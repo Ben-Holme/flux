@@ -1,49 +1,32 @@
 {
   "name": "flux",
-  "version": "2.0.2",
-  "description": "An application architecture based on a unidirectional data flow",
-  "keywords": [
-    "flux",
-    "react",
-    "facebook",
-    "dispatcher"
-  ],
-  "homepage": "http://facebook.github.io/flux/",
-  "bugs": "https://github.com/facebook/flux/issues",
-  "files": [
-    "index.js",
-    "lib/",
-    "LICENSE",
-    "PATENTS"
-  ],
-  "main": "index.js",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "prepublish": "gulp publish",
-    "test": "jest"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
-  "jest": {
-    "rootDir": "src",
-    "scriptPreprocessor": "../jest-preprocessor.js"
+  "dependencies": {
+    "contentful": "^11.12.2",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/facebook/flux"
-  },
-  "author": "Facebook",
-  "contributors": [
-    "Jing Chen <jingc@fb.com>",
-    "Bill Fisher <fisherwebdev@gmail.com>",
-    "Paul O'Shannessy <paul@oshanessy.com>"
-  ],
-  "license": "BSD",
   "devDependencies": {
-    "browserify": "^5.9.1",
-    "del": "^0.1.2",
-    "gulp": "^3.8.6",
-    "gulp-react": "^2.0.0",
-    "gulp-replace": "^0.4.0",
-    "jest-cli": "~0.1.17",
-    "react-tools": "^0.12.0",
-    "vinyl-source-stream": "^0.1.1"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
