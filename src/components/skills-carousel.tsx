@@ -86,12 +86,12 @@ export default function SkillsCarousel() {
           >
             <div className={styles.mask} />
             <div className={styles.skillTitle}>
+              <h3 className={styles.title}>{skill.title}</h3>
               <div>
                 <span className={styles.bubble}>{skill.category}</span>
                 {skill.icon}
               </div>
             </div>
-            <h3 className={styles.title}>{skill.title}</h3>
             <p>{skill.text}</p>
             <svg className="absolute bottom-6 right-6" width="25" height="34" viewBox="0 0 25 34" fill="none">
               <path fillRule="evenodd" clipRule="evenodd" d="M0 0H25V14H12V8H19V6H6V8H10V24H15V22H12V16H25V18H14V20H17V26H8V10H4V4H21V10H14V12H23V2H2V12H6V28H19V20H25V34H0V18V16H2V32H23V22H21V30H4V14H0V0Z" fill="white" />

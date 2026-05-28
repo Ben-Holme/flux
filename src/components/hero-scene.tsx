@@ -7,6 +7,7 @@ import RichText from "@/components/rich-text";
 import SkillsCarousel from "@/components/skills-carousel";
 import LeadForm from "@/components/lead-form";
 import Button from "@/components/button";
+import styles from "@/components/hero-scene.module.css";
 
 interface LayerProps {
   src: string;
@@ -105,13 +106,18 @@ export default function HeroScene({
         <>
           {/* Parallax background */}
           <div className="absolute inset-0">
-            <Layer src="/img/1/5.png" progress={scrollYProgress} speed={1} />
-            <Layer src="/img/1/4.png" progress={scrollYProgress} speed={0.99} />
-            <Layer src="/img/1/3.png" progress={scrollYProgress} speed={0.95} />
-            <Layer src="/img/1/2.png" progress={scrollYProgress} speed={0.85} />
-            <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
+            <div className={styles.layers}>
+              <Layer src="/img/1/5.png" progress={scrollYProgress} speed={1} />
+              <Layer src="/img/1/4.png" progress={scrollYProgress} speed={0.99} />
+              <Layer src="/img/1/3.png" progress={scrollYProgress} speed={0.95} />
+              <Layer src="/img/1/2.png" progress={scrollYProgress} speed={0.85} />
+              <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
+            </div>
+            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/1/1.png"), url("/img/1/2.png"), url("/img/1/3.png"), url("/img/1/4.png"), url("/img/1/5.png")' }} />
+            {/* 30% black overlay */}
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
             {/* Blue color blend overlay */}
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
           {/* Viewport-height content area */}
@@ -159,11 +165,15 @@ export default function HeroScene({
         <>
           {/* Parallax background */}
           <div className="absolute inset-0">
-            <Layer src="/img/2/4.png" progress={scrollYProgress} speed={1} />
-            <Layer src="/img/2/3.png" progress={scrollYProgress} speed={0.95} />
-            <Layer src="/img/2/2.png" progress={scrollYProgress} speed={0.87} />
-            <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+            <div className={styles.layers}>
+              <Layer src="/img/2/4.png" progress={scrollYProgress} speed={1} />
+              <Layer src="/img/2/3.png" progress={scrollYProgress} speed={0.95} />
+              <Layer src="/img/2/2.png" progress={scrollYProgress} speed={0.87} />
+              <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
+            </div>
+            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/2/1.png"), url("/img/2/2.png"), url("/img/2/3.png"), url("/img/2/4.png")' }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
           <div className="relative z-10 flex min-h-screen flex-col justify-center py-24">
@@ -193,11 +203,15 @@ export default function HeroScene({
         <>
           {/* Parallax background */}
           <div className="absolute inset-0">
-            <Layer src="/img/3/4.png" progress={scrollYProgress} speed={1} />
-            <Layer src="/img/3/3.png" progress={scrollYProgress} speed={0.95} />
-            <Layer src="/img/3/2.png" progress={scrollYProgress} speed={0.8} />
-            <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+            <div className={styles.layers}>
+              <Layer src="/img/3/4.png" progress={scrollYProgress} speed={1} />
+              <Layer src="/img/3/3.png" progress={scrollYProgress} speed={0.95} />
+              <Layer src="/img/3/2.png" progress={scrollYProgress} speed={0.8} />
+              <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
+            </div>
+            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/3/1.png"), url("/img/3/2.png"), url("/img/3/3.png"), url("/img/3/4.png")' }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
           <div className="relative z-10 flex min-h-screen items-center justify-center px-8 py-24">

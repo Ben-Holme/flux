@@ -80,17 +80,16 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── Intro ──────────────────────────────────────────── */}
       <section
-        className="relative flex h-screen flex-col items-center justify-center px-6 text-center"
+        className="flex h-screen flex-col items-center justify-center text-center"
         style={{
           backgroundImage: "url(/img/hero.png)",
           backgroundSize: "cover",
           backgroundPosition: "center",
+          gap: "24px",
         }}
       >
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex flex-col items-center gap-8">
         {/* Unyha logo — all paths from source */}
-        <svg width="180" viewBox="0 0 240 245" className="opacity-90" fill="white">
+        <svg style={{ width: "min(180px, 50%)" }} viewBox="0 0 240 245" className="opacity-90" fill="white">
           <path fillRule="evenodd" clipRule="evenodd" d="M112.407 240.037V0.310547L127.767 14.7955V82.2457L140.335 70.3944V26.6468L155.696 41.1318V76.3942L127.767 102.731V131.992C127.271 132.131 126.793 132.29 126.356 132.466C123.05 133.797 122.791 134.342 123.885 137.633C124.674 140.005 125.866 141.273 127.242 141.204C127.424 141.195 127.6 141.189 127.767 141.187V179.86C126.397 192.946 125.307 205.024 125.289 207.403C125.228 215.738 123.249 228.365 121.861 229.28C121.112 229.774 119.074 229.937 117.331 229.643C114.456 229.156 114.129 229.591 113.785 234.361C113.617 236.71 113.043 238.99 112.407 240.037ZM121.985 109.804C121.882 110.864 122.215 111.14 122.834 110.507C123.394 109.934 123.47 109.149 123.003 108.763C122.536 108.377 122.078 108.845 121.985 109.804ZM119.024 133.444C118.553 133.78 118.868 135.63 119.722 137.554L121.275 141.054L120.945 137.299C120.579 133.141 120.282 132.545 119.024 133.444ZM124.605 145.318C124.077 145.991 123.171 147.139 122.592 147.869C122.011 148.598 122.111 149.76 122.813 150.45C123.515 151.141 124.191 152.971 124.317 154.518C124.441 156.065 125.145 154.415 125.881 150.852C127.157 144.675 126.691 142.652 124.605 145.318ZM121.011 184.019C120.467 187.233 120.527 188.596 121.144 187.047C121.763 185.499 122.209 182.868 122.135 181.203C122.063 179.538 121.556 180.804 121.011 184.019ZM116.776 219.139C116.262 222.739 116.366 225.774 117.008 225.884C118.447 226.133 119.352 219.418 118.408 215.488C117.931 213.5 117.421 214.643 116.776 219.139Z" />
           <path d="M124.174 240.726L120.244 244.433C119.237 240.002 118.372 234.386 118.677 232.591C118.825 231.715 119.732 232.042 121.72 233.687C123.58 235.225 124.241 236.944 124.174 240.726Z" />
           <path d="M127.767 230.703V234.51C126.619 233.577 125.736 232.194 126.332 231.56C126.704 231.166 127.249 230.853 127.767 230.703Z" />
@@ -113,7 +112,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           <path d="M233.104 217.737C232.644 217.147 231.578 216.795 230.733 216.954C228.445 217.382 228.762 217.987 231.505 218.421C232.843 218.633 233.562 218.325 233.104 217.737Z" />
         </svg>
 
-        <div className="font-heading text-sm tracking-[0.4em] text-white/50 uppercase">
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: "1.3em", textTransform: "uppercase", letterSpacing: "0.2em", fontWeight: "normal", textAlign: "center", color: "var(--fg1)", lineHeight: 1.2, marginBottom: "30vh" }}>
           Medieval Goth
           <br />
           Autochronicle
@@ -138,7 +137,6 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
             </svg>
             Wishlist on Steam
           </Button>
-        </div>
         </div>
       </section>
 
