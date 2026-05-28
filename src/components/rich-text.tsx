@@ -5,9 +5,17 @@ import {
   type Options,
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
-import type { Document } from "@contentful/rich-text-types";
+import type { Block, Document } from "@contentful/rich-text-types";
 
-const options: Options = {
+function assetUrl(target: unknown): string | null {
+  if (!target || typeof target !== "object") return null;
+  const t = target as { fields?: { file?: { url?: string } } };
+  const url = t.fields?.file?.url;
+  if (!url) return null;
+  return url.startsWith("//") ? `https:${url}` : url;
+}
+
+const baseOptions: Options = {
   renderMark: {
     [MARKS.BOLD]: (text) => <strong className="font-semibold">{text}</strong>,
     [MARKS.ITALIC]: (text) => <em>{text}</em>,
@@ -39,6 +47,12 @@ const options: Options = {
     [BLOCKS.LIST_ITEM]: (_node, children) => (
       <li className="mb-1">{children}</li>
     ),
+    [BLOCKS.EMBEDDED_ASSET]: (node) => {
+      const url = assetUrl(node.data.target);
+      if (!url) return null;
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={url} alt="" className="my-4 max-w-full rounded" />;
+    },
     [BLOCKS.QUOTE]: (_node, children) => (
       <blockquote className="mb-4 border-l-2 border-gold pl-4 italic">
         {children}
@@ -58,6 +72,33 @@ const options: Options = {
   },
 };
 
-export default function RichText({ document }: { document: Document }) {
-  return <div>{documentToReactComponents(document, options)}</div>;
+// Section variant: list items with an embedded-asset child use it as background-image
+const sectionOptions: Options = {
+  ...baseOptions,
+  renderNode: {
+    ...baseOptions.renderNode,
+    [BLOCKS.EMBEDDED_ASSET]: () => null,
+    [BLOCKS.LIST_ITEM]: (node, children) => {
+      const assetNode = (node.content as Block[]).find(
+        (c) => c.nodeType === BLOCKS.EMBEDDED_ASSET
+      );
+      const url = assetNode ? assetUrl(assetNode.data.target) : null;
+      return (
+        <li style={url ? { backgroundImage: `url(${url})` } : undefined}>
+          {children}
+        </li>
+      );
+    },
+  },
+};
+
+export default function RichText({
+  document,
+  variant,
+}: {
+  document: Document;
+  variant?: "section";
+}) {
+  const opts = variant === "section" ? sectionOptions : baseOptions;
+  return <div>{documentToReactComponents(document, opts)}</div>;
 }

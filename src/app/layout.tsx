@@ -27,7 +27,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${odebeeSans.variable} ${inter.variable}`}>
-      <body className="flex min-h-screen flex-col bg-void text-parchment antialiased">
+      <body className="flex min-h-screen flex-col bg-void antialiased">
         <Suspense fallback={null}>
           <Nav />
         </Suspense>

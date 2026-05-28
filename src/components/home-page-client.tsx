@@ -169,7 +169,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               <div className={sectionStyles.text}>
                 <div>
                   {item.fields.preHeading && (
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: "normal", position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.5rem", color: "#ffd98f", marginBottom: "1.5rem", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.2em" }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: "normal", position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.5rem", color: "#ffd98f", textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px", marginBottom: "1.5rem", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.2em" }}>
                       <p style={{ margin: 0 }}>{item.fields.preHeading as string}</p>
                       <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mt-1">
                         <path opacity="0.3" fillRule="evenodd" clipRule="evenodd" d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z" fill="url(#sec-line)" />
@@ -183,7 +183,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                     </div>
                   )}
                   {item.fields.content && (
-                    <RichText document={item.fields.content as Document} />
+                    <RichText document={item.fields.content as Document} variant="section" />
                   )}
                 </div>
                 <div />
