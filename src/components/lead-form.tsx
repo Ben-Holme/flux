@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/button";
 
 export default function LeadForm() {
   const [name, setName] = useState("");
@@ -59,12 +60,9 @@ export default function LeadForm() {
         />
         I agree to receive updates about Unyha and accept the Privacy Policy.
       </label>
-      <button
-        type="submit"
-        className="border border-gold px-8 py-3 text-sm tracking-widest text-gold transition-colors hover:bg-gold hover:text-void"
-      >
+      <Button type="submit" variant="outline">
         NOTIFY ME
-      </button>
+      </Button>
     </form>
   );
 }

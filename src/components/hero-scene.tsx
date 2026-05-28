@@ -6,6 +6,7 @@ import type { Document } from "@contentful/rich-text-types";
 import RichText from "@/components/rich-text";
 import SkillsCarousel from "@/components/skills-carousel";
 import LeadForm from "@/components/lead-form";
+import Button from "@/components/button";
 
 interface LayerProps {
   src: string;
@@ -109,15 +110,12 @@ export default function HeroScene({
               )}
               {copy && <RichText document={copy} />}
               {onShowLoreVideo && (
-                <button
-                  onClick={onShowLoreVideo}
-                  className="mt-8 flex items-center gap-3 text-sm tracking-widest text-parchment/70 transition-colors hover:text-parchment"
-                >
+                <Button variant="ghost" onClick={onShowLoreVideo} className="mt-8">
                   <svg className="h-5 w-5" viewBox="0 0 576 512" fill="currentColor">
                     <path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z" />
                   </svg>
                   Lore Trailer
-                </button>
+                </Button>
               )}
             </div>
             {/* Spritfolk character — static sprite with mix-blend-screen */}
