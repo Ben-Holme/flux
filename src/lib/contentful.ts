@@ -43,71 +43,95 @@ export async function getHero() {
   "use cache";
   cacheLife("hours");
   cacheTag("hero");
-  const res = await client.getEntries<HeroSkeleton>({
-    content_type: "title",
-    limit: 1,
-    include: 1,
-  });
-  return res.items[0] ?? null;
+  try {
+    const res = await client.getEntries<HeroSkeleton>({
+      content_type: "title",
+      limit: 1,
+      include: 1,
+    });
+    return res.items[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSections() {
   "use cache";
   cacheLife("hours");
   cacheTag("sections");
-  const res = await client.getEntries<SectionSkeleton>({
-    content_type: "section",
-    include: 1,
-  });
-  return res.items;
+  try {
+    const res = await client.getEntries<SectionSkeleton>({
+      content_type: "section",
+      include: 1,
+    });
+    return res.items;
+  } catch {
+    return [];
+  }
 }
 
 export async function getLatestPosts(limit = 3) {
   "use cache";
   cacheLife("hours");
   cacheTag("posts");
-  const res = await client.getEntries<PostSkeleton>({
-    content_type: "post",
-    order: ["-fields.date"],
-    limit,
-    include: 1,
-  });
-  return res.items;
+  try {
+    const res = await client.getEntries<PostSkeleton>({
+      content_type: "post",
+      order: ["-fields.date"],
+      limit,
+      include: 1,
+    });
+    return res.items;
+  } catch {
+    return [];
+  }
 }
 
 export async function getAllPosts() {
   "use cache";
   cacheLife("hours");
   cacheTag("posts");
-  const res = await client.getEntries<PostSkeleton>({
-    content_type: "post",
-    order: ["-fields.date"],
-    include: 1,
-  });
-  return res.items;
+  try {
+    const res = await client.getEntries<PostSkeleton>({
+      content_type: "post",
+      order: ["-fields.date"],
+      include: 1,
+    });
+    return res.items;
+  } catch {
+    return [];
+  }
 }
 
 export async function getPost(slug: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(`post:${slug}`);
-  const res = await client.getEntries<PostSkeleton>({
-    content_type: "post",
-    "fields.slug": slug,
-    limit: 1,
-    include: 2,
-  });
-  return res.items[0] ?? null;
+  try {
+    const res = await client.getEntries<PostSkeleton>({
+      content_type: "post",
+      "fields.slug": slug,
+      limit: 1,
+      include: 2,
+    });
+    return res.items[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getPage(slug: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(`page:${slug}`);
-  const res = await client.getEntries<PageSkeleton>({
-    content_type: "page",
-    "fields.slug": slug,
-    limit: 1,
-  });
-  return res.items[0] ?? null;
+  try {
+    const res = await client.getEntries<PageSkeleton>({
+      content_type: "page",
+      "fields.slug": slug,
+      limit: 1,
+    });
+    return res.items[0] ?? null;
+  } catch {
+    return null;
+  }
 }
