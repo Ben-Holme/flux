@@ -57,3 +57,12 @@ export type YouTubeSkeleton = EntrySkeletonType & {
     id: EntryFieldTypes.Symbol;
   };
 };
+
+export type BlockListSkeleton = EntrySkeletonType & {
+  contentTypeId: "blockList";
+  fields: {
+    list: EntryFieldTypes.Array<
+      EntryFieldTypes.EntryLink<HeroSkeleton | SectionSkeleton>
+    >;
+  };
+};
