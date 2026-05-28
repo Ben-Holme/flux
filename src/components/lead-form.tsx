@@ -60,7 +60,7 @@ export default function LeadForm() {
         />
         I agree to receive updates about Unyha and accept the Privacy Policy.
       </label>
-      <Button type="submit" variant="outline">
+      <Button type="submit" variant="primary">
         NOTIFY ME
       </Button>
     </form>

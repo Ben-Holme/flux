@@ -1,0 +1,140 @@
+.button {
+  appearance: none;
+  padding: 16px 40px;
+  background-color: rgba(101, 202, 225, 0.13);
+  border-radius: 4px;
+  outline: 0;
+  color: var(--ash);
+  border: 0;
+  font-size: 0.88rem;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: 0.5s;
+  position: relative;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+  .button {
+    min-width: 10em;
+  }
+}
+
+.button svg {
+  display: inline-block;
+  height: 24px;
+  margin: 0 8px -24px -16px;
+  transform: translateY(-16px);
+}
+
+.button span {
+  z-index: 2;
+  position: relative;
+}
+
+.button:hover {
+  background-color: rgba(101, 202, 225, 0.18);
+  transition: 0.1s;
+  color: var(--parchment);
+}
+
+.button:active {
+  transition: 0s;
+  transform: translateY(2px) scale(0.99);
+}
+
+/* Inner border ring */
+.button::after {
+  content: "";
+  position: absolute;
+  border-radius: 3px;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  right: 2px;
+  border: solid var(--parchment) 1px;
+  transition: 0.5s;
+  opacity: 0.1;
+}
+
+.button:hover::after {
+  transition: 0.2s;
+  opacity: 0.2;
+}
+
+/* ── Primary variant ─────────────────────────────── */
+
+.primary {
+  background-color: #111;
+}
+
+.primary::after {
+  content: "";
+  border: 0;
+  background-image:
+    radial-gradient(rgba(101, 202, 225, 1) 0%, rgba(101, 202, 225, 0) 69%),
+    radial-gradient(rgba(255, 122, 0, 0.7) 0%, rgba(255, 122, 0, 0) 69%);
+  background-repeat: no-repeat;
+  background-size: 150% 200%, 90% 110%;
+  background-position: 113% 100%, 360% -462%;
+  position: absolute;
+  border-radius: 3px;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  right: 2px;
+  transition: 0.5s;
+  opacity: 0.3;
+}
+
+.primary::before {
+  content: "";
+  background-color: #111;
+  background-image:
+    radial-gradient(rgba(101, 202, 225, 0.1) 0%, rgba(101, 202, 225, 0) 69%),
+    radial-gradient(rgba(255, 122, 0, 0.05) 0%, rgba(255, 122, 0, 0) 69%);
+  background-repeat: no-repeat;
+  background-size: 150% 200%, 90% 110%;
+  background-position: 113% 100%, 360% -462%;
+  position: absolute;
+  border-radius: 2px;
+  left: 3px;
+  top: 3px;
+  bottom: 3px;
+  right: 3px;
+  z-index: 1;
+}
+
+.primary:hover::after {
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.primary:hover::before {
+  background-color: #181818;
+  transition: 0.2s;
+}
+
+/* ── Ghost variant ───────────────────────────────── */
+
+.ghost {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: var(--ash);
+}
+
+.ghost::after {
+  display: none;
+}
+
+.ghost:hover {
+  background: none;
+  color: var(--parchment);
+}
