@@ -10,6 +10,7 @@ import Button from "@/components/button";
 import VideoModal from "@/components/video-modal";
 import HeroScene from "@/components/hero-scene";
 import RichText from "@/components/rich-text";
+import sectionStyles from "@/components/section.module.css";
 
 const VIDEOS = [
   { name: "gameplay trailer", id: "okXJWVGoaeo" },
@@ -158,34 +159,37 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
         if (isSectionEntry(item)) {
           const imgUrl = getAssetUrl(item.fields.image);
           const imgAlt = getAssetTitle(item.fields.image);
-          const isReversed = i % 2 !== 0;
           return (
-            <div
-              key={item.sys.id}
-              className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24 lg:flex-row lg:items-center"
-              style={isReversed ? { flexDirection: "row-reverse" } : undefined}
-            >
+            <section key={item.sys.id} className={sectionStyles.section}>
               {imgUrl && (
-                <div className="relative h-72 w-full flex-1 overflow-hidden lg:h-96">
-                  <Image src={imgUrl} alt={imgAlt} fill className="object-cover" />
+                <div className={sectionStyles.image}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imgUrl} alt={imgAlt} />
                 </div>
               )}
-              <div className="flex-1">
-                {item.fields.preHeading && (
-                  <p className="mb-3 text-xs font-heading tracking-[0.3em] text-gold uppercase">
-                    {item.fields.preHeading as string}
-                  </p>
-                )}
-                {item.fields.title && (
-                  <h2 className="mb-4 font-heading text-3xl text-parchment">
-                    {item.fields.title as string}
-                  </h2>
-                )}
-                {item.fields.content && (
-                  <RichText document={item.fields.content as Document} />
-                )}
+              <div className={sectionStyles.text}>
+                <div>
+                  {item.fields.preHeading && (
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: "normal", position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.5rem", color: "#ffd98f", marginBottom: "1.5rem", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.2em" }}>
+                      <p style={{ margin: 0 }}>{item.fields.preHeading as string}</p>
+                      <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mt-1">
+                        <path opacity="0.3" fillRule="evenodd" clipRule="evenodd" d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z" fill="url(#sec-line)" />
+                        <defs>
+                          <linearGradient id="sec-line" x1="1" y1="6.25" x2="284.04" y2="6.25" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="white" />
+                            <stop offset="1" stopColor="white" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  )}
+                  {item.fields.content && (
+                    <RichText document={item.fields.content as Document} />
+                  )}
+                </div>
+                <div />
               </div>
-            </div>
+            </section>
           );
         }
         return null;

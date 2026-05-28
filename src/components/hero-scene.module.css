@@ -6,6 +6,99 @@
   display: none;
 }
 
+.caption {
+  position: absolute;
+  color: var(--fg3);
+  text-transform: uppercase;
+  left: 30px;
+  bottom: 30px;
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  z-index: 2;
+}
+
+.caption svg {
+  width: 8px;
+  margin-right: 8px;
+  display: block;
+}
+
+.zoom {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: auto;
+  gap: 96px;
+}
+
+.zoom > div {
+  flex-grow: 1;
+  flex-basis: 0;
+}
+
+.sf {
+  position: relative;
+}
+
+.sf::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-image: url('/img/paint.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transform: scale(1.5);
+}
+
+.sf img {
+  z-index: 2;
+  position: relative;
+  mix-blend-mode: screen;
+  transform: scale(0.9) translateX(-20px);
+  display: block;
+}
+
+.sfCaption {
+  left: 0;
+  position: absolute;
+  right: 0;
+  bottom: 100px;
+  text-align: center;
+  color: var(--fg3);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.skills {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 2;
+  gap: 48px;
+}
+
+.skills > .text {
+  flex-basis: 0;
+  max-width: 1200px;
+  margin: 80px auto 0;
+  padding-right: 600px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 @media screen and (max-width: 768px) {
   .layers > img {
     display: none !important;
@@ -20,5 +113,51 @@
     bottom: 0;
     background-size: cover;
     background-position: center;
+  }
+
+  .caption {
+    left: 24px;
+    bottom: 24px;
+  }
+
+  .caption svg {
+    width: 6px;
+    margin-right: 6px;
+  }
+
+  .zoom {
+    flex-direction: column;
+    padding: 64px 24px;
+    padding-bottom: 80px;
+    min-height: auto;
+  }
+
+  .zoom > div:first-child {
+    order: 2;
+  }
+
+  .sf {
+    position: absolute;
+    width: 60%;
+    right: -5%;
+    top: -2%;
+  }
+
+  .sf img {
+    transform: scale(0.7);
+  }
+
+  .sfCaption {
+    display: none;
+  }
+
+  .skills {
+    display: block;
+    min-height: auto;
+  }
+
+  .skills > .text {
+    padding: 64px 24px;
+    margin: 0 0 32px 0;
   }
 }

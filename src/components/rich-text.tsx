@@ -19,28 +19,28 @@ const options: Options = {
   },
   renderNode: {
     [BLOCKS.PARAGRAPH]: (_node, children) => (
-      <p className="mb-4 leading-7 text-ash last:mb-0">{children}</p>
+      <p className="mb-4 leading-7 last:mb-0">{children}</p>
     ),
     [BLOCKS.HEADING_1]: (_node, children) => (
-      <h1 className="mb-4 font-heading text-3xl text-parchment">{children}</h1>
+      <h1 className="mb-4">{children}</h1>
     ),
     [BLOCKS.HEADING_2]: (_node, children) => (
-      <h2 className="mb-3 font-heading text-2xl text-parchment">{children}</h2>
+      <h2 className="mb-3">{children}</h2>
     ),
     [BLOCKS.HEADING_3]: (_node, children) => (
-      <h3 className="mb-3 font-heading text-xl text-parchment">{children}</h3>
+      <h3 className="mb-3">{children}</h3>
     ),
     [BLOCKS.UL_LIST]: (_node, children) => (
-      <ul className="mb-4 list-disc pl-6 text-ash">{children}</ul>
+      <ul className="mb-4">{children}</ul>
     ),
     [BLOCKS.OL_LIST]: (_node, children) => (
-      <ol className="mb-4 list-decimal pl-6 text-ash">{children}</ol>
+      <ol className="mb-4 list-decimal pl-6">{children}</ol>
     ),
     [BLOCKS.LIST_ITEM]: (_node, children) => (
       <li className="mb-1">{children}</li>
     ),
     [BLOCKS.QUOTE]: (_node, children) => (
-      <blockquote className="mb-4 border-l-2 border-gold pl-4 text-ash italic">
+      <blockquote className="mb-4 border-l-2 border-gold pl-4 italic">
         {children}
       </blockquote>
     ),

@@ -81,6 +81,12 @@ function PreHeadingDecor() {
   );
 }
 
+const CAPTION_ICON = (
+  <svg viewBox="0 0 181 393" fill="currentColor">
+    <path fillRule="evenodd" clipRule="evenodd" d="M180.302 90.5L90.5 0.697449L0.69751 90.5V213L180.302 392.605V90.5ZM139.602 88.6017L90.5 39.5L41.3983 88.6017L90.5 137.703L139.602 88.6017Z" />
+  </svg>
+);
+
 interface HeroSceneProps {
   scene: number;
   preHeading?: string;
@@ -120,9 +126,9 @@ export default function HeroScene({
             <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
-          {/* Viewport-height content area */}
-          <div className="relative z-10 flex min-h-screen items-center px-8 py-24 lg:px-16">
-            <div className="max-w-xl">
+          {/* Content zone */}
+          <div className={`relative z-10 ${styles.zoom}`}>
+            <div>
               {preHeading && (
                 <div>
                   <p style={PRE_HEADING_GLOW}>{preHeading}</p>
@@ -140,24 +146,18 @@ export default function HeroScene({
               )}
             </div>
             {/* Spritfolk character */}
-            <div className="pointer-events-none absolute bottom-0 right-0 z-20">
+            <div className={styles.sf}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/img/sf.png"
-                alt=""
-                className="h-[55vh] max-h-[580px] w-auto mix-blend-screen"
-                draggable={false}
-              />
-              <p className="absolute bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-xs" style={{ color: "var(--fg3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                Create your spritfolk bloodline
-              </p>
+              <img src="/img/sf.png" alt="" draggable={false} />
+              <p className={styles.sfCaption}>Create your spritfolk bloodline</p>
             </div>
           </div>
 
           {/* Location caption */}
-          <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
+          <div className={styles.caption}>
+            {CAPTION_ICON}
             Elder Forest
-          </p>
+          </div>
         </>
       )}
 
@@ -176,26 +176,23 @@ export default function HeroScene({
             <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
-          <div className="relative z-10 flex min-h-screen flex-col justify-center py-24">
-            <div className="mb-12 px-8 lg:px-16">
+          <div className={`relative z-10 ${styles.skills}`}>
+            <div className={styles.text}>
               {preHeading && (
                 <div>
                   <p style={PRE_HEADING_GLOW}>{preHeading}</p>
                   <PreHeadingDecor />
                 </div>
               )}
-              {copy && (
-                <div className="max-w-xl">
-                  <RichText document={copy} />
-                </div>
-              )}
+              {copy && <RichText document={copy} />}
             </div>
             <SkillsCarousel />
           </div>
 
-          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
+          <div className={styles.caption}>
+            {CAPTION_ICON}
             Great Glizum Ravine
-          </p>
+          </div>
         </>
       )}
 
@@ -214,8 +211,8 @@ export default function HeroScene({
             <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
 
-          <div className="relative z-10 flex min-h-screen items-center justify-center px-8 py-24">
-            <div className="w-full max-w-md">
+          <div className={`relative z-10 ${styles.zoom}`}>
+            <div>
               {copy && (
                 <div className="mb-8">
                   <RichText document={copy} />
@@ -225,9 +222,10 @@ export default function HeroScene({
             </div>
           </div>
 
-          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
+          <div className={styles.caption}>
+            {CAPTION_ICON}
             The Black Mine
-          </p>
+          </div>
         </>
       )}
     </div>
