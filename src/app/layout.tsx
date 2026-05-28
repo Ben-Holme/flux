@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel, Inter } from "next/font/google";
+import Image from "next/image";
+import Link from "next/link";
 import "./globals.css";
 import Nav from "@/components/nav";
 
@@ -27,8 +29,28 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col bg-void text-parchment antialiased">
         <Nav />
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-border py-8 text-center text-sm text-ash">
-          © 2026 Unyha. All rights reserved.
+        <footer className="flex flex-col items-center justify-center gap-4 bg-black px-6 py-12">
+          <a href="https://realspawn.com" target="_blank" rel="noopener noreferrer">
+            <Image
+              src="/img/RealspawnStudios.png"
+              alt="Realspawn Studios"
+              width={100}
+              height={57}
+              className="opacity-30"
+            />
+          </a>
+          <nav className="flex gap-6 text-sm text-white/30">
+            <Link href="/" className="transition-colors hover:text-white/60">
+              About
+            </Link>
+            <Link href="/devlog" className="transition-colors hover:text-white/60">
+              Devlog
+            </Link>
+            <Link href="/privacy-policy" className="transition-colors hover:text-white/60">
+              Privacy Policy
+            </Link>
+          </nav>
+          <p className="text-xs text-white/30">© Realspawn Studios, 2026</p>
         </footer>
       </body>
     </html>

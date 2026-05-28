@@ -1,17 +1,18 @@
 import "server-only";
 import { createClient } from "contentful";
-import type { Asset, AssetFile } from "contentful";
+import type { Asset, AssetFile, Entry } from "contentful";
 import { cacheLife, cacheTag } from "next/cache";
 import type {
   HeroSkeleton,
   SectionSkeleton,
   PostSkeleton,
   PageSkeleton,
+  BlockListSkeleton,
 } from "@/types/contentful";
 
 const client = createClient({
-  space: process.env.CONTENTFUL_SPACE_ID!,
-  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN!,
+  space: process.env.CONTENTFUL_SPACE_ID ?? "MISSING",
+  accessToken: process.env.CONTENTFUL_ACCESS_TOKEN ?? "MISSING",
 });
 
 type MaybeAsset = Asset | { sys: object } | undefined | null;
@@ -37,6 +38,28 @@ export function getAssetTitle(field: MaybeAsset): string {
   if (!isAsset(field)) return "";
   const title = field.fields.title;
   return typeof title === "string" ? title : "";
+}
+
+export function isHeroEntry(item: unknown): item is Entry<HeroSkeleton> {
+  return (
+    !!item &&
+    typeof item === "object" &&
+    "sys" in item &&
+    "fields" in item &&
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (item as any).sys?.contentType?.sys?.id === "title"
+  );
+}
+
+export function isSectionEntry(item: unknown): item is Entry<SectionSkeleton> {
+  return (
+    !!item &&
+    typeof item === "object" &&
+    "sys" in item &&
+    "fields" in item &&
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (item as any).sys?.contentType?.sys?.id === "section"
+  );
 }
 
 export async function getHero() {
@@ -67,6 +90,22 @@ export async function getSections() {
     return res.items;
   } catch {
     return [];
+  }
+}
+
+export async function getBlockList() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("blockList");
+  try {
+    const res = await client.getEntries<BlockListSkeleton>({
+      content_type: "blockList",
+      limit: 1,
+      include: 2,
+    });
+    return res.items[0] ?? null;
+  } catch {
+    return null;
   }
 }
 
