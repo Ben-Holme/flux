@@ -1,0 +1,196 @@
+.carouselWrapper {
+  height: 300px;
+  width: 100%;
+  overflow-x: scroll;
+  position: relative;
+  cursor: grab;
+}
+
+.carousel {
+  display: flex;
+  gap: 24px;
+  position: absolute;
+  padding: 0 calc(50vw - 600px);
+}
+
+.item {
+  width: 600px;
+  height: 300px;
+  background-color: #19202c;
+  border-radius: 8px;
+  padding: 40px 250px 40px 40px;
+  box-sizing: border-box;
+  position: relative;
+  background-position: 100% 0;
+  background-size: auto 130%;
+  background-repeat: no-repeat;
+  user-select: none;
+}
+
+.mask {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-position: 100% 0;
+  background-size: 65% 100%;
+  background-image: linear-gradient(-90deg, transparent, #19202c);
+}
+
+.item::before {
+  content: '';
+  position: absolute;
+  bottom: 40px;
+  left: 65px;
+  right: -64px;
+  height: 2px;
+  background: #fff;
+  opacity: 0.1;
+  z-index: 3;
+}
+
+.item:last-child::before {
+  background: linear-gradient(90deg, #fff, #fff, #fff, #fff, transparent);
+}
+
+.item::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: solid rgba(255, 255, 255, 0.1) 1px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.item > svg {
+  position: absolute;
+  opacity: 0.1;
+  display: block;
+  bottom: 24px;
+  z-index: 2;
+}
+
+.item p {
+  z-index: 2;
+  position: relative;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--fg2);
+  margin: 0;
+}
+
+.title {
+  margin: 0 0 8px;
+  color: var(--fg1);
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: normal;
+  font-size: 2.5rem;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.skillTitle {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 8px;
+}
+
+.skillTitle > div {
+  position: relative;
+}
+
+.skillTitle svg {
+  opacity: 0.5;
+  display: block;
+  transform: scale(0.8) translateY(2px);
+}
+
+.bubble {
+  opacity: 0;
+  pointer-events: none;
+  background-color: #000;
+  border-radius: 4px;
+  padding: 8px 16px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px) scale(0.8);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  transition: 0.2s;
+  text-transform: uppercase;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  font-family: var(--font-heading);
+  color: var(--fg1);
+}
+
+.skillTitle:hover .bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-30px) scale(1);
+}
+
+@media screen and (max-width: 768px) {
+  .carouselWrapper {
+    height: 350px;
+  }
+
+  .carousel {
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  .item {
+    width: 300px;
+    padding: 24px 24px 40px 24px;
+    height: 350px;
+    background-size: 90% auto;
+  }
+
+  .mask {
+    left: auto;
+    width: 90%;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    background-position: 20px -30px;
+    aspect-ratio: 1 / 1;
+    background-image: radial-gradient(transparent 50%, #19202c 70%);
+    background-size: 400%;
+  }
+
+  .item::before {
+    left: 49px;
+    right: -40px;
+  }
+
+  .skillTitle {
+    position: relative;
+    margin-top: 64px;
+    z-index: 2;
+  }
+
+  .skillTitle > div {
+    position: absolute;
+    left: 0;
+    top: -48px;
+  }
+
+  .skillTitle svg {
+    transform: none;
+  }
+
+  .title {
+    font-size: 1.7rem;
+  }
+}

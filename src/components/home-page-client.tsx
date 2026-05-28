@@ -195,8 +195,8 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── News preview ────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="border-t border-border bg-surface py-24">
-          <div className="mx-auto max-w-6xl px-6">
+        <section className="py-20">
+          <div style={{ maxWidth: "1200px", padding: "0 24px", margin: "0 auto" }}>
             <div className="mb-12 flex items-end justify-between">
               <div>
                 <svg
@@ -248,44 +248,41 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                   <Link
                     key={post.sys.id}
                     href={`/devlog/${post.fields?.slug}`}
-                    className="group flex flex-col border border-border bg-surface-raised transition-colors hover:border-gold/40"
+                    className="group block relative"
                   >
-                    {thumb && (
-                      <div className="relative h-48 overflow-hidden">
+                    <div className="news-img-fx relative overflow-hidden rounded-lg">
+                      {thumb ? (
                         <Image
                           src={thumb}
                           alt={thumbAlt}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          width={600}
+                          height={300}
+                          className="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                      </div>
-                    )}
-                    <div className="flex flex-1 flex-col p-5">
-                      <p className="mb-1 text-xs font-heading tracking-wider text-gold uppercase">
-                        {post.fields?.categry?.fields?.name ?? "news"}
-                      </p>
-                      <h3 className="mb-2 font-heading text-base leading-snug text-parchment">
-                        {post.fields?.title}
-                      </h3>
-                      {post.fields?.short && (
-                        <p className="mt-auto line-clamp-2 text-sm leading-6 text-ash">
-                          {post.fields.short}
-                        </p>
+                      ) : (
+                        <div className="aspect-video bg-black flex items-center justify-center opacity-20">
+                          <svg width="40" height="40" viewBox="0 0 25 34" fill="white">
+                            <path fillRule="evenodd" clipRule="evenodd" d="M0 0H25V14H12V8H19V6H6V8H10V24H15V22H12V16H25V18H14V20H17V26H8V10H4V4H21V10H14V12H23V2H2V12H6V28H19V20H25V34H0V18V16H2V32H23V22H21V30H4V14H0V0Z" />
+                          </svg>
+                        </div>
                       )}
                     </div>
+                    <p className="mt-3" style={{ color: "#ffd98f", fontSize: "0.75rem", fontFamily: "var(--font-heading)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                      {post.fields?.categry?.fields?.name ?? "news"}
+                    </p>
+                    <h3 style={{ color: "var(--fg1)", fontSize: "1.7rem", marginBottom: "-0.25em", marginTop: "0.75em", lineHeight: 1.1, letterSpacing: "0.1em", fontFamily: "var(--font-heading)", textTransform: "uppercase", fontWeight: "normal" }}>
+                      {post.fields?.title}
+                    </h3>
+                    {post.fields?.short && (
+                      <p className="mt-3 text-sm leading-6" style={{ color: "var(--fg2)" }}>
+                        {post.fields.short}
+                      </p>
+                    )}
                   </Link>
                 );
               })}
             </div>
 
-            <div className="mt-12 text-center">
-              <Link
-                href="/devlog"
-                className="border border-white/20 px-8 py-3 text-sm tracking-widest text-parchment/70 transition-colors hover:border-white/50 hover:text-parchment"
-              >
-                MORE NEWS
-              </Link>
-            </div>
           </div>
         </section>
       )}

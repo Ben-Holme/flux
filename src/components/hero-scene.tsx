@@ -38,6 +38,22 @@ function Layer({ src, progress, speed }: LayerProps) {
   );
 }
 
+const PRE_HEADING_GLOW: React.CSSProperties = {
+  color: "#ffd98f",
+  textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+  fontSize: "1rem",
+  fontFamily: "var(--font-heading)",
+  textTransform: "uppercase",
+  letterSpacing: "0.2em",
+  fontWeight: "normal",
+  whiteSpace: "nowrap",
+  marginRight: "-500px",
+  marginBottom: "1.5rem",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+};
+
 function PreHeadingDecor() {
   return (
     <svg
@@ -94,17 +110,16 @@ export default function HeroScene({
             <Layer src="/img/1/3.png" progress={scrollYProgress} speed={0.95} />
             <Layer src="/img/1/2.png" progress={scrollYProgress} speed={0.85} />
             <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
-            <div className="absolute inset-0 bg-black/30" />
+            {/* Blue color blend overlay */}
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
           </div>
 
           {/* Viewport-height content area */}
           <div className="relative z-10 flex min-h-screen items-center px-8 py-24 lg:px-16">
             <div className="max-w-xl">
               {preHeading && (
-                <div className="mb-6">
-                  <p className="text-xs font-heading tracking-[0.3em] text-white/60 uppercase">
-                    {preHeading}
-                  </p>
+                <div>
+                  <p style={PRE_HEADING_GLOW}>{preHeading}</p>
                   <PreHeadingDecor />
                 </div>
               )}
@@ -118,7 +133,7 @@ export default function HeroScene({
                 </Button>
               )}
             </div>
-            {/* Spritfolk character — static sprite with mix-blend-screen */}
+            {/* Spritfolk character */}
             <div className="pointer-events-none absolute bottom-0 right-0 z-20">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -127,14 +142,14 @@ export default function HeroScene({
                 className="h-[55vh] max-h-[580px] w-auto mix-blend-screen"
                 draggable={false}
               />
-              <p className="absolute bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-xs text-white/30">
+              <p className="absolute bottom-24 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-xs" style={{ color: "var(--fg3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 Create your spritfolk bloodline
               </p>
             </div>
           </div>
 
           {/* Location caption */}
-          <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-xs tracking-[0.25em] text-white/40 uppercase">
+          <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
             Elder Forest
           </p>
         </>
@@ -148,16 +163,14 @@ export default function HeroScene({
             <Layer src="/img/2/3.png" progress={scrollYProgress} speed={0.95} />
             <Layer src="/img/2/2.png" progress={scrollYProgress} speed={0.87} />
             <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
-            <div className="absolute inset-0 bg-black/30" />
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
           </div>
 
           <div className="relative z-10 flex min-h-screen flex-col justify-center py-24">
             <div className="mb-12 px-8 lg:px-16">
               {preHeading && (
-                <div className="mb-6">
-                  <p className="text-xs font-heading tracking-[0.3em] text-white/60 uppercase">
-                    {preHeading}
-                  </p>
+                <div>
+                  <p style={PRE_HEADING_GLOW}>{preHeading}</p>
                   <PreHeadingDecor />
                 </div>
               )}
@@ -170,7 +183,7 @@ export default function HeroScene({
             <SkillsCarousel />
           </div>
 
-          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] text-white/40 uppercase">
+          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
             Great Glizum Ravine
           </p>
         </>
@@ -184,7 +197,7 @@ export default function HeroScene({
             <Layer src="/img/3/3.png" progress={scrollYProgress} speed={0.95} />
             <Layer src="/img/3/2.png" progress={scrollYProgress} speed={0.8} />
             <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
           </div>
 
           <div className="relative z-10 flex min-h-screen items-center justify-center px-8 py-24">
@@ -198,7 +211,7 @@ export default function HeroScene({
             </div>
           </div>
 
-          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] text-white/40 uppercase">
+          <p className="absolute bottom-4 right-8 z-10 text-xs tracking-[0.25em] uppercase" style={{ color: "var(--fg3)" }}>
             The Black Mine
           </p>
         </>
