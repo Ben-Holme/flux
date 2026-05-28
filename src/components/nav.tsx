@@ -10,24 +10,16 @@ const MENU_LINKS = [
   { href: "/screenshots",  label: "Screenshots" },
   { href: "/devlog",       label: "News & Devlog" },
   { href: "/wiki",         label: "Unyha Wiki" },
-  { href: "https://discord.gg/unyha", label: "Discord", external: true },
-  { href: "http://realspawn.com",     label: "Realspawn Studios", external: true },
-  { href: "/privacy-policy",          label: "Privacy Policy" },
+  { href: "https://discord.gg/BRd7y3P5Xg", label: "Unyha Discord", external: true, discord: true },
+  { href: "http://realspawn.com",           label: "Realspawn Studios", external: true, small: true },
+  { href: "/privacy-policy",               label: "Privacy Policy", small: true },
 ];
 
-const LOGO = (
-  <svg width="171" height="185" viewBox="0 0 171 185" fill="none">
-    <path fillRule="evenodd" clipRule="evenodd" d="M0 0H171V83.9489L144.748 105.418V28H26.2518V105.418L0 83.9489V0Z" fill="white" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M85.5 185L26.2518 136.647V105.418L85.5 153.771L144.748 105.418V136.647L85.5 185Z" fill="white" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M61.3262 49.7402H52.5039V107.779L85.4951 134.165L118.496 107.779V49.7402H109.674V103.697L85.4951 123.215L61.3262 103.697V49.7402Z" fill="white" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M109.674 49.7402V58.5625H134.526V49.7402H109.674Z" fill="white" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M61.3262 49.7402V58.5625H36.4746V49.7402H61.3262Z" fill="white" />
-  </svg>
-);
-
-const DISCORD_ICON = (
-  <svg width="16" height="16" viewBox="0 0 71 55" fill="white" style={{ display: "inline-block", marginLeft: "0.4em", verticalAlign: "middle", opacity: 0.6 }}>
-    <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.292408 45.3914C0.304408 45.5064 0.372214 45.6158 0.467706 45.6876C6.53949 50.0174 12.4099 52.7249 18.1547 54.5195C18.2471 54.5477 18.3451 54.5139 18.4025 54.4378C19.7799 52.5728 21.0063 50.6063 22.0498 48.5385C22.11 48.4172 22.053 48.2731 21.9296 48.2253C20.0011 47.4968 18.1547 46.6131 16.3771 45.6086C16.2407 45.5318 16.2296 45.3367 16.3546 45.2458C16.7249 44.9718 17.0952 44.6864 17.4488 44.4010C17.5076 44.3519 17.5887 44.341 17.6589 44.3747C29.5344 49.8259 42.4444 49.8259 54.1878 44.3747C54.258 44.3383 54.3392 44.3492 54.4007 44.3983C54.7543 44.6837 55.1246 44.9718 55.4977 45.2458C55.6227 45.3367 55.6144 45.5318 55.4780 45.6086C53.7004 46.6294 51.854 47.4968 49.9228 48.2225C49.7994 48.2703 49.7452 48.4172 49.8054 48.5385C50.8713 50.6035 52.0977 52.5700 53.4512 54.435C53.5058 54.5139 53.6066 54.5477 53.699 54.5195C59.4717 52.7249 65.3421 50.0174 71.4139 45.6876C71.5122 45.6158 71.5772 45.5092 71.5892 45.3942C73.0817 30.0991 69.0666 16.7989 60.1980 4.9823C60.1786 4.9429 60.1450 4.9147 60.1045 4.8978Z" />
+const DISCORD_SVG = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32px" viewBox="0 0 512 512" fill="#FFF" style={{ marginRight: "10px" }}>
+    <path d="M464,66.52A50,50,0,0,0,414.12,17L97.64,16A49.65,49.65,0,0,0,48,65.52V392c0,27.3,22.28,48,49.64,48H368l-13-44L464,496ZM324.65,329.81s-8.72-10.39-16-19.32C340.39,301.55,352.5,282,352.5,282a139,139,0,0,1-27.85,14.25,173.31,173.31,0,0,1-35.11,10.39,170.05,170.05,0,0,1-62.72-.24A184.45,184.45,0,0,1,191.23,296a141.46,141.46,0,0,1-17.68-8.21c-.73-.48-1.45-.72-2.18-1.21-.49-.24-.73-.48-1-.48-4.36-2.42-6.78-4.11-6.78-4.11s11.62,19.09,42.38,28.26c-7.27,9.18-16.23,19.81-16.23,19.81-53.51-1.69-73.85-36.47-73.85-36.47,0-77.06,34.87-139.62,34.87-139.62,34.87-25.85,67.8-25.12,67.8-25.12l2.42,2.9c-43.59,12.32-63.44,31.4-63.44,31.4s5.32-2.9,14.28-6.77c25.91-11.35,46.5-14.25,55-15.21a24,24,0,0,1,4.12-.49,205.62,205.62,0,0,1,48.91-.48,201.62,201.62,0,0,1,72.89,22.95S333.61,145,292.44,132.7l3.39-3.86S329,128.11,363.64,154c0,0,34.87,62.56,34.87,139.62C398.51,293.34,378.16,328.12,324.65,329.81Z" />
+    <path d="M212.05,218c-13.8,0-24.7,11.84-24.7,26.57s11.14,26.57,24.7,26.57c13.8,0,24.7-11.83,24.7-26.57C237,229.81,225.85,218,212.05,218Z" />
+    <path d="M300.43,218c-13.8,0-24.7,11.84-24.7,26.57s11.14,26.57,24.7,26.57c13.81,0,24.7-11.83,24.7-26.57S314,218,300.43,218Z" />
   </svg>
 );
 
@@ -59,125 +51,78 @@ export default function Nav() {
   return (
     <>
       {/* Full-screen menu overlay */}
-      <div
-        style={{
-          visibility: open ? "visible" : "hidden",
-          opacity: open ? 1 : 0,
-          transition: "opacity 0.4s, visibility 0.4s",
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "#000",
-          zIndex: 5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-        }}
-      >
-        {MENU_LINKS.map(({ href, label, external }) => (
-          external ? (
-            <a
-              key={href}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={menuLinkStyle}
-            >
-              {label}
-              {href.includes("discord") && DISCORD_ICON}
+      <div className={`${styles.menu} ${open ? styles.menuOpen : ""}`}>
+        {MENU_LINKS.map(({ href, label, external, discord, small }) => {
+          const linkStyle: React.CSSProperties = small
+            ? { fontSize: ".9em", opacity: 0.5, ...(label === "Realspawn Studios" ? { marginTop: "50px" } : {}) }
+            : {};
+          const inner = discord
+            ? <span style={{ display: "flex", alignItems: "center" }}>{DISCORD_SVG}{label}</span>
+            : label;
+          return external ? (
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+              {inner}
             </a>
           ) : (
-            <Link
-              key={href}
-              href={href}
-              style={menuLinkStyle}
-              onClick={() => setOpen(false)}
-            >
-              {label}
+            <Link key={href} href={href} style={linkStyle} onClick={() => setOpen(false)}>
+              {inner}
             </Link>
-          )
-        ))}
+          );
+        })}
       </div>
 
       {/* Nav bar */}
-      <nav className={styles.nav}>
-        {/* Background ball — mobile only (CSS hides on desktop) */}
+      <div className={styles.nav}>
+        {/* Background ball — desktop hidden, mobile shown via CSS */}
         <div
           className={styles.ball}
           style={{
-            transition: "0.25s",
+            transition: ".25s",
             position: "absolute",
             left: "-50%",
             width: "500px",
             height: "500px",
             borderRadius: "100%",
-            transform: active ? "scale(2)" : "scale(0.5)",
+            transform: active ? "scale(2)" : "scale(.5)",
             transformOrigin: "30% 50%",
             backgroundColor: scrolled ? "#000" : "transparent",
           }}
         />
 
-        {/* Logo */}
-        <Link href="/" onClick={() => setOpen(false)} aria-label="Unyha home" style={{ position: "relative", zIndex: 1 }}>
-          <div
+        {/* Logo — correct "U" letter SVG from original nav.js */}
+        <Link href="/" onClick={() => setOpen(false)} aria-label="Unyha home">
+          <svg
+            viewBox="0 0 171 185"
+            fill="none"
             style={{
-              transition: "0.5s",
-              opacity: active ? 1 : 0,
+              width: "50px",
+              display: "block",
+              transition: ".5s",
               transform: active ? "scale(0.9)" : "scale(1)",
+              opacity: active ? 1 : 0,
             }}
           >
-            {LOGO}
-          </div>
+            <path d="M80.0001 185V92.5V0L91 10.6544V60.2672L100 51.5499V19.3717L111 30.0262V55.9631L91 75.3349V174.346L80.0001 185Z" fill="white" />
+            <path d="M0 38.7435V178.005L31 147.979V68.7697L20 58.1152V143.566L11 152.283V49.3979L0 38.7435Z" fill="white" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M171 175.315V40.8954L140 70.9216L140 145.288L151 155.943L151 109.235L160 100.518V164.66L171 175.315ZM160 85.4504L151 94.1676V75.3348L160 66.6175V85.4504Z" fill="white" />
+            <path d="M100 78.4556L111 67.8011L111 94.1678L120 85.4505L120 59.0838L131 48.4293L131 116.23L120 126.885V100.518L111 109.235L111 135.602L100 146.257L100 78.4556Z" fill="white" />
+            <path d="M59.9999 76.3034V155.942L70.9999 145.288V50.5812L39.9999 80.6074V141.414L50.9999 130.759V85.0206L59.9999 76.3034Z" fill="white" />
+          </svg>
         </Link>
 
-        {/* Hamburger button */}
-        <button
-          aria-label={open ? "Close menu" : "Open menu"}
+        {/* Hamburger / cross button */}
+        <div
+          className={`${styles.button} ${open ? styles.cross : ""}`}
           onClick={() => setOpen((v) => !v)}
-          style={{
-            position: "relative",
-            zIndex: 1,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-          }}
+          role="button"
+          aria-label={open ? "Close menu" : "Open menu"}
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)}
         >
-          <span
-            style={{
-              display: "block",
-              height: "3px",
-              width: "30px",
-              background: "white",
-              marginBottom: "3px",
-              transition: "0.3s",
-              transform: open ? "translateY(3px) rotate(-45deg)" : "skewX(45deg)",
-            }}
-          />
-          <span
-            style={{
-              display: "block",
-              height: "3px",
-              width: "30px",
-              background: "white",
-              transition: "0.3s",
-              transform: open ? "translateY(-3px) rotate(45deg)" : "skewX(45deg)",
-            }}
-          />
-        </button>
-      </nav>
+          <span />
+          <span />
+        </div>
+      </div>
     </>
   );
 }
-
-const menuLinkStyle: React.CSSProperties = {
-  fontFamily: "var(--font-heading)",
-  textTransform: "uppercase",
-  letterSpacing: "0.2em",
-  fontSize: "1.25em",
-  margin: "0.75em 0",
-  color: "#fff",
-  textDecoration: "none",
-};
