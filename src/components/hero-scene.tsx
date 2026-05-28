@@ -14,15 +14,25 @@ interface LayerProps {
 }
 
 function Layer({ src, progress, speed }: LayerProps) {
-  const pct = (speed * 60).toFixed(1);
-  const y = useTransform(progress, [0, 1], [`-${pct}vh`, `${pct}vh`]);
+  const shift = speed * 40; // vh units — max shift per direction
+  const y = useTransform(progress, [0, 1], [`-${shift}vh`, `${shift}vh`]);
   return (
     <motion.img
       src={src}
       alt=""
-      className="absolute inset-0 h-full w-full object-cover object-top"
-      style={{ y, willChange: "transform" }}
       draggable={false}
+      style={{
+        position: "absolute",
+        top: `-${shift}vh`,
+        left: 0,
+        right: 0,
+        width: "100%",
+        height: `calc(100% + ${shift * 2}vh)`,
+        objectFit: "cover",
+        objectPosition: "top center",
+        y,
+        willChange: "transform",
+      }}
     />
   );
 }
