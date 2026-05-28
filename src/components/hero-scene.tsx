@@ -212,9 +212,9 @@ export default function HeroScene({
           </div>
 
           <div className={`relative z-10 ${styles.zoom}`}>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               {copy && (
-                <div className="mb-8">
+                <div className="mb-8 w-full max-w-md">
                   <RichText document={copy} />
                 </div>
               )}
