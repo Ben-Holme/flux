@@ -1,0 +1,21 @@
+.nav {
+  position: fixed;
+  z-index: 10;
+  width: 1200px;
+  max-width: 100%;
+  top: 0;
+  left: calc((100vw - 1200px) / 2);
+  display: flex;
+  align-items: center;
+  padding-top: 24px;
+  justify-content: space-between;
+}
+
+@media (max-width: 1200px) {
+  .nav {
+    width: 100%;
+    padding: 16px 24px;
+    box-sizing: border-box;
+    left: auto;
+  }
+}
