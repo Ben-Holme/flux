@@ -101,8 +101,9 @@ export default function Nav() {
 
       {/* Nav bar */}
       <nav className={styles.nav}>
-        {/* Background ball */}
+        {/* Background ball — mobile only (CSS hides on desktop) */}
         <div
+          className={styles.ball}
           style={{
             transition: "0.25s",
             position: "absolute",
