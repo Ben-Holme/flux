@@ -23,13 +23,17 @@
   --color-gold-dim: var(--gold-dim);
   --color-ember: var(--ember);
 
-  --font-heading: var(--font-cinzel), Georgia, serif;
+  --font-heading: var(--font-odibee), Impact, sans-serif;
   --font-body: var(--font-inter), system-ui, sans-serif;
 }
 
 @layer base {
   body {
     background-color: var(--void);
+    background-image: url("/img/bg.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: var(--parchment);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
@@ -42,6 +46,7 @@
   h5,
   h6 {
     font-family: var(--font-heading);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
   }
 }

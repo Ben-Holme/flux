@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Cinzel, Inter } from "next/font/google";
+import { Odibee_Sans, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 import Nav from "@/components/nav";
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
+const odebeeSans = Odibee_Sans({
+  variable: "--font-odibee",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400"],
 });
 
 const inter = Inter({
@@ -25,7 +25,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${inter.variable}`}>
+    <html lang="en" className={`${odebeeSans.variable} ${inter.variable}`}>
       <body className="flex min-h-screen flex-col bg-void text-parchment antialiased">
         <Nav />
         <main className="flex-1">{children}</main>
