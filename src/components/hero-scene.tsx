@@ -110,7 +110,7 @@ export default function HeroScene({
     <div ref={sectionRef} className="relative overflow-hidden">
       {scene === 1 && (
         <>
-          {/* Parallax background */}
+          {/* Parallax background layers */}
           <div className="absolute inset-0">
             <div className={styles.layers}>
               <Layer src="/img/1/5.png" progress={scrollYProgress} speed={1} />
@@ -120,14 +120,13 @@ export default function HeroScene({
               <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
             </div>
             <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/1/1.png"), url("/img/1/2.png"), url("/img/1/3.png"), url("/img/1/4.png"), url("/img/1/5.png")' }} />
-            {/* 30% black overlay */}
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
-            {/* Blue color blend overlay */}
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
+          {/* Overlays sit after background in DOM order — no z-index needed */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
+          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
 
-          {/* Content zone */}
-          <div className={`relative z-10 ${styles.zoom}`}>
+          {/* Content zone — no z-index so no stacking context; sf img blends through */}
+          <div className={`relative ${styles.zoom}`}>
             <div>
               {preHeading && (
                 <div>
@@ -153,7 +152,6 @@ export default function HeroScene({
             </div>
           </div>
 
-          {/* Location caption */}
           <div className={styles.caption}>
             {CAPTION_ICON}
             Elder Forest
@@ -163,7 +161,6 @@ export default function HeroScene({
 
       {scene === 2 && (
         <>
-          {/* Parallax background */}
           <div className="absolute inset-0">
             <div className={styles.layers}>
               <Layer src="/img/2/4.png" progress={scrollYProgress} speed={1} />
@@ -172,11 +169,11 @@ export default function HeroScene({
               <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
             <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/2/1.png"), url("/img/2/2.png"), url("/img/2/3.png"), url("/img/2/4.png")' }} />
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
+          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
 
-          <div className={`relative z-10 ${styles.skills}`}>
+          <div className={`relative ${styles.skills}`}>
             <div className={styles.text}>
               {preHeading && (
                 <div>
@@ -198,7 +195,6 @@ export default function HeroScene({
 
       {scene === 3 && (
         <>
-          {/* Parallax background */}
           <div className="absolute inset-0">
             <div className={styles.layers}>
               <Layer src="/img/3/4.png" progress={scrollYProgress} speed={1} />
@@ -207,14 +203,14 @@ export default function HeroScene({
               <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
             <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/3/1.png"), url("/img/3/2.png"), url("/img/3/3.png"), url("/img/3/4.png")' }} />
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3, zIndex: 2 }} />
-            <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6, zIndex: 3 }} />
           </div>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
+          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
 
-          <div className={`relative z-10 ${styles.zoom}`}>
-            <div>
+          <div className={`relative ${styles.zoom}`}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               {copy && (
-                <div className="mb-8">
+                <div className="mb-8 w-full max-w-md">
                   <RichText document={copy} />
                 </div>
               )}

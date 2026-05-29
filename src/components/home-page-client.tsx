@@ -81,12 +81,11 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── Intro ──────────────────────────────────────────── */}
       <section
-        className="flex h-screen flex-col items-center justify-center text-center"
+        className="flex h-screen flex-col items-center justify-center text-center gap-6 max-[768px]:gap-8"
         style={{
           backgroundImage: "url(/img/hero.png)",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          gap: "24px",
         }}
       >
         {/* Unyha logo — all paths from source */}
@@ -121,7 +120,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           Online RPG
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex justify-center gap-4 max-[768px]:flex-col max-[768px]:gap-2">
           <Button onClick={() => openVideo(VIDEOS[0].id)} variant="primary">
             <svg className="h-4 w-4" viewBox="0 0 576 512" fill="currentColor">
               <path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z" />
@@ -170,7 +169,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               <div className={sectionStyles.text}>
                 <div>
                   {item.fields.preHeading && (
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: "normal", position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.5rem", color: "#ffd98f", marginBottom: "1.5rem", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.2em" }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: "normal", position: "relative", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "0.5rem", color: "#ffd98f", textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px", marginBottom: "1.5rem", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.2em" }}>
                       <p style={{ margin: 0 }}>{item.fields.preHeading as string}</p>
                       <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mt-1">
                         <path opacity="0.3" fillRule="evenodd" clipRule="evenodd" d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z" fill="url(#sec-line)" />
@@ -184,7 +183,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                     </div>
                   )}
                   {item.fields.content && (
-                    <RichText document={item.fields.content as Document} />
+                    <RichText document={item.fields.content as Document} variant="section" />
                   )}
                 </div>
                 <div />

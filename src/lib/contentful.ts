@@ -159,6 +159,21 @@ export async function getPost(slug: string) {
   }
 }
 
+export async function getAllPages() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("pages");
+  try {
+    const res = await client.getEntries<PageSkeleton>({
+      content_type: "page",
+      order: ["fields.title"],
+    });
+    return res.items;
+  } catch {
+    return [];
+  }
+}
+
 export async function getPage(slug: string) {
   "use cache";
   cacheLife("hours");
