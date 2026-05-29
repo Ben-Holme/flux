@@ -20,53 +20,59 @@ async function ScreenshotsContent() {
     : [];
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "80px 24px" }}>
-      <p
-        style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#ffd98f",
-          textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-          margin: "0 0 0.5rem",
-        }}
-      >
-        Unyha
-      </p>
-      <h1 style={{ marginBottom: "3rem" }}>Screenshots</h1>
-
-      {assets.length === 0 ? (
-        <p style={{ color: "var(--fg3)" }}>No screenshots yet.</p>
-      ) : (
-        <div
+    <>
+      <style>{`
+        .screenshot-link img { transition: transform 0.4s; display: block; width: 100%; height: 100%; object-fit: cover; }
+        .screenshot-link:hover img { transform: scale(1.04); }
+      `}</style>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "80px 24px" }}>
+        <p
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-            gap: "16px",
+            fontFamily: "var(--font-heading)",
+            fontSize: "1rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.2em",
+            color: "#ffd98f",
+            textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+            margin: "0 0 0.5rem",
           }}
         >
-          {assets.map((url, i) => (
-            <a
-              key={i}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: "block", aspectRatio: "16/9", overflow: "hidden", borderRadius: "4px" }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={`Screenshot ${i + 1}`}
-                style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s", display: "block" }}
-                onMouseOver={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)")}
-                onMouseOut={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
-              />
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
+          Unyha
+        </p>
+        <h1 style={{ marginBottom: "3rem" }}>Screenshots</h1>
+
+        {assets.length === 0 ? (
+          <p style={{ color: "var(--fg3)" }}>No screenshots yet.</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            {assets.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="screenshot-link"
+                style={{
+                  display: "block",
+                  aspectRatio: "16/9",
+                  overflow: "hidden",
+                  borderRadius: "4px",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Screenshot ${i + 1}`} />
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -92,3 +98,4 @@ export default function ScreenshotsPage() {
     </Suspense>
   );
 }
+

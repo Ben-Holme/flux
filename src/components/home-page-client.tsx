@@ -174,7 +174,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
       </section>
 
       {/* ── Block list (heroes + sections from Contentful) ──── */}
-      {blockItems.map((item, i) => {
+      {blockItems.map((item) => {
         if (isHeroEntry(item)) {
           return (
             <HeroScene
@@ -374,8 +374,11 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
         </section>
       )}
 
-      {/* ── Final hero (The Black Mine) with lead form ─────── */}
-      <HeroScene scene={3} />
+      {/* ── Final hero (The Black Mine) — only if Contentful blockList doesn't already include scene 3 */}
+      {!blockItems.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (item) => isHeroEntry(item) && (item as any).fields.scene === 3
+      ) && <HeroScene scene={3} />}
     </>
   );
 }

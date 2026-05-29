@@ -166,9 +166,13 @@ export async function getAllPages() {
   try {
     const res = await client.getEntries<PageSkeleton>({
       content_type: "page",
-      order: ["fields.title"],
     });
-    return res.items;
+    // Sort by title in JS rather than relying on a server-side `order`
+    // param, which 422s (and gets swallowed) if `title` isn't a sortable
+    // field on the content type — leaving the wiki nav empty.
+    return [...res.items].sort((a, b) =>
+      String(a.fields.title ?? "").localeCompare(String(b.fields.title ?? ""))
+    );
   } catch {
     return [];
   }
