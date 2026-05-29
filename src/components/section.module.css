@@ -17,6 +17,16 @@
   .section .text {
     display: block;
   }
+  .image {
+    position: static;
+    height: 240px;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    margin: -64px -24px 40px;
+    width: calc(100% + 48px);
+  }
 }
 
 .image {
