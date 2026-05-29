@@ -113,7 +113,7 @@
   z-index: 2;
 }
 
-.section ul > li > p b {
+.section ul > li > p strong {
   display: block;
   font-family: var(--font-heading);
   font-size: 1.7rem;

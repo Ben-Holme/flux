@@ -16,7 +16,7 @@ interface LayerProps {
 }
 
 function Layer({ src, progress, speed }: LayerProps) {
-  const shift = speed * 40; // vh units — max shift per direction
+  const shift = speed * 40;
   const y = useTransform(progress, [0, 1], [`-${shift}vh`, `${shift}vh`]);
   return (
     <motion.img
@@ -25,13 +25,11 @@ function Layer({ src, progress, speed }: LayerProps) {
       draggable={false}
       style={{
         position: "absolute",
-        top: `-${shift}vh`,
+        top: 0,
         left: 0,
-        right: 0,
         width: "100%",
-        height: `calc(100% + ${shift * 2}vh)`,
+        height: "100%",
         objectFit: "cover",
-        objectPosition: "top center",
         y,
         willChange: "transform",
       }}
@@ -57,13 +55,7 @@ const PRE_HEADING_GLOW: React.CSSProperties = {
 
 function PreHeadingDecor() {
   return (
-    <svg
-      width="285"
-      height="12"
-      viewBox="0 0 285 12"
-      fill="none"
-      className="mt-1"
-    >
+    <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mt-1">
       <path
         opacity="0.3"
         fillRule="evenodd"
@@ -72,7 +64,14 @@ function PreHeadingDecor() {
         fill="url(#phd)"
       />
       <defs>
-        <linearGradient id="phd" x1="1" y1="6.25" x2="284.04" y2="6.25" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="phd"
+          x1="1"
+          y1="6.25"
+          x2="284.04"
+          y2="6.25"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="white" />
           <stop offset="1" stopColor="white" stopOpacity="0" />
         </linearGradient>
@@ -83,7 +82,11 @@ function PreHeadingDecor() {
 
 const CAPTION_ICON = (
   <svg viewBox="0 0 181 393" fill="currentColor">
-    <path fillRule="evenodd" clipRule="evenodd" d="M180.302 90.5L90.5 0.697449L0.69751 90.5V213L180.302 392.605V90.5ZM139.602 88.6017L90.5 39.5L41.3983 88.6017L90.5 137.703L139.602 88.6017Z" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M180.302 90.5L90.5 0.697449L0.69751 90.5V213L180.302 392.605V90.5ZM139.602 88.6017L90.5 39.5L41.3983 88.6017L90.5 137.703L139.602 88.6017Z"
+    />
   </svg>
 );
 
@@ -94,12 +97,7 @@ interface HeroSceneProps {
   onShowLoreVideo?: () => void;
 }
 
-export default function HeroScene({
-  scene,
-  preHeading,
-  copy,
-  onShowLoreVideo,
-}: HeroSceneProps) {
+export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: HeroSceneProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -119,15 +117,27 @@ export default function HeroScene({
               <Layer src="/img/1/2.png" progress={scrollYProgress} speed={0.85} />
               <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
             </div>
-            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/1/1.png"), url("/img/1/2.png"), url("/img/1/3.png"), url("/img/1/4.png"), url("/img/1/5.png")' }} />
+            <div
+              className={styles.mobileLayer}
+              style={{
+                backgroundImage:
+                  'url("/img/1/1.png"), url("/img/1/2.png"), url("/img/1/3.png"), url("/img/1/4.png"), url("/img/1/5.png")',
+              }}
+            />
           </div>
           {/* Overlays sit after background in DOM order — no z-index needed */}
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
-          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "#000", opacity: 0.3 }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-color"
+            style={{ background: "#00a2ff", opacity: 0.6 }}
+          />
 
           {/* Content zone — no z-index so no stacking context; sf img blends through */}
           <div className={`relative ${styles.zoom}`}>
-            <div>
+            <div style={{ zIndex: 2 }}>
               {preHeading && (
                 <p style={PRE_HEADING_GLOW}>
                   {preHeading}
@@ -168,10 +178,22 @@ export default function HeroScene({
               <Layer src="/img/2/2.png" progress={scrollYProgress} speed={0.87} />
               <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
-            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/2/1.png"), url("/img/2/2.png"), url("/img/2/3.png"), url("/img/2/4.png")' }} />
+            <div
+              className={styles.mobileLayer}
+              style={{
+                backgroundImage:
+                  'url("/img/2/1.png"), url("/img/2/2.png"), url("/img/2/3.png"), url("/img/2/4.png")',
+              }}
+            />
           </div>
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
-          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "#000", opacity: 0.3 }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-color"
+            style={{ background: "#00a2ff", opacity: 0.6 }}
+          />
 
           <div className={`relative ${styles.skills}`}>
             <div className={styles.text}>
@@ -202,10 +224,22 @@ export default function HeroScene({
               <Layer src="/img/3/2.png" progress={scrollYProgress} speed={0.8} />
               <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
-            <div className={styles.mobileLayer} style={{ backgroundImage: 'url("/img/3/1.png"), url("/img/3/2.png"), url("/img/3/3.png"), url("/img/3/4.png")' }} />
+            <div
+              className={styles.mobileLayer}
+              style={{
+                backgroundImage:
+                  'url("/img/3/1.png"), url("/img/3/2.png"), url("/img/3/3.png"), url("/img/3/4.png")',
+              }}
+            />
           </div>
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "#000", opacity: 0.3 }} />
-          <div className="absolute inset-0 mix-blend-color pointer-events-none" style={{ background: "#00a2ff", opacity: 0.6 }} />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "#000", opacity: 0.3 }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-color"
+            style={{ background: "#00a2ff", opacity: 0.6 }}
+          />
 
           <div className={`relative ${styles.zoom}`}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
