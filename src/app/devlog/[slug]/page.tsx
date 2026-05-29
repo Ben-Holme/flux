@@ -1,10 +1,25 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getPost, getAssetUrl, getAssetTitle } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPost(slug);
+  if (!post) return {};
+  const heroImg = getAssetUrl(post.fields.image);
+  return {
+    title: `${post.fields.title} — Unyha Devlog`,
+    description: post.fields.short as string | undefined,
+    openGraph: heroImg ? { images: [heroImg] } : undefined,
+  };
+}
 
 function formatDate(dateStr: string | undefined) {
   if (!dateStr) return "";

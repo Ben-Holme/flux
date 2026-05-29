@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import "./globals.css";
 import Nav from "@/components/nav";
+import Year from "@/components/year";
 
 const odebeeSans = Odibee_Sans({
   variable: "--font-odibee",
@@ -53,7 +54,7 @@ export default function RootLayout({
               Privacy Policy
             </Link>
           </nav>
-          <p className="text-xs text-white/30">© Realspawn Studios, 2026</p>
+          <p className="text-xs text-white/30">© Realspawn Studios, <Suspense fallback="2026"><Year /></Suspense></p>
         </footer>
       </body>
     </html>

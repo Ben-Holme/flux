@@ -96,3 +96,16 @@
     scrollbar-width: none;
   }
 }
+
+.news-img-fx {
+  position: relative;
+}
+
+.news-img-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(13, 11, 18, 0.85));
+  pointer-events: none;
+  border-radius: inherit;
+}
