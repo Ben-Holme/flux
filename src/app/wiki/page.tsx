@@ -1,10 +1,8 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
-import { getPage, getAllPages } from "@/lib/contentful";
+import { getPage } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
-import styles from "./wiki.module.css";
 
 export const metadata: Metadata = {
   title: "Unyha Wiki",
@@ -12,12 +10,13 @@ export const metadata: Metadata = {
 };
 
 async function WikiIndex() {
+  // Try loading a dedicated Contentful landing page first
   const landing = await getPage("wiki");
 
   if (landing) {
     return (
-      <article>
-        <h1 style={{ marginBottom: "2.5rem" }}>{landing.fields.title}</h1>
+      <article className="plain-page">
+        <h1>{landing.fields.title as string}</h1>
         {landing.fields.pageContent && (
           <RichText document={landing.fields.pageContent as Document} />
         )}
@@ -25,29 +24,18 @@ async function WikiIndex() {
     );
   }
 
-  // Fallback: list of pages when no "wiki" landing entry exists
-  const pages = await getAllPages();
+  // Fallback: hardcoded content matching the original Gatsby site
   return (
-    <>
-      <h1 style={{ marginBottom: "3rem" }}>Unyha Wiki</h1>
-      {pages.length === 0 ? (
-        <p>No pages yet.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {pages.map((page) => (
-            <li key={page.sys.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-              <Link
-                href={`/wiki/${page.fields.slug}`}
-                className={styles.sidebarLink}
-                style={{ fontSize: "1.2rem", padding: "1.1rem 0" }}
-              >
-                {page.fields.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+    <div className="plain-page">
+      <h1>Welcome to the Unyha Wiki</h1>
+      <p>
+        Welcome to the official Unyha Wiki, your go-to resource for everything about the world of
+        Unyha! This wiki is a work in progress and will continue to grow as we develop the game.
+        Here, you&apos;ll find information on gameplay mechanics, lore, characters, and more.
+      </p>
+      <p>Thank you for being part of our journey!</p>
+      <p>- The Unya Team</p>
+    </div>
   );
 }
 

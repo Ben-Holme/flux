@@ -8,6 +8,7 @@ import type {
   PostSkeleton,
   PageSkeleton,
   BlockListSkeleton,
+  WikiNavSkeleton,
 } from "@/types/contentful";
 
 const client = createClient({
@@ -191,5 +192,29 @@ export async function getPage(slug: string) {
     return res.items[0] ?? null;
   } catch {
     return null;
+  }
+}
+
+export async function getWikiNav() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("wikiNav");
+  try {
+    const res = await client.getEntries<WikiNavSkeleton>({
+      content_type: "wikiNav",
+      limit: 1,
+      include: 1,
+    });
+    if (!res.items.length) return [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const links: any[] = (res.items[0].fields as any).links ?? [];
+    return links
+      .filter((l) => l?.fields?.slug && l?.fields?.title)
+      .map((l) => ({
+        slug: String(l.fields.slug),
+        title: String(l.fields.title),
+      }));
+  } catch {
+    return [];
   }
 }

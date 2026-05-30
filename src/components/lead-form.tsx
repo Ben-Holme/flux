@@ -1,68 +1,75 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/components/button";
+import styles from "./lead-form.module.css";
 
 export default function LeadForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [agreed, setAgreed] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [state, setState] = useState<Record<string, string>>({});
+  const [thanks, setThanks] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !agreed) return;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 10000);
-    setName("");
-    setEmail("");
-    setAgreed(false);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setState((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  if (submitted) {
-    return (
-      <div className="text-center">
-        <p className="font-heading text-xl text-parchment">You&apos;re on the list.</p>
-        <p className="mt-2 text-sm text-ash">We&apos;ll be in touch when the time comes.</p>
-      </div>
-    );
-  }
+  const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setState((prev) => ({ ...prev, consent: e.target.checked ? "on" : "" }));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (state.didPost !== state.email) {
+      setState((prev) => ({ ...prev, didPost: prev.email }));
+      setThanks(true);
+      setTimeout(() => setThanks(false), 10000);
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md">
-      <p className="mb-6 text-xs tracking-[0.3em] text-white/60 uppercase font-heading">
-        Stay in the loop
-      </p>
-      <div className="mb-4 space-y-3">
+    <div className={styles.wrapper} id="form">
+      <div className={styles.thanks} style={{ opacity: thanks ? 1 : 0 }}>
+        <h2 style={{ padding: "0 24px" }}>Thanks, we&apos;ll be in touch!</h2>
+      </div>
+      <h2 style={{ maxWidth: "700px" }}>
+        Join us, sign up, &amp; get early access!
+      </h2>
+      <form name="contact" onSubmit={handleSubmit}>
+        <p>
+          We&apos;re still early in the process of finalizing Unyha for a first beta release. But
+          you can sign up below to stay updated with our progress, join discussions, give feedback,
+          and get early access to play!
+        </p>
+        <div style={{ height: "40px" }} />
         <input
           type="text"
+          name="name"
           placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border border-white/20 bg-black/40 px-4 py-3 text-sm text-parchment placeholder-white/30 outline-none focus:border-gold/60"
+          onChange={handleChange}
         />
         <input
           type="email"
-          placeholder="Your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          name="email"
           required
-          className="w-full border border-white/20 bg-black/40 px-4 py-3 text-sm text-parchment placeholder-white/30 outline-none focus:border-gold/60"
+          placeholder="E-mail"
+          onChange={handleChange}
         />
-      </div>
-      <label className="mb-6 flex items-start gap-3 text-xs text-ash">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          required
-          className="mt-0.5 accent-gold"
-        />
-        I agree to receive updates about Unyha and accept the Privacy Policy.
-      </label>
-      <Button type="submit" variant="primary">
-        NOTIFY ME
-      </Button>
-    </form>
+        <label>
+          <input type="checkbox" name="consent" required onChange={handleCheckbox} />
+          <div className={styles.checker} />
+          <div>
+            I have read and agree to&nbsp;
+            <a target="_blank" href="/privacy-policy" rel="noopener noreferrer">
+              the privacy terms
+            </a>
+            .
+          </div>
+        </label>
+        <button
+          style={{ visibility: thanks ? "hidden" : "visible" }}
+          type="submit"
+        >
+          Send
+        </button>
+      </form>
+    </div>
   );
 }

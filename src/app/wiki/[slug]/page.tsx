@@ -22,8 +22,8 @@ async function WikiPage({ params }: { params: Promise<{ slug: string }> }) {
   const page = await getPage(slug);
   if (!page) notFound();
   return (
-    <article>
-      <h1 style={{ marginBottom: "2.5rem" }}>{page.fields.title}</h1>
+    <article className="plain-page">
+      <h1>{page.fields.title}</h1>
       {page.fields.pageContent && (
         <RichText document={page.fields.pageContent as Document} />
       )}

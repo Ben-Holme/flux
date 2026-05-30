@@ -66,3 +66,10 @@ export type BlockListSkeleton = EntrySkeletonType & {
     >;
   };
 };
+
+export type WikiNavSkeleton = EntrySkeletonType & {
+  contentTypeId: "wikiNav";
+  fields: {
+    links: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<PageSkeleton>>;
+  };
+};

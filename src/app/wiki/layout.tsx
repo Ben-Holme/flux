@@ -1,38 +1,34 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { getAllPages } from "@/lib/contentful";
+import { getWikiNav } from "@/lib/contentful";
 import styles from "./wiki.module.css";
+import WikiNavLinks from "./wiki-nav-links";
 
 async function WikiSidebar() {
-  const pages = await getAllPages();
+  const links = await getWikiNav();
   return (
-    <nav className={styles.sidebar}>
-      <p className={styles.sidebarHeading}>Unyha Wiki</p>
-      <ul>
-        {pages.map((page) => (
-          <li key={page.sys.id}>
-            <Link href={`/wiki/${page.fields.slug}`} className={styles.sidebarLink}>
-              {page.fields.title}
-            </Link>
-          </li>
-        ))}
-        {pages.length === 0 && (
-          <li className={styles.sidebarEmpty}>No entries yet</li>
-        )}
-      </ul>
-    </nav>
+    <div>
+      <div className={styles.wikiNav}>
+        <Link href="/wiki" className={styles.wikiNavHeading}>
+          Unyha Wiki
+        </Link>
+        <WikiNavLinks links={links} />
+      </div>
+    </div>
   );
 }
 
 export default function WikiLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={styles.outer}>
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={styles.wikiImg} src="/img/wiki.png" alt="" aria-hidden="true" />
       <div className={styles.layout}>
         <Suspense fallback={<div className={styles.sidebarSkeleton} />}>
           <WikiSidebar />
         </Suspense>
         <div className={styles.content}>{children}</div>
       </div>
-    </div>
+    </>
   );
 }
