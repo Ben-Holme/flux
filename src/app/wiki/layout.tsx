@@ -26,11 +26,13 @@ async function WikiSidebar() {
 
 export default function WikiLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={styles.layout}>
-      <Suspense fallback={<div className={styles.sidebarSkeleton} />}>
-        <WikiSidebar />
-      </Suspense>
-      <div className={styles.content}>{children}</div>
+    <div className={styles.outer}>
+      <div className={styles.layout}>
+        <Suspense fallback={<div className={styles.sidebarSkeleton} />}>
+          <WikiSidebar />
+        </Suspense>
+        <div className={styles.content}>{children}</div>
+      </div>
     </div>
   );
 }

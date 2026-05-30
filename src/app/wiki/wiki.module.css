@@ -1,35 +1,64 @@
+.outer {
+  position: relative;
+  background-image: url('/img/2/4.png');
+  background-size: cover;
+  background-position: center top;
+  min-height: 100vh;
+}
+
+/* dark + blue-tint overlay, matching hero scene treatment */
+.outer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--void);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.outer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #00a2ff;
+  opacity: 0.15;
+  mix-blend-mode: color;
+  pointer-events: none;
+}
+
 .layout {
+  position: relative; /* sit above overlays */
   display: flex;
   align-items: flex-start;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 24px 80px;
+  padding: 80px 24px 100px;
   box-sizing: border-box;
-  gap: 64px;
+  gap: 80px;
   min-height: 100vh;
 }
 
 .sidebar {
-  width: 220px;
+  width: 260px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
-  padding-top: 16px;
 }
 
 .sidebarSkeleton {
-  width: 220px;
+  width: 260px;
   flex-shrink: 0;
 }
 
 .sidebarHeading {
   font-family: var(--font-heading);
-  font-size: 0.75rem;
+  font-size: 1.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: #ffd98f;
-  text-shadow: #ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px;
-  margin: 0 0 16px 0;
+  letter-spacing: 0.1em;
+  color: var(--fg1);
+  margin: 0 0 28px 0;
+  font-weight: normal;
+  line-height: 1.1;
 }
 
 .sidebar ul {
@@ -38,19 +67,12 @@
   margin: 0;
 }
 
-.sidebar ul li + li {
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-
 .sidebarLink {
   display: block;
-  padding: 10px 0;
-  font-size: 0.85rem;
+  padding: 7px 0;
+  font-size: 1rem;
   color: var(--fg2);
   text-decoration: none;
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   transition: color 0.2s;
 }
 
@@ -59,7 +81,7 @@
 }
 
 .sidebarEmpty {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--fg3);
 }
 
@@ -71,15 +93,17 @@
 @media screen and (max-width: 768px) {
   .layout {
     flex-direction: column;
-    padding: 64px 24px 64px;
+    padding: 64px 24px 80px;
     gap: 0;
   }
 
   .sidebar {
     width: 100%;
     position: static;
-    padding-bottom: 32px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 40px;
+    padding-bottom: 48px;
+  }
+
+  .sidebarHeading {
+    font-size: 1.4rem;
   }
 }
