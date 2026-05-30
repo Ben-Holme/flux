@@ -74,8 +74,6 @@
   border-radius: 8px;
   background-color: #111;
   position: relative;
-  background-repeat: no-repeat;
-  background-size: cover;
   display: flex;
   overflow: hidden;
   flex-direction: column;

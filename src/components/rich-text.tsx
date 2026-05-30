@@ -72,7 +72,7 @@ const baseOptions: Options = {
   },
 };
 
-// Section variant: list items with an embedded-asset child use it as background-image
+// Section variant: card list items with embedded-asset background image + ornamental decos
 const sectionOptions: Options = {
   ...baseOptions,
   renderNode: {
@@ -85,7 +85,19 @@ const sectionOptions: Options = {
       );
       const url = assetNode ? assetUrl(assetNode.data.target) : null;
       return (
-        <li style={url ? { backgroundImage: `url(${url})` } : undefined}>
+        <li>
+          {url && (
+            <div className="card-img-fx">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" />
+            </div>
+          )}
+          <svg className="card-deco card-deco-top" height="35" viewBox="0 0 128 35" fill="white">
+            <path d="M63 0V10H57V6H55V14H49V6H47V16H55V22H41V6H39V10H33V6H15V8H31V12H39V24H57V12H63V33H65V12H71V24H89V12H97V8H113V6H95V10H89V6H87V22H73V16H81V6H79V14H73V6H71V10H65V0H128V2H67V8H69V4H75V12H77V4H83V18H75V20H85V4H91V8H93V4H115V10H99V14H91V26H69V14H67V35H61V14H59V26H37V14H29V10H13V4H35V8H37V4H43V20H53V18H45V4H51V12H53V4H59V8H61V2H0V0H63Z" />
+          </svg>
+          <svg className="card-deco card-deco-bottom" height="11" viewBox="0 0 56 11" fill="white">
+            <path d="M25 2.71011e-06L25 8.50002L23 8.50002L23 3.50002L17 3.50002L17 8.50002L7.43095e-07 8.50002L9.1794e-07 10.5L19 10.5L19 5.50002L21 5.50002L21 10.5L27 10.5L27 2L29 2L29 10.5L35 10.5L35 5.50002L37 5.50002L37 10.5L56 10.5L56 8.50002L39 8.50001L39 3.50002L33 3.50002L33 8.50002L31 8.50002L31 2.66241e-06L25 2.71011e-06Z" />
+          </svg>
           {children}
         </li>
       );
