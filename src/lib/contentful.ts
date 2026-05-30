@@ -186,10 +186,8 @@ export async function getPage(slug: string) {
   cacheLife("hours");
   cacheTag(`page:${slug}`);
   try {
-    // No content_type filter: lets the query find the entry regardless of
-    // what ID the Contentful content type was given (avoids silent 404s if
-    // the content type ID differs from the TypeScript skeleton name "page").
     const res = await client.getEntries<PageSkeleton>({
+      content_type: "page",
       "fields.slug": slug,
       limit: 1,
       include: 2,
