@@ -77,6 +77,7 @@ const sectionOptions: Options = {
   ...baseOptions,
   renderNode: {
     ...baseOptions.renderNode,
+    [BLOCKS.PARAGRAPH]: (_node, children) => <p>{children}</p>,
     [BLOCKS.EMBEDDED_ASSET]: () => null,
     [BLOCKS.LIST_ITEM]: (node, children) => {
       const assetNode = (node.content as Block[]).find(

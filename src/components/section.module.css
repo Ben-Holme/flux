@@ -19,6 +19,9 @@
   .section .text {
     display: block;
   }
+  .image {
+    display: none;
+  }
 }
 
 .image {
