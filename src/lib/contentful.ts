@@ -14,6 +14,7 @@ import type {
 const client = createClient({
   space: process.env.CONTENTFUL_SPACE_ID ?? "MISSING",
   accessToken: process.env.CONTENTFUL_ACCESS_TOKEN ?? "MISSING",
+  ...(process.env.CONTENTFUL_HOST ? { host: process.env.CONTENTFUL_HOST } : {}),
 });
 
 type MaybeAsset = Asset | { sys: object } | undefined | null;
@@ -174,7 +175,8 @@ export async function getAllPages() {
     return [...res.items].sort((a, b) =>
       String(a.fields.title ?? "").localeCompare(String(b.fields.title ?? ""))
     );
-  } catch {
+  } catch (error) {
+    console.error("[contentful] getAllPages failed:", error);
     return [];
   }
 }
@@ -184,13 +186,17 @@ export async function getPage(slug: string) {
   cacheLife("hours");
   cacheTag(`page:${slug}`);
   try {
+    // No content_type filter: lets the query find the entry regardless of
+    // what ID the Contentful content type was given (avoids silent 404s if
+    // the content type ID differs from the TypeScript skeleton name "page").
     const res = await client.getEntries<PageSkeleton>({
-      content_type: "page",
       "fields.slug": slug,
       limit: 1,
+      include: 2,
     });
     return res.items[0] ?? null;
-  } catch {
+  } catch (error) {
+    console.error("[contentful] getPage failed for slug:", slug, error);
     return null;
   }
 }
