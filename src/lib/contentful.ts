@@ -14,6 +14,7 @@ import type {
 const client = createClient({
   space: process.env.CONTENTFUL_SPACE_ID ?? "MISSING",
   accessToken: process.env.CONTENTFUL_ACCESS_TOKEN ?? "MISSING",
+  ...(process.env.CONTENTFUL_HOST ? { host: process.env.CONTENTFUL_HOST } : {}),
 });
 
 type MaybeAsset = Asset | { sys: object } | undefined | null;
