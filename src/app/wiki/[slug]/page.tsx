@@ -1,15 +1,23 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPage, getAllPages } from "@/lib/contentful";
+import { getPage, getPost, getAllPages, getAllPosts } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
 
 export async function generateStaticParams() {
-  const pages = await getAllPages();
-  const slugs = pages.map((p) => ({ slug: String(p.fields.slug) }));
-  // Cache Components requires at least one param; use a placeholder if Contentful is
-  // unavailable at build time so the build doesn't fail with an empty array.
-  return slugs.length > 0 ? slugs : [{ slug: "__placeholder__" }];
+  const [allPosts, pages] = await Promise.all([getAllPosts(), getAllPages()]);
+  // Wiki articles are posts with "Unyha Wiki" category; page entries are a secondary fallback.
+  const wikiPosts = allPosts.filter((p) => {
+    const cat = (p.fields.categry as { fields?: { name?: string } } | undefined)
+      ?.fields?.name;
+    return cat === "Unyha Wiki";
+  });
+  const slugs = [
+    ...wikiPosts.map((p) => ({ slug: String(p.fields.slug) })),
+    ...pages.map((p) => ({ slug: String(p.fields.slug) })),
+  ];
+  const unique = [...new Map(slugs.map((s) => [s.slug, s])).values()];
+  return unique.length > 0 ? unique : [{ slug: "__placeholder__" }];
 }
 
 export async function generateMetadata({
@@ -18,11 +26,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const page = await getPage(slug);
-  if (!page) return {};
+  const [post, page] = await Promise.all([getPost(slug), getPage(slug)]);
+  const entry = post ?? page;
+  if (!entry) return {};
+  const title = String(entry.fields.title ?? "");
   return {
-    title: `${page.fields.title} — Unyha Wiki`,
-    description: `Unyha Wiki: ${page.fields.title}`,
+    title: `${title} — Unyha Wiki`,
+    description: `Unyha Wiki: ${title}`,
   };
 }
 
@@ -32,13 +42,28 @@ export default async function WikiSlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const page = await getPage(slug);
-  if (!page) notFound();
+  // Wiki articles may be stored as `post` entries with "Unyha Wiki" category
+  // or as `page` entries — try both.
+  const [post, page] = await Promise.all([getPost(slug), getPage(slug)]);
+
+  if (!post && !page) notFound();
+
+  if (post) {
+    return (
+      <article className="plain-page">
+        <h1>{post.fields.title as string}</h1>
+        {post.fields.body && (
+          <RichText document={post.fields.body as Document} />
+        )}
+      </article>
+    );
+  }
+
   return (
     <article className="plain-page">
-      <h1>{page.fields.title as string}</h1>
-      {page.fields.pageContent && (
-        <RichText document={page.fields.pageContent as Document} />
+      <h1>{page!.fields.title as string}</h1>
+      {page!.fields.pageContent && (
+        <RichText document={page!.fields.pageContent as Document} />
       )}
     </article>
   );
