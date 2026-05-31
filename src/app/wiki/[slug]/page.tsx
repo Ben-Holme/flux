@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { getPage, getPost, getAllPages, getAllPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
@@ -56,13 +55,8 @@ export default async function WikiSlugPage({
       <article className="plain-page">
         <h1>{post.fields.title as string}</h1>
         {heroUrl && (
-          <Image
-            src={heroUrl}
-            alt={heroAlt}
-            width={800}
-            height={450}
-            className="my-6 w-full rounded object-cover"
-          />
+          // eslint-disable-next-line @next/next/no-img-element
+          <p className="news-img-fx"><img src={heroUrl} alt={heroAlt} className="max-w-full rounded" /></p>
         )}
         {post.fields.body && (
           <RichText document={post.fields.body as Document} />
