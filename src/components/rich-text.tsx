@@ -50,8 +50,31 @@ const baseOptions: Options = {
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
       const url = assetUrl(node.data.target);
       if (!url) return null;
+      const t = node.data.target as { fields?: { description?: string; title?: string } };
+      const alt = t.fields?.description ?? t.fields?.title ?? "";
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={url} alt="" className="my-4 max-w-full rounded" />;
+      return <p className="news-img-fx"><img src={url} alt={alt} className="max-w-full rounded" /></p>;
+    },
+    [BLOCKS.EMBEDDED_ENTRY]: (node) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const target = node.data.target as any;
+      const contentType = target?.sys?.contentType?.sys?.id;
+      if (contentType === "youTube") {
+        const ytId = target?.fields?.ytId ?? target?.fields?.id;
+        if (!ytId) return null;
+        return (
+          <div className="relative my-4 overflow-hidden rounded" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${ytId}`}
+              className="absolute inset-0 h-full w-full"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        );
+      }
+      return null;
     },
     [BLOCKS.QUOTE]: (_node, children) => (
       <blockquote className="mb-4 border-l-2 border-gold pl-4 italic">

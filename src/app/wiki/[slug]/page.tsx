@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPage, getPost, getAllPages, getAllPosts } from "@/lib/contentful";
+import Image from "next/image";
+import { getPage, getPost, getAllPages, getAllPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
 
@@ -49,9 +50,20 @@ export default async function WikiSlugPage({
   if (!post && !page) notFound();
 
   if (post) {
+    const heroUrl = getAssetUrl(post.fields.image);
+    const heroAlt = getAssetTitle(post.fields.image);
     return (
       <article className="plain-page">
         <h1>{post.fields.title as string}</h1>
+        {heroUrl && (
+          <Image
+            src={heroUrl}
+            alt={heroAlt}
+            width={800}
+            height={450}
+            className="my-6 w-full rounded object-cover"
+          />
+        )}
         {post.fields.body && (
           <RichText document={post.fields.body as Document} />
         )}
