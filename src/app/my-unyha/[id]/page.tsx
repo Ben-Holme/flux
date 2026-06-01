@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 
@@ -33,12 +33,6 @@ interface Character {
   storyweaving: number;
 }
 
-interface AccountData {
-  email: string;
-  house: string;
-  characters: Character[];
-}
-
 const SKILL_LABELS: Record<string, string> = {
   melee: "Melee",
   defense: "Defense",
@@ -64,16 +58,19 @@ const SKILL_LABELS: Record<string, string> = {
 
 const SKILL_KEYS = Object.keys(SKILL_LABELS) as (keyof Character)[];
 
-export default function MyUnyhaPage() {
+export default function CharacterPage() {
   const { session, logout } = useAuth();
   const router = useRouter();
-  const [account, setAccount] = useState<AccountData | null>(null);
+  const params = useParams();
+  const charId = Number(params.id);
+
+  const [char, setChar] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
-      router.push("/login?redirect=/my-unyha");
+      router.push(`/login?redirect=/my-unyha/${charId}`);
       return;
     }
     fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
@@ -82,27 +79,29 @@ export default function MyUnyhaPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.status !== "OK") throw new Error(data.status);
-        setAccount(data);
+        const found = (data.characters as Character[]).find((c) => c.id === charId);
+        if (!found) throw new Error("Character not found");
+        setChar(found);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [session, router]);
+  }, [session, router, charId]);
 
   if (!session) return null;
+
+  const displayName = char ? char.name.split("#")[0] : "";
 
   return (
     <div className="plain-page" style={{ maxWidth: "800px", margin: "0 auto", padding: "120px 24px 80px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#ffd98f",
-          textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+        <Link href="/my-unyha" style={{
+          fontSize: "0.78rem",
+          color: "rgba(255,255,255,0.35)",
+          letterSpacing: ".08em",
+          textDecoration: "none",
         }}>
-          My Unyha
-        </div>
+          ← My Unyha
+        </Link>
         <button
           onClick={logout}
           style={{
@@ -121,13 +120,26 @@ export default function MyUnyhaPage() {
           Sign Out
         </button>
       </div>
-      <h1>Account</h1>
 
       {loading && <p style={{ marginTop: "32px" }}>Loading…</p>}
       {error && <p style={{ marginTop: "32px", color: "#e16565" }}>Error: {error}</p>}
 
-      {account && (
+      {char && (
         <>
+          <div style={{ marginTop: "24px" }}>
+            <div style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "1rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+              color: "#ffd98f",
+              textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+            }}>
+              Character
+            </div>
+            <h1>{displayName}</h1>
+          </div>
+
           <div style={{
             marginTop: "28px",
             padding: "20px 24px",
@@ -135,20 +147,45 @@ export default function MyUnyhaPage() {
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: "6px",
           }}>
-            <InfoRow label="Email" value={account.email} />
-            <InfoRow label="House" value={account.house || "—"} last />
+            <InfoRow label="Fame" value={String(char.fame)} last />
           </div>
 
-          {account.characters.length > 0 && (
-            <>
-              <h2 style={{ marginTop: "48px" }}>Characters</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
-                {account.characters.map((char) => (
-                  <CharacterCard key={char.id} char={char} />
-                ))}
-              </div>
-            </>
-          )}
+          <h2 style={{ marginTop: "48px" }}>Skills</h2>
+          <div style={{
+            marginTop: "16px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+            gap: "2px",
+          }}>
+            {SKILL_KEYS.map((k) => {
+              const val = char[k] as number;
+              return (
+                <div key={k} style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 12px",
+                  background: val > 0 ? "rgba(255,255,255,0.04)" : "transparent",
+                  borderRadius: "3px",
+                }}>
+                  <span style={{
+                    fontSize: "0.78rem",
+                    letterSpacing: ".06em",
+                    color: val > 0 ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.18)",
+                  }}>
+                    {SKILL_LABELS[k as string]}
+                  </span>
+                  <span style={{
+                    fontSize: "0.85rem",
+                    fontFamily: "var(--font-heading)",
+                    color: val > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.18)",
+                  }}>
+                    {val}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
     </div>
@@ -167,60 +204,6 @@ function InfoRow({ label, value, last }: { label: string; value: string; last?: 
         {label}
       </span>
       <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.85rem" }}>{value}</span>
-    </div>
-  );
-}
-
-function CharacterCard({ char }: { char: Character }) {
-  const displayName = char.name.split("#")[0];
-  const skills = SKILL_KEYS.filter((k) => (char[k] as number) > 0);
-
-  return (
-    <div style={{
-      padding: "20px 24px",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: "6px",
-    }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        marginBottom: skills.length > 0 ? "16px" : 0,
-      }}>
-        <Link href={`/my-unyha/${char.id}`} style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1.1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.15em",
-          color: "rgba(255,255,255,0.9)",
-          textDecoration: "none",
-        }}>
-          {displayName}
-        </Link>
-        <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", letterSpacing: ".06em" }}>
-          Fame {char.fame}
-        </span>
-      </div>
-      {skills.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {skills.map((k) => (
-            <div key={k} style={{
-              background: "rgba(255,255,255,0.06)",
-              borderRadius: "3px",
-              padding: "3px 8px",
-              fontSize: "0.72rem",
-              color: "rgba(255,255,255,0.55)",
-              letterSpacing: ".06em",
-            }}>
-              <span style={{ color: "rgba(255,255,255,0.3)", marginRight: "6px" }}>
-                {SKILL_LABELS[k as string]}
-              </span>
-              {char[k]}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
