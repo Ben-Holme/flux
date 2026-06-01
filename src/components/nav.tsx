@@ -6,17 +6,23 @@ import { usePathname } from "next/navigation";
 import styles from "./nav.module.css";
 
 const MENU_LINKS = [
-  { href: "/",              label: "About" },
-  { href: "/screenshots",  label: "Screenshots" },
-  { href: "/devlog",       label: "News & Devlog" },
-  { href: "/wiki",         label: "Unyha Wiki" },
+  { href: "/", label: "About" },
+  { href: "/screenshots", label: "Screenshots" },
+  { href: "/devlog", label: "News & Devlog" },
+  { href: "/wiki", label: "Unyha Wiki" },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Unyha Discord", external: true, discord: true },
-  { href: "http://realspawn.com",           label: "Realspawn Studios", external: true, small: true },
-  { href: "/privacy-policy",               label: "Privacy Policy", small: true },
+  { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
+  { href: "/privacy-policy", label: "Privacy Policy", small: true },
 ];
 
 const DISCORD_SVG = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="32px" viewBox="0 0 512 512" fill="#FFF" style={{ marginRight: "10px" }}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="32px"
+    viewBox="0 0 512 512"
+    fill="#FFF"
+    style={{ marginRight: "10px" }}
+  >
     <path d="M464,66.52A50,50,0,0,0,414.12,17L97.64,16A49.65,49.65,0,0,0,48,65.52V392c0,27.3,22.28,48,49.64,48H368l-13-44L464,496ZM324.65,329.81s-8.72-10.39-16-19.32C340.39,301.55,352.5,282,352.5,282a139,139,0,0,1-27.85,14.25,173.31,173.31,0,0,1-35.11,10.39,170.05,170.05,0,0,1-62.72-.24A184.45,184.45,0,0,1,191.23,296a141.46,141.46,0,0,1-17.68-8.21c-.73-.48-1.45-.72-2.18-1.21-.49-.24-.73-.48-1-.48-4.36-2.42-6.78-4.11-6.78-4.11s11.62,19.09,42.38,28.26c-7.27,9.18-16.23,19.81-16.23,19.81-53.51-1.69-73.85-36.47-73.85-36.47,0-77.06,34.87-139.62,34.87-139.62,34.87-25.85,67.8-25.12,67.8-25.12l2.42,2.9c-43.59,12.32-63.44,31.4-63.44,31.4s5.32-2.9,14.28-6.77c25.91-11.35,46.5-14.25,55-15.21a24,24,0,0,1,4.12-.49,205.62,205.62,0,0,1,48.91-.48,201.62,201.62,0,0,1,72.89,22.95S333.61,145,292.44,132.7l3.39-3.86S329,128.11,363.64,154c0,0,34.87,62.56,34.87,139.62C398.51,293.34,378.16,328.12,324.65,329.81Z" />
     <path d="M212.05,218c-13.8,0-24.7,11.84-24.7,26.57s11.14,26.57,24.7,26.57c13.8,0,24.7-11.83,24.7-26.57C237,229.81,225.85,218,212.05,218Z" />
     <path d="M300.43,218c-13.8,0-24.7,11.84-24.7,26.57s11.14,26.57,24.7,26.57c13.81,0,24.7-11.83,24.7-26.57S314,218,300.43,218Z" />
@@ -41,7 +47,9 @@ export default function Nav() {
   }, [isFirst]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -54,11 +62,20 @@ export default function Nav() {
       <div className={`${styles.menu} ${open ? styles.menuOpen : ""}`}>
         {MENU_LINKS.map(({ href, label, external, discord, small }) => {
           const linkStyle: React.CSSProperties = small
-            ? { fontSize: ".9em", opacity: 0.5, ...(label === "Realspawn Studios" ? { marginTop: "50px" } : {}) }
+            ? {
+                fontSize: ".9em",
+                opacity: 0.5,
+                ...(label === "Realspawn Studios" ? { marginTop: "50px" } : {}),
+              }
             : {};
-          const inner = discord
-            ? <span style={{ display: "flex", alignItems: "center" }}>{DISCORD_SVG}{label}</span>
-            : label;
+          const inner = discord ? (
+            <span style={{ display: "flex", alignItems: "center" }}>
+              {DISCORD_SVG}
+              {label}
+            </span>
+          ) : (
+            label
+          );
           return external ? (
             <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
               {inner}
@@ -80,12 +97,13 @@ export default function Nav() {
             transition: ".25s",
             position: "absolute",
             left: "-50%",
-            width: "500px",
+            width: "200vw",
             height: "500px",
             borderRadius: "100%",
-            transform: active ? "scale(2)" : "scale(.5)",
+            transform: active ? "scale(1)" : "scale(0)",
             transformOrigin: "30% 50%",
             backgroundColor: scrolled ? "#000" : "transparent",
+            filter: scrolled ? "none" : "blur(100px)",
           }}
         />
 
@@ -102,11 +120,28 @@ export default function Nav() {
               opacity: active ? 1 : 0,
             }}
           >
-            <path d="M80.0001 185V92.5V0L91 10.6544V60.2672L100 51.5499V19.3717L111 30.0262V55.9631L91 75.3349V174.346L80.0001 185Z" fill="white" />
-            <path d="M0 38.7435V178.005L31 147.979V68.7697L20 58.1152V143.566L11 152.283V49.3979L0 38.7435Z" fill="white" />
-            <path fillRule="evenodd" clipRule="evenodd" d="M171 175.315V40.8954L140 70.9216L140 145.288L151 155.943L151 109.235L160 100.518V164.66L171 175.315ZM160 85.4504L151 94.1676V75.3348L160 66.6175V85.4504Z" fill="white" />
-            <path d="M100 78.4556L111 67.8011L111 94.1678L120 85.4505L120 59.0838L131 48.4293L131 116.23L120 126.885V100.518L111 109.235L111 135.602L100 146.257L100 78.4556Z" fill="white" />
-            <path d="M59.9999 76.3034V155.942L70.9999 145.288V50.5812L39.9999 80.6074V141.414L50.9999 130.759V85.0206L59.9999 76.3034Z" fill="white" />
+            <path
+              d="M80.0001 185V92.5V0L91 10.6544V60.2672L100 51.5499V19.3717L111 30.0262V55.9631L91 75.3349V174.346L80.0001 185Z"
+              fill="white"
+            />
+            <path
+              d="M0 38.7435V178.005L31 147.979V68.7697L20 58.1152V143.566L11 152.283V49.3979L0 38.7435Z"
+              fill="white"
+            />
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M171 175.315V40.8954L140 70.9216L140 145.288L151 155.943L151 109.235L160 100.518V164.66L171 175.315ZM160 85.4504L151 94.1676V75.3348L160 66.6175V85.4504Z"
+              fill="white"
+            />
+            <path
+              d="M100 78.4556L111 67.8011L111 94.1678L120 85.4505L120 59.0838L131 48.4293L131 116.23L120 126.885V100.518L111 109.235L111 135.602L100 146.257L100 78.4556Z"
+              fill="white"
+            />
+            <path
+              d="M59.9999 76.3034V155.942L70.9999 145.288V50.5812L39.9999 80.6074V141.414L50.9999 130.759V85.0206L59.9999 76.3034Z"
+              fill="white"
+            />
           </svg>
         </Link>
 

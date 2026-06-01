@@ -315,10 +315,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               const thumbAlt = getAssetTitle(post.fields?.image);
               return (
                 <div key={post.sys.id} style={{ position: "relative" }}>
-                  <Link
-                    href={`/devlog/${post.fields?.slug}`}
-                    style={{ textDecoration: "none" }}
-                  >
+                  <Link href={`/devlog/${post.fields?.slug}`} style={{ textDecoration: "none" }}>
                     <p
                       style={{
                         color: "#ffd98f",
@@ -340,6 +337,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                           width={600}
                           height={300}
                           style={{ width: "100%", height: "auto", display: "block" }}
+                          className="aspect-16/9 object-cover"
                         />
                       ) : (
                         <div
@@ -351,7 +349,12 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                             alignItems: "center",
                           }}
                         >
-                          <svg width="20%" viewBox="0 0 240 245" fill="white" style={{ opacity: 0.2 }}>
+                          <svg
+                            width="20%"
+                            viewBox="0 0 240 245"
+                            fill="white"
+                            style={{ opacity: 0.2 }}
+                          >
                             <path
                               fillRule="evenodd"
                               clipRule="evenodd"
@@ -378,9 +381,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                       {post.fields?.title}
                     </h3>
                     {post.fields?.short && (
-                      <p style={{ color: "var(--fg2)", marginTop: "0.5em" }}>
-                        {post.fields.short}
-                      </p>
+                      <p style={{ color: "var(--fg2)", marginTop: "0.5em" }}>{post.fields.short}</p>
                     )}
                   </Link>
                 </div>
@@ -388,22 +389,16 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
             })}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: "32px" }}>
-            <Link
-              href="/devlog"
-              style={{
-                fontFamily: "var(--font-heading)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontSize: "0.9rem",
-                color: "var(--fg2)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                padding: "10px 24px",
-                borderRadius: "4px",
-                textDecoration: "none",
-              }}
-            >
-              More news
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: "32px",
+            }}
+          >
+            <Link href="/devlog">
+              <Button>More news</Button>
             </Link>
           </div>
         </section>
@@ -412,7 +407,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
       {/* ── Final hero (The Black Mine) — only if Contentful blockList doesn't already include scene 3 */}
       {!blockItems.some(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (item) => isHeroEntry(item) && (item as any).fields.scene === 3
+        (item) => isHeroEntry(item) && (item as any).fields.scene === 3,
       ) && <HeroScene scene={3} />}
     </>
   );

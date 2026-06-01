@@ -33,6 +33,8 @@
   max-width: 1200px;
   margin: auto;
   gap: 96px;
+  padding: 0px 24px;
+  box-sizing: content-box;
 }
 
 .zoom > div {

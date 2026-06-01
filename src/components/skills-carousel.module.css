@@ -74,6 +74,7 @@
   display: block;
   bottom: 24px;
   z-index: 2;
+  left: 40px;
 }
 
 .item p {
@@ -141,6 +142,7 @@
 @media screen and (max-width: 768px) {
   .carouselWrapper {
     height: 350px;
+    margin-bottom: 80px;
   }
 
   .carousel {

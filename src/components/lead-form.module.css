@@ -40,7 +40,7 @@
 
 .wrapper input[type='text'],
 .wrapper input[type='email'] {
-  border: rgba(255, 255, 255, 0.12) solid 1px;
+  border: rgba(255, 255, 255, 0.12) solid 2px;
   border-radius: 6px;
   appearance: none;
   background: rgba(0, 0, 0, 0.6);
@@ -78,7 +78,7 @@
 
 .checker {
   display: inline-block;
-  border: rgba(255, 255, 255, 0.12) solid 1px;
+  border: rgba(255, 255, 255, 0.12) solid 2px;
   backdrop-filter: blur(20px);
   background: rgba(0, 0, 0, 0.6);
   appearance: none;
@@ -87,6 +87,12 @@
   height: 32px;
   margin: 0 20px 0 0;
   overflow: hidden;
+  transition: 0.3s;
+}
+
+
+.checker:hover {
+  border: rgba(255, 255, 255, 0.4) solid 2px;
 }
 
 .wrapper input[type='checkbox'] + .checker::after {
@@ -105,28 +111,4 @@
 .wrapper input[type='checkbox']:checked + .checker::after {
   opacity: 1;
   transform: translate(10px, 0px) rotate(45deg) scale(1);
-}
-
-.wrapper button {
-  display: block;
-  outline: 0;
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 1.3em;
-  font-weight: normal;
-  padding: 20px 40px;
-  border: 0;
-  margin-top: 16px;
-  cursor: pointer;
-  background-color: transparent;
-  color: var(--fg4);
-  transform: scale(0.8);
-  transition: 0.3s;
-}
-
-form:valid .wrapper button {
-  background-color: var(--fg1);
-  color: #000;
-  transform: scale(1);
 }

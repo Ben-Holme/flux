@@ -41,7 +41,7 @@ button {line-height: normal;}
     color: var(--fg2);
     font-family: var(--font-body);
     font-size: 1.1rem;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1.65;
     margin: 0;
     -webkit-font-smoothing: antialiased;
