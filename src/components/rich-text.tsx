@@ -26,9 +26,7 @@ const baseOptions: Options = {
     ),
   },
   renderNode: {
-    [BLOCKS.PARAGRAPH]: (_node, children) => (
-      <p className="mb-4 leading-7 last:mb-0">{children}</p>
-    ),
+    [BLOCKS.PARAGRAPH]: (_node, children) => <p>{children}</p>,
     [BLOCKS.HEADING_1]: (_node, children) => (
       <h1 className="mb-4">{children}</h1>
     ),
