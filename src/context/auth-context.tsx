@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -41,7 +42,11 @@ function clearSession() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(() => loadSession());
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    setSession(loadSession());
+  }, []);
 
   async function login(username: string, password: string) {
     const res = await fetch("https://api.unyhagame.com/ueserv/mmologin-w.php", {
