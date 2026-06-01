@@ -41,7 +41,7 @@ async function WikiIndex() {
 
 export default function WikiPage() {
   return (
-    <Suspense fallback={<div className="h-8 w-48 animate-pulse rounded bg-surface" />}>
+    <Suspense fallback={<div className="bg-surface h-8 w-48 animate-pulse rounded" />}>
       <WikiIndex />
     </Suspense>
   );
