@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Odibee_Sans, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +22,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Unyha",
   description: "A medieval gothic online MMO RPG",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

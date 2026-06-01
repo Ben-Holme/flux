@@ -264,89 +264,105 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── News preview ────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="py-20">
-          <div style={{ maxWidth: "1200px", padding: "0 24px", margin: "0 auto" }}>
-            <div className="mb-12 flex items-end justify-between">
-              <div>
-                <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mb-3">
-                  <path
-                    opacity="0.3"
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
-                    fill="url(#news-line)"
-                  />
-                  <defs>
-                    <linearGradient
-                      id="news-line"
-                      x1="1"
-                      y1="6.25"
-                      x2="284.04"
-                      y2="6.25"
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop stopColor="white" />
-                      <stop offset="1" stopColor="white" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <p className="font-heading text-gold mb-1 text-xs tracking-[0.3em] uppercase">
-                  Latest
-                </p>
-                <h2 className="font-heading text-parchment text-3xl">News</h2>
-              </div>
-              <Link
-                href="/devlog"
-                className="text-ash hover:text-parchment text-sm tracking-widest transition-colors"
-              >
-                MORE NEWS →
-              </Link>
-            </div>
+        <section className="news-section">
+          <div
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "1rem",
+              fontWeight: "normal",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              gap: "0.5rem",
+              color: "#ffd98f",
+              textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+              marginBottom: "1.5rem",
+              whiteSpace: "nowrap",
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+            }}
+          >
+            <p style={{ margin: 0 }}>Latest</p>
+            <svg width="285" height="12" viewBox="0 0 285 12" fill="none">
+              <path
+                opacity="0.3"
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
+                fill="url(#news-line)"
+              />
+              <defs>
+                <linearGradient
+                  id="news-line"
+                  x1="1"
+                  y1="6.25"
+                  x2="284.04"
+                  y2="6.25"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="white" />
+                  <stop offset="1" stopColor="white" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h2 style={{ marginTop: 0 }}>News</h2>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => {
-                const thumb = getAssetUrl(post.fields?.image);
-                const thumbAlt = getAssetTitle(post.fields?.image);
-                return (
+          <div className="news-thumbs">
+            {posts.map((post) => {
+              const thumb = getAssetUrl(post.fields?.image);
+              const thumbAlt = getAssetTitle(post.fields?.image);
+              return (
+                <div key={post.sys.id} style={{ position: "relative" }}>
                   <Link
-                    key={post.sys.id}
                     href={`/devlog/${post.fields?.slug}`}
-                    className="group relative block"
+                    style={{ textDecoration: "none" }}
                   >
-                    <div className="news-img-fx relative overflow-hidden rounded-lg">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={thumbAlt}
-                          width={600}
-                          height={300}
-                          className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex aspect-video items-center justify-center bg-black opacity-20">
-                          <svg width="40" height="40" viewBox="0 0 25 34" fill="white">
-                            <path
-                              fillRule="evenodd"
-                              clipRule="evenodd"
-                              d="M0 0H25V14H12V8H19V6H6V8H10V24H15V22H12V16H25V18H14V20H17V26H8V10H4V4H21V10H14V12H23V2H2V12H6V28H19V20H25V34H0V18V16H2V32H23V22H21V30H4V14H0V0Z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
                     <p
-                      className="mt-3"
                       style={{
                         color: "#ffd98f",
                         fontSize: "0.75rem",
                         fontFamily: "var(--font-heading)",
                         textTransform: "uppercase",
                         letterSpacing: "0.1em",
+                        margin: 0,
+                        marginBottom: "0.5rem",
                       }}
                     >
                       {post.fields?.categry?.fields?.name ?? "news"}
                     </p>
+                    <div className="news-img-fx">
+                      {thumb ? (
+                        <Image
+                          src={thumb}
+                          alt={thumbAlt}
+                          width={600}
+                          height={300}
+                          style={{ width: "100%", height: "auto", display: "block" }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            aspectRatio: "2",
+                            backgroundColor: "#000",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <svg width="20%" viewBox="0 0 240 245" fill="white" style={{ opacity: 0.2 }}>
+                            <path
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M112.407 240.037V0.310547L127.767 14.7955V82.2457L140.335 70.3944V26.6468L155.696 41.1318V76.3942L127.767 102.731V131.992C127.271 132.131 126.793 132.29 126.356 132.466C123.05 133.797 122.791 134.342 123.885 137.633C124.674 140.005 125.866 141.273 127.242 141.204C127.424 141.195 127.6 141.189 127.767 141.187V179.86C126.397 192.946 125.307 205.024 125.289 207.403C125.228 215.738 123.249 228.365 121.861 229.28C121.112 229.774 119.074 229.937 117.331 229.643C114.456 229.156 114.129 229.591 113.785 234.361C113.617 236.71 113.043 238.99 112.407 240.037Z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                     <h3
+                      className="news-thumb-title"
                       style={{
                         color: "var(--fg1)",
                         fontSize: "1.7rem",
@@ -362,14 +378,33 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                       {post.fields?.title}
                     </h3>
                     {post.fields?.short && (
-                      <p className="mt-3 text-sm leading-6" style={{ color: "var(--fg2)" }}>
+                      <p style={{ color: "var(--fg2)", marginTop: "0.5em" }}>
                         {post.fields.short}
                       </p>
                     )}
                   </Link>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: "32px" }}>
+            <Link
+              href="/devlog"
+              style={{
+                fontFamily: "var(--font-heading)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontSize: "0.9rem",
+                color: "var(--fg2)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                padding: "10px 24px",
+                borderRadius: "4px",
+                textDecoration: "none",
+              }}
+            >
+              More news
+            </Link>
           </div>
         </section>
       )}

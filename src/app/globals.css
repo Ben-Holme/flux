@@ -101,6 +101,8 @@ button {line-height: normal;}
 
 .news-img-fx {
   position: relative;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .news-img-fx::after {
@@ -114,6 +116,41 @@ button {line-height: normal;}
   border: 1px solid #fff;
   opacity: 0.1;
   pointer-events: none;
+}
+
+.news-thumb-title {
+  transition: text-decoration 0.1s;
+}
+
+a:hover .news-thumb-title {
+  text-decoration: underline;
+}
+
+.news-section {
+  max-width: 1200px;
+  padding: 80px 24px;
+  margin: auto;
+}
+
+.news-thumbs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media screen and (max-width: 768px) {
+  .news-section {
+    padding: 64px 24px !important;
+  }
+
+  .news-thumbs {
+    display: block;
+  }
+
+  .news-thumbs > div + div {
+    margin-top: 2.5rem;
+  }
 }
 
 
