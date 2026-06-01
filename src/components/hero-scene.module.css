@@ -117,8 +117,11 @@
   }
 
   .caption {
-    left: 24px;
+    left: 0;
+    right: 0;
     bottom: 24px;
+    justify-content: center;
+    font-size: 0.65rem;
   }
 
   .caption svg {
