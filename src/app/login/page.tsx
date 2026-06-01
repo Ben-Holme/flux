@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 
 const inputStyle: React.CSSProperties = {
@@ -28,9 +28,10 @@ const labelStyle: React.CSSProperties = {
   marginBottom: "2px",
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]   = useState<string | null>(null);
@@ -42,7 +43,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-      router.push("/play-test");
+      const redirect = searchParams.get("redirect") ?? "/play-test";
+      router.push(redirect);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -50,6 +52,73 @@ export default function LoginPage() {
     }
   }
 
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: "10px",
+        padding: "28px",
+      }}
+    >
+      <div style={{ marginBottom: "20px" }}>
+        <label style={labelStyle}>Username</label>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          required
+          style={inputStyle}
+        />
+      </div>
+
+      <div style={{ marginBottom: "24px" }}>
+        <label style={labelStyle}>Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+          style={inputStyle}
+        />
+      </div>
+
+      {error && (
+        <p style={{ margin: "0 0 18px", fontSize: "0.85rem", color: "#e16565" }}>
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "11px",
+          background: loading ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: "6px",
+          color: loading ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.85)",
+          fontFamily: "var(--font-heading)",
+          fontSize: "0.85rem",
+          letterSpacing: ".15em",
+          textTransform: "uppercase",
+          cursor: loading ? "not-allowed" : "pointer",
+          transition: "all 0.15s",
+        }}
+      >
+        {loading ? "Signing in…" : "Sign In"}
+      </button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div style={{
       minHeight: "100vh",
@@ -75,69 +144,9 @@ export default function LoginPage() {
         <h1 style={{ textAlign: "center", marginBottom: "32px", fontSize: "3rem" }}>
           Sign In
         </h1>
-
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: "10px",
-            padding: "28px",
-          }}
-        >
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={inputStyle}
-            />
-          </div>
-
-          {error && (
-            <p style={{ margin: "0 0 18px", fontSize: "0.85rem", color: "#e16565" }}>
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "11px",
-              background: loading ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "6px",
-              color: loading ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.85)",
-              fontFamily: "var(--font-heading)",
-              fontSize: "0.85rem",
-              letterSpacing: ".15em",
-              textTransform: "uppercase",
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.15s",
-            }}
-          >
-            {loading ? "Signing in…" : "Sign In"}
-          </button>
-        </form>
+        <Suspense>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

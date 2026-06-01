@@ -72,7 +72,7 @@ export default function MyUnyhaPage() {
 
   useEffect(() => {
     if (!session) {
-      router.push("/login");
+      router.push("/login?redirect=/my-unyha");
       return;
     }
     fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
