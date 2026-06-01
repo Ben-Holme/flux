@@ -56,7 +56,7 @@ export default async function WikiSlugPage({
         <h1>{post.fields.title as string}</h1>
         {heroUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <p className="news-img-fx"><img src={heroUrl} alt={heroAlt} className="max-w-full rounded" /></p>
+          <p className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']"><img src={heroUrl} alt={heroAlt} className="max-w-full rounded" /></p>
         )}
         {post.fields.body && (
           <RichText document={post.fields.body as Document} />
