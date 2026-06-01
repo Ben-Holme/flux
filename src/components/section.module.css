@@ -87,7 +87,7 @@
     gap: 16px;
   }
   .section ul > li {
-    padding: 25% 24px 24px 24px;
+    padding: 25% 24px 40px 24px;
   }
 }
 
@@ -110,7 +110,7 @@
   display: block;
   font-family: var(--font-heading);
   font-size: 1.7rem;
-  margin-bottom: 0.15em;
+  margin-bottom: 0.6em;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: normal;
