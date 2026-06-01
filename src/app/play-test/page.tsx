@@ -7,6 +7,7 @@ import useStoryEvents from "@/components/story-events/use-story-events";
 import EventCard from "@/components/story-events/event-card";
 import FilterChip from "@/components/story-events/filter-chip";
 import EVENT_TYPES from "@/components/story-events/event-types";
+import PlainPage from "@/components/plain-page";
 
 const SEASON_TYPES = new Set(["seasonContext", "seasonSummary"]);
 const normalize = (t: string) => SEASON_TYPES.has(t) ? "season" : t;
@@ -45,44 +46,29 @@ export default function PlayTestPage() {
     .filter((e) => !search.trim() || matchesSearch(e, players, items, search.trim()));
 
   return (
-    <div className="plain-page" style={{ maxWidth: "800px", margin: "0 auto", padding: "120px 24px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#ffd98f",
-          textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-        }}>
+    <PlainPage className="pt-[120px] !pb-20">
+      <div className="flex items-center justify-between">
+        <div
+          className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+        >
           Play Test
         </div>
         <button
           onClick={logout}
-          style={{
-            background: "none",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "4px",
-            color: "rgba(255,255,255,0.35)",
-            fontFamily: "var(--font-heading)",
-            fontSize: "0.62rem",
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            padding: "4px 10px",
-            cursor: "pointer",
-          }}
+          className="cursor-pointer rounded border border-white/10 bg-transparent px-[10px] py-1 font-heading text-[0.62rem] uppercase tracking-[0.12em] text-white/35"
         >
           Sign Out
         </button>
       </div>
       <h1>Story Events</h1>
 
-      {loading && <p style={{ marginTop: "32px" }}>Loading events…</p>}
-      {error   && <p style={{ marginTop: "32px", color: "#e16565" }}>Error: {error}</p>}
+      {loading && <p className="mt-8">Loading events…</p>}
+      {error   && <p className="mt-8 text-[#e16565]">Error: {error}</p>}
 
       {!loading && !error && events.length > 0 && (
         <>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginTop: "28px" }}>
+          <div className="mt-7 flex flex-wrap items-center gap-2">
             <FilterChip
               label="All"
               color="rgba(255,255,255,0.5)"
@@ -103,22 +89,11 @@ export default function PlayTestPage() {
               placeholder="Search player or item…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                marginLeft: "auto",
-                background: "rgba(0,0,0,0.35)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "4px",
-                color: "rgba(255,255,255,0.7)",
-                fontFamily: "inherit",
-                fontSize: "0.8rem",
-                padding: "5px 12px",
-                outline: "none",
-                width: "200px",
-              }}
+              className="ml-auto w-[200px] rounded border border-white/10 bg-black/35 px-3 py-[5px] text-[0.8rem] text-white/70 outline-none"
             />
           </div>
 
-          <div style={{ marginTop: "16px", marginBottom: "8px", fontSize: "0.72rem", color: "rgba(255,255,255,0.28)", letterSpacing: ".06em" }}>
+          <div className="mb-2 mt-4 text-[0.72rem] tracking-[0.06em] text-white/[0.28]">
             {visible.length} event{visible.length !== 1 ? "s" : ""}
           </div>
 
@@ -136,8 +111,8 @@ export default function PlayTestPage() {
       )}
 
       {!loading && !error && events.length === 0 && (
-        <p style={{ marginTop: "32px" }}>No events found.</p>
+        <p className="mt-8">No events found.</p>
       )}
-    </div>
+    </PlainPage>
   );
 }

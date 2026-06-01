@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPage, getPost, getAllPages, getAllPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
+import PlainPage from "@/components/plain-page";
 import type { Document } from "@contentful/rich-text-types";
 
 export async function generateStaticParams() {
@@ -52,7 +53,7 @@ export default async function WikiSlugPage({
     const heroUrl = getAssetUrl(post.fields.image);
     const heroAlt = getAssetTitle(post.fields.image);
     return (
-      <article className="plain-page">
+      <PlainPage as="article">
         <h1>{post.fields.title as string}</h1>
         {heroUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -61,16 +62,16 @@ export default async function WikiSlugPage({
         {post.fields.body && (
           <RichText document={post.fields.body as Document} />
         )}
-      </article>
+      </PlainPage>
     );
   }
 
   return (
-    <article className="plain-page">
+    <PlainPage as="article">
       <h1>{page!.fields.title as string}</h1>
       {page!.fields.pageContent && (
         <RichText document={page!.fields.pageContent as Document} />
       )}
-    </article>
+    </PlainPage>
   );
 }
