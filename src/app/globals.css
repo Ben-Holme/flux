@@ -164,6 +164,10 @@ p {
   margin-top: 1em;
 }
 
+li > p {
+  margin-top: 0;
+}
+
 /* ── Wiki / plain page content ─────────────────────────── */
 .plain-page {
   max-width: 800px;
