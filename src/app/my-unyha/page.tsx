@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import PlainPage from "@/components/plain-page";
@@ -65,16 +65,21 @@ const SKILL_LABELS: Record<string, string> = {
 
 const SKILL_KEYS = Object.keys(SKILL_LABELS) as (keyof Character)[];
 
-export default function MyUnyhaPage() {
+function MyUnyhaContent() {
   const { session, logout } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const charParam = searchParams.get("char");
+  const activeCharId = charParam ? Number(charParam) : null;
+
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) {
-      router.push("/login?redirect=/my-unyha");
+      const redirect = activeCharId ? `/my-unyha?char=${activeCharId}` : "/my-unyha";
+      router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
     fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
@@ -87,19 +92,30 @@ export default function MyUnyhaPage() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [session, router]);
+  }, [session, router, activeCharId]);
 
   if (!session) return null;
 
+  const activeChar = account && activeCharId
+    ? account.characters.find((c) => c.id === activeCharId) ?? null
+    : null;
+
   return (
     <PlainPage className="pt-[120px] !pb-20">
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <div
-          className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
-          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
-        >
-          My Unyha
-        </div>
+        {activeChar ? (
+          <Link href="/my-unyha" className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline">
+            ← My Unyha
+          </Link>
+        ) : (
+          <div
+            className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+            style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+          >
+            My Unyha
+          </div>
+        )}
         <button
           onClick={logout}
           className="cursor-pointer rounded border border-white/10 bg-transparent px-[10px] py-1 font-heading text-[0.62rem] uppercase tracking-[0.12em] text-white/35"
@@ -107,13 +123,17 @@ export default function MyUnyhaPage() {
           Sign Out
         </button>
       </div>
-      <h1>Account</h1>
 
       {loading && <p className="mt-8">Loading…</p>}
       {error && <p className="mt-8 text-[#e16565]">Error: {error}</p>}
 
-      {account && (
+      {/* Character detail view */}
+      {account && activeChar && <CharacterDetail char={activeChar} />}
+
+      {/* Account overview */}
+      {account && !activeCharId && (
         <>
+          <h1>Account</h1>
           <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
             <InfoRow label="Email" value={account.email} />
             <InfoRow label="House" value={account.house || "—"} last />
@@ -131,7 +151,20 @@ export default function MyUnyhaPage() {
           )}
         </>
       )}
+
+      {/* charParam set but character not found */}
+      {account && activeCharId && !activeChar && !loading && (
+        <p className="mt-8 text-white/35">Character not found.</p>
+      )}
     </PlainPage>
+  );
+}
+
+export default function MyUnyhaPage() {
+  return (
+    <Suspense>
+      <MyUnyhaContent />
+    </Suspense>
   );
 }
 
@@ -152,7 +185,7 @@ function CharacterCard({ char }: { char: Character }) {
     <div className="rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
       <div className={`flex items-baseline justify-between${skills.length > 0 ? " mb-4" : ""}`}>
         <Link
-          href={`/my-unyha/${char.id}`}
+          href={`/my-unyha?char=${char.id}`}
           className="font-heading text-[1.1rem] uppercase tracking-[0.15em] text-white/90 no-underline"
         >
           {displayName}
@@ -175,5 +208,47 @@ function CharacterCard({ char }: { char: Character }) {
         </div>
       )}
     </div>
+  );
+}
+
+function CharacterDetail({ char }: { char: Character }) {
+  const displayName = char.name.split("#")[0];
+
+  return (
+    <>
+      <div className="mt-6">
+        <div
+          className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+        >
+          Character
+        </div>
+        <h1>{displayName}</h1>
+      </div>
+
+      <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
+        <InfoRow label="Fame" value={String(char.fame)} last />
+      </div>
+
+      <h2 className="mt-12">Skills</h2>
+      <div className="mt-4 grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+        {SKILL_KEYS.map((k) => {
+          const val = char[k] as number;
+          return (
+            <div
+              key={k}
+              className={`flex items-center justify-between rounded-[3px] px-3 py-2${val > 0 ? " bg-white/[0.04]" : ""}`}
+            >
+              <span className={`text-[0.78rem] tracking-[0.06em]${val > 0 ? " text-white/50" : " text-white/20"}`}>
+                {SKILL_LABELS[k as string]}
+              </span>
+              <span className={`font-heading text-[0.85rem]${val > 0 ? " text-white/85" : " text-white/20"}`}>
+                {val}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
