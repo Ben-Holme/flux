@@ -68,15 +68,6 @@
   z-index: 3;
 }
 
-.item > svg {
-  position: absolute;
-  opacity: 0.1;
-  display: block;
-  bottom: 24px;
-  z-index: 2;
-  left: 40px;
-}
-
 .item p {
   z-index: 2;
   position: relative;
