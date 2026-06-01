@@ -10,6 +10,7 @@ const MENU_LINKS = [
   { href: "/screenshots", label: "Screenshots" },
   { href: "/devlog", label: "News & Devlog" },
   { href: "/wiki", label: "Unyha Wiki" },
+  { href: "/my-unyha", label: "My Unyha" },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Unyha Discord", external: true, discord: true },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
   { href: "/privacy-policy", label: "Privacy Policy", small: true },
