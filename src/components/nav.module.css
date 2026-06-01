@@ -15,7 +15,7 @@
   display: none;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1248px) {
   .nav {
     width: 100%;
     padding: 16px 24px;

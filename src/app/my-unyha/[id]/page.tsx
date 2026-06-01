@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
+import PlainPage from "@/components/plain-page";
 
 interface Character {
   id: number;
@@ -92,94 +93,51 @@ export default function CharacterPage() {
   const displayName = char ? char.name.split("#")[0] : "";
 
   return (
-    <div className="plain-page" style={{ maxWidth: "800px", margin: "0 auto", padding: "120px 24px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link href="/my-unyha" style={{
-          fontSize: "0.78rem",
-          color: "rgba(255,255,255,0.35)",
-          letterSpacing: ".08em",
-          textDecoration: "none",
-        }}>
+    <PlainPage className="pt-[120px] !pb-20">
+      <div className="flex items-center justify-between">
+        <Link href="/my-unyha" className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline">
           ← My Unyha
         </Link>
         <button
           onClick={logout}
-          style={{
-            background: "none",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "4px",
-            color: "rgba(255,255,255,0.35)",
-            fontFamily: "var(--font-heading)",
-            fontSize: "0.62rem",
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            padding: "4px 10px",
-            cursor: "pointer",
-          }}
+          className="cursor-pointer rounded border border-white/10 bg-transparent px-[10px] py-1 font-heading text-[0.62rem] uppercase tracking-[0.12em] text-white/35"
         >
           Sign Out
         </button>
       </div>
 
-      {loading && <p style={{ marginTop: "32px" }}>Loading…</p>}
-      {error && <p style={{ marginTop: "32px", color: "#e16565" }}>Error: {error}</p>}
+      {loading && <p className="mt-8">Loading…</p>}
+      {error && <p className="mt-8 text-[#e16565]">Error: {error}</p>}
 
       {char && (
         <>
-          <div style={{ marginTop: "24px" }}>
-            <div style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "1rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              color: "#ffd98f",
-              textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-            }}>
+          <div className="mt-6">
+            <div
+              className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+              style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+            >
               Character
             </div>
             <h1>{displayName}</h1>
           </div>
 
-          <div style={{
-            marginTop: "28px",
-            padding: "20px 24px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "6px",
-          }}>
+          <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
             <InfoRow label="Fame" value={String(char.fame)} last />
           </div>
 
-          <h2 style={{ marginTop: "48px" }}>Skills</h2>
-          <div style={{
-            marginTop: "16px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: "2px",
-          }}>
+          <h2 className="mt-12">Skills</h2>
+          <div className="mt-4 grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
             {SKILL_KEYS.map((k) => {
               const val = char[k] as number;
               return (
-                <div key={k} style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "8px 12px",
-                  background: val > 0 ? "rgba(255,255,255,0.04)" : "transparent",
-                  borderRadius: "3px",
-                }}>
-                  <span style={{
-                    fontSize: "0.78rem",
-                    letterSpacing: ".06em",
-                    color: val > 0 ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.18)",
-                  }}>
+                <div
+                  key={k}
+                  className={`flex items-center justify-between rounded-[3px] px-3 py-2${val > 0 ? " bg-white/[0.04]" : ""}`}
+                >
+                  <span className={`text-[0.78rem] tracking-[0.06em]${val > 0 ? " text-white/50" : " text-white/20"}`}>
                     {SKILL_LABELS[k as string]}
                   </span>
-                  <span style={{
-                    fontSize: "0.85rem",
-                    fontFamily: "var(--font-heading)",
-                    color: val > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.18)",
-                  }}>
+                  <span className={`font-heading text-[0.85rem]${val > 0 ? " text-white/85" : " text-white/20"}`}>
                     {val}
                   </span>
                 </div>
@@ -188,22 +146,15 @@ export default function CharacterPage() {
           </div>
         </>
       )}
-    </div>
+    </PlainPage>
   );
 }
 
 function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <div style={{
-      display: "flex",
-      gap: "16px",
-      padding: "8px 0",
-      borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.05)",
-    }}>
-      <span style={{ minWidth: "72px", color: "rgba(255,255,255,0.35)", fontSize: "0.78rem", letterSpacing: ".08em" }}>
-        {label}
-      </span>
-      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.85rem" }}>{value}</span>
+    <div className={`flex gap-4 py-2${last ? "" : " border-b border-white/[0.05]"}`}>
+      <span className="min-w-[72px] text-[0.78rem] tracking-[0.08em] text-white/35">{label}</span>
+      <span className="text-[0.85rem] text-white/80">{value}</span>
     </div>
   );
 }

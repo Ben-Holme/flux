@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
+import PlainPage from "@/components/plain-page";
 
 interface Character {
   id: number;
@@ -91,58 +92,37 @@ export default function MyUnyhaPage() {
   if (!session) return null;
 
   return (
-    <div className="plain-page" style={{ maxWidth: "800px", margin: "0 auto", padding: "120px 24px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#ffd98f",
-          textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-        }}>
+    <PlainPage className="pt-[120px] !pb-20">
+      <div className="flex items-center justify-between">
+        <div
+          className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+        >
           My Unyha
         </div>
         <button
           onClick={logout}
-          style={{
-            background: "none",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "4px",
-            color: "rgba(255,255,255,0.35)",
-            fontFamily: "var(--font-heading)",
-            fontSize: "0.62rem",
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            padding: "4px 10px",
-            cursor: "pointer",
-          }}
+          className="cursor-pointer rounded border border-white/10 bg-transparent px-[10px] py-1 font-heading text-[0.62rem] uppercase tracking-[0.12em] text-white/35"
         >
           Sign Out
         </button>
       </div>
       <h1>Account</h1>
 
-      {loading && <p style={{ marginTop: "32px" }}>Loading…</p>}
-      {error && <p style={{ marginTop: "32px", color: "#e16565" }}>Error: {error}</p>}
+      {loading && <p className="mt-8">Loading…</p>}
+      {error && <p className="mt-8 text-[#e16565]">Error: {error}</p>}
 
       {account && (
         <>
-          <div style={{
-            marginTop: "28px",
-            padding: "20px 24px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "6px",
-          }}>
+          <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
             <InfoRow label="Email" value={account.email} />
             <InfoRow label="House" value={account.house || "—"} last />
           </div>
 
           {account.characters.length > 0 && (
             <>
-              <h2 style={{ marginTop: "48px" }}>Characters</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              <h2 className="mt-12">Characters</h2>
+              <div className="mt-4 flex flex-col gap-4">
                 {account.characters.map((char) => (
                   <CharacterCard key={char.id} char={char} />
                 ))}
@@ -151,22 +131,15 @@ export default function MyUnyhaPage() {
           )}
         </>
       )}
-    </div>
+    </PlainPage>
   );
 }
 
 function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <div style={{
-      display: "flex",
-      gap: "16px",
-      padding: "8px 0",
-      borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.05)",
-    }}>
-      <span style={{ minWidth: "72px", color: "rgba(255,255,255,0.35)", fontSize: "0.78rem", letterSpacing: ".08em" }}>
-        {label}
-      </span>
-      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.85rem" }}>{value}</span>
+    <div className={`flex gap-4 py-2${last ? "" : " border-b border-white/[0.05]"}`}>
+      <span className="min-w-[72px] text-[0.78rem] tracking-[0.08em] text-white/35">{label}</span>
+      <span className="text-[0.85rem] text-white/80">{value}</span>
     </div>
   );
 }
@@ -176,46 +149,26 @@ function CharacterCard({ char }: { char: Character }) {
   const skills = SKILL_KEYS.filter((k) => (char[k] as number) > 0);
 
   return (
-    <div style={{
-      padding: "20px 24px",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: "6px",
-    }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        marginBottom: skills.length > 0 ? "16px" : 0,
-      }}>
-        <Link href={`/my-unyha/${char.id}`} style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1.1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.15em",
-          color: "rgba(255,255,255,0.9)",
-          textDecoration: "none",
-        }}>
+    <div className="rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
+      <div className={`flex items-baseline justify-between${skills.length > 0 ? " mb-4" : ""}`}>
+        <Link
+          href={`/my-unyha/${char.id}`}
+          className="font-heading text-[1.1rem] uppercase tracking-[0.15em] text-white/90 no-underline"
+        >
           {displayName}
         </Link>
-        <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", letterSpacing: ".06em" }}>
+        <span className="text-[0.75rem] tracking-[0.06em] text-white/35">
           Fame {char.fame}
         </span>
       </div>
       {skills.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <div className="flex flex-wrap gap-2">
           {skills.map((k) => (
-            <div key={k} style={{
-              background: "rgba(255,255,255,0.06)",
-              borderRadius: "3px",
-              padding: "3px 8px",
-              fontSize: "0.72rem",
-              color: "rgba(255,255,255,0.55)",
-              letterSpacing: ".06em",
-            }}>
-              <span style={{ color: "rgba(255,255,255,0.3)", marginRight: "6px" }}>
-                {SKILL_LABELS[k as string]}
-              </span>
+            <div
+              key={k}
+              className="rounded-[3px] bg-white/[0.06] px-2 py-[3px] text-[0.72rem] tracking-[0.06em] text-white/55"
+            >
+              <span className="mr-1.5 text-white/30">{SKILL_LABELS[k as string]}</span>
               {char[k]}
             </div>
           ))}

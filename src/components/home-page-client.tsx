@@ -264,26 +264,12 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── News preview ────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="news-section">
+        <section className="mx-auto max-w-[1200px] px-6 py-16 md:py-20">
           <div
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "1rem",
-              fontWeight: "normal",
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: "0.5rem",
-              color: "#ffd98f",
-              textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-              marginBottom: "1.5rem",
-              whiteSpace: "nowrap",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-            }}
+            className="relative mb-6 flex items-center justify-start gap-2 whitespace-nowrap font-heading text-base font-normal uppercase tracking-[0.2em] text-[#ffd98f]"
+            style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
           >
-            <p style={{ margin: 0 }}>Latest</p>
+            <span>Latest</span>
             <svg width="285" height="12" viewBox="0 0 285 12" fill="none">
               <path
                 opacity="0.3"
@@ -307,29 +293,19 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               </defs>
             </svg>
           </div>
-          <h2 style={{ marginTop: 0 }}>News</h2>
+          <h2 className="mt-0">News</h2>
 
-          <div className="news-thumbs">
+          <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
             {posts.map((post) => {
               const thumb = getAssetUrl(post.fields?.image);
               const thumbAlt = getAssetTitle(post.fields?.image);
               return (
-                <div key={post.sys.id} style={{ position: "relative" }}>
-                  <Link href={`/devlog/${post.fields?.slug}`} style={{ textDecoration: "none" }}>
-                    <p
-                      style={{
-                        color: "#ffd98f",
-                        fontSize: "0.75rem",
-                        fontFamily: "var(--font-heading)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        margin: 0,
-                        marginBottom: "0.5rem",
-                      }}
-                    >
+                <div key={post.sys.id} className="relative">
+                  <Link href={`/devlog/${post.fields?.slug}`} className="group">
+                    <p className="mt-0 mb-2 font-heading text-xs uppercase tracking-[0.1em] text-[#ffd98f]">
                       {post.fields?.categry?.fields?.name ?? "news"}
                     </p>
-                    <div className="news-img-fx">
+                    <div className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']">
                       {thumb ? (
                         <Image
                           src={thumb}
@@ -365,23 +341,12 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                       )}
                     </div>
                     <h3
-                      className="news-thumb-title"
-                      style={{
-                        color: "var(--fg1)",
-                        fontSize: "1.7rem",
-                        marginBottom: "-0.25em",
-                        marginTop: "0.75em",
-                        lineHeight: 1.1,
-                        letterSpacing: "0.1em",
-                        fontFamily: "var(--font-heading)",
-                        textTransform: "uppercase",
-                        fontWeight: "normal",
-                      }}
+                      className="mt-3 -mb-[0.25em] font-heading text-[1.7rem] font-normal uppercase leading-[1.1] tracking-[0.1em] text-white group-hover:underline"
                     >
                       {post.fields?.title}
                     </h3>
                     {post.fields?.short && (
-                      <p style={{ color: "var(--fg2)", marginTop: "0.5em" }}>{post.fields.short}</p>
+                      <p className="mt-2 text-white/60">{post.fields.short}</p>
                     )}
                   </Link>
                 </div>
@@ -389,14 +354,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
             })}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginTop: "32px",
-            }}
-          >
+          <div className="mt-8 flex items-center justify-center">
             <Link href="/devlog">
               <Button>More news</Button>
             </Link>

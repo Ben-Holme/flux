@@ -194,7 +194,7 @@ export default function SkillsCarousel() {
             </div>
             <p className="py-4">{skill.text}</p>
             <svg
-              className="absolute right-6 bottom-6"
+              className="absolute bottom-6 left-6 z-2 opacity-10 md:left-10"
               width="25"
               height="34"
               viewBox="0 0 25 34"
