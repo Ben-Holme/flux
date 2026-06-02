@@ -18,8 +18,8 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 const BASE =
   "appearance-none relative inline-flex items-center justify-center box-border whitespace-nowrap no-underline cursor-pointer " +
   "rounded-[4px] border-0 outline-none font-heading uppercase tracking-[0.1em] " +
-  "bg-accent/15 text-white/60 " +
-  "transition-all duration-500 hover:bg-accent/20 hover:text-white hover:duration-100 " +
+  "bg-[rgba(101,202,225,0.13)] text-white/60 " +
+  "transition-all duration-500 hover:bg-[rgba(101,202,225,0.18)] hover:text-white hover:duration-100 " +
   "active:translate-y-[2px] active:scale-[0.99] active:duration-0 " +
   "disabled:cursor-not-allowed disabled:pointer-events-none disabled:text-white/20 disabled:bg-white/[0.08] disabled:scale-90 " +
   "after:content-[''] after:pointer-events-none after:absolute after:inset-[2px] after:rounded-[3px] after:border after:border-white after:opacity-10 after:transition-[opacity] after:duration-500 " +

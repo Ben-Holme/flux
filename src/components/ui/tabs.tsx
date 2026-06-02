@@ -40,7 +40,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className }: TabsListProps) {
   return (
-    <div role="tablist" className={cn("flex border-b border-border", className)}>
+    <div role="tablist" className={cn("flex gap-2 border-b border-border", className)}>
       {children}
     </div>
   );
@@ -61,9 +61,9 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
       aria-selected={isActive}
       onClick={() => setActive(value)}
       className={cn(
-        "-mb-px border-b-2 px-4 py-2 font-heading text-sm uppercase tracking-[0.1em] transition-colors duration-150",
+        "-mb-px border-b-2 py-2 font-heading text-sm uppercase tracking-[0.1em] transition-colors duration-150",
         isActive
-          ? "border-accent text-white"
+          ? "border-white text-white"
           : "border-transparent text-white/40 hover:text-white/70",
         className,
       )}
