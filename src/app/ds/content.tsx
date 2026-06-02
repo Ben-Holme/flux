@@ -2,6 +2,11 @@
 
 import type { ReactNode } from "react";
 import {
+  User, Shield, Swords, Star, Map, Eye, Settings, Plus, X, Check,
+  ChevronRight, MoreHorizontal, Zap, Scroll, Crown, Skull, Heart,
+  Package, Flame, Wind,
+} from "lucide-react";
+import {
   Eyebrow,
   Heading,
   Text,
@@ -14,6 +19,13 @@ import {
   TabsPanel,
   Checkbox,
   Radio,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  Th,
+  Td,
+  TableEllipsis,
 } from "@/components/ui";
 import Button from "@/components/button";
 
@@ -47,6 +59,7 @@ export default function DSContent() {
           <TabsTrigger value="typography">Typography</TabsTrigger>
           <TabsTrigger value="form">Form</TabsTrigger>
           <TabsTrigger value="misc">Misc</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
         </TabsList>
 
         {/* ── Typography ─────────────────────────────────── */}
@@ -225,6 +238,131 @@ export default function DSContent() {
                   </TabsPanel>
                 </Tabs>
               </Card>
+            </DemoSection>
+
+            <DemoSection label="Icons — Lucide">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-4">
+                {[
+                  { icon: User, name: "User" },
+                  { icon: Shield, name: "Shield" },
+                  { icon: Swords, name: "Swords" },
+                  { icon: Star, name: "Star" },
+                  { icon: Map, name: "Map" },
+                  { icon: Eye, name: "Eye" },
+                  { icon: Settings, name: "Settings" },
+                  { icon: Plus, name: "Plus" },
+                  { icon: X, name: "X" },
+                  { icon: Check, name: "Check" },
+                  { icon: ChevronRight, name: "ChevronRight" },
+                  { icon: MoreHorizontal, name: "MoreHorizontal" },
+                  { icon: Zap, name: "Zap" },
+                  { icon: Scroll, name: "Scroll" },
+                  { icon: Crown, name: "Crown" },
+                  { icon: Skull, name: "Skull" },
+                  { icon: Heart, name: "Heart" },
+                  { icon: Package, name: "Package" },
+                  { icon: Flame, name: "Flame" },
+                  { icon: Wind, name: "Wind" },
+                ].map(({ icon: Icon, name }) => (
+                  <div key={name} className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 text-white/40">
+                    <Icon size={20} />
+                    <span className="text-center font-heading text-[0.55rem] uppercase tracking-[0.1em] text-white/25">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </DemoSection>
+
+          </Flow>
+        </TabsPanel>
+
+        {/* ── Content ─────────────────────────────────────── */}
+        <TabsPanel value="content">
+          <Flow className="mt-10">
+
+            <DemoSection label="Character profile">
+              <Flow>
+                <Eyebrow>Spritfolk — Ranger</Eyebrow>
+                <Heading as="h1">Vaelindra Ashfen</Heading>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="accent">Active</Badge>
+                  <Badge variant="success">Veteran</Badge>
+                  <Badge>Melee 87</Badge>
+                  <Badge>Archery 91</Badge>
+                  <Badge>Magery 42</Badge>
+                </div>
+                <Text>
+                  Vaelindra emerged from the Elder Forest three seasons past, bearing the ashen markings
+                  of her kin and a longbow carved from heartwood older than the current age. She has
+                  since made a name in the lower ravines — a steady hand for hire, known for clean work
+                  and a distaste for unnecessary bloodshed.
+                </Text>
+                <Text variant="muted">
+                  Her lineage traces back to the Fenwatch covenant, a nomadic ranger guild that dissolved
+                  during the Black Siege. Though the covenant is gone, its oaths linger — she refuses
+                  contracts that target settlements, no matter the coin offered.
+                </Text>
+                <Text>
+                  In combat she favours distance, positioning, and patience over brute force. When pressed
+                  into close quarters she switches to twin short blades, a technique drilled into her by
+                  an old mercenary captain whose name she will not share.
+                </Text>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="primary">Hire</Button>
+                  <Button>Send Message</Button>
+                  <Button variant="ghost">View History <ChevronRight size={14} /></Button>
+                </div>
+              </Flow>
+            </DemoSection>
+
+            <DemoSection label="Roster table">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <Th>Name</Th>
+                    <Th>Class</Th>
+                    <Th>Status</Th>
+                    <Th>Rating</Th>
+                    <Th></Th>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow href="#">
+                    <Td variant="heading">Vaelindra Ashfen</Td>
+                    <Td>Ranger</Td>
+                    <Td><Badge variant="success">Active</Badge></Td>
+                    <Td>91</Td>
+                    <TableEllipsis onClick={() => {}} />
+                  </TableRow>
+                  <TableRow href="#">
+                    <Td variant="heading">Torven Blackmere</Td>
+                    <Td>Warrior</Td>
+                    <Td><Badge variant="accent">Elite</Badge></Td>
+                    <Td>87</Td>
+                    <TableEllipsis onClick={() => {}} />
+                  </TableRow>
+                  <TableRow href="#">
+                    <Td variant="heading">Seraphel the Pale</Td>
+                    <Td>Mage</Td>
+                    <Td><Badge>Inactive</Badge></Td>
+                    <Td>74</Td>
+                    <TableEllipsis onClick={() => {}} />
+                  </TableRow>
+                  <TableRow href="#">
+                    <Td variant="heading">Gruk Ironjaw</Td>
+                    <Td>Berserker</Td>
+                    <Td><Badge variant="warning">Wounded</Badge></Td>
+                    <Td>68</Td>
+                    <TableEllipsis onClick={() => {}} />
+                  </TableRow>
+                  <TableRow>
+                    <Td variant="heading">Lisseth Vane</Td>
+                    <Td>Rogue</Td>
+                    <Td><Badge variant="error">Exiled</Badge></Td>
+                    <Td>55</Td>
+                    <TableEllipsis />
+                  </TableRow>
+                </TableBody>
+              </Table>
             </DemoSection>
 
           </Flow>
