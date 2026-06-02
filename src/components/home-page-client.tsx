@@ -198,8 +198,8 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                 [&_li]:relative [&_li]:flex [&_li]:list-none [&_li]:flex-col [&_li]:justify-end [&_li]:overflow-hidden [&_li]:rounded-lg [&_li]:bg-[#111] [&_li]:px-10 [&_li]:pb-10 [&_li]:pt-[25%]
                 max-[768px]:[&_li]:px-6 max-[768px]:[&_li]:pb-6
                 [&_li]:after:pointer-events-none [&_li]:after:absolute [&_li]:after:inset-1 [&_li]:after:rounded [&_li]:after:border [&_li]:after:border-white/10 [&_li]:after:content-[''] [&_li]:after:z-[2]
-                [&_li>p]:relative [&_li>p]:z-[3]
-                [&_li>p_strong]:mb-[0.6em] [&_li>p_strong]:block [&_li>p_strong]:font-heading [&_li>p_strong]:text-[1.7rem] [&_li>p_strong]:font-normal [&_li>p_strong]:uppercase [&_li>p_strong]:tracking-[0.1em]"
+                [&_li>p]:relative [&_li>p]:z-[3] [&_li>p]:my-0
+                [&_li>p_strong]:mb-2 [&_li>p_strong]:block [&_li>p_strong]:font-heading [&_li>p_strong]:text-[1.7rem] [&_li>p_strong]:font-normal [&_li>p_strong]:uppercase [&_li>p_strong]:tracking-[0.1em]"
             >
               {imgUrl && (
                 <div className="absolute top-0 left-[42%] right-0 bottom-0 [&>*]:h-full [&>*]:w-full [&>*]:object-cover [&>*]:object-top max-[768px]:hidden">
