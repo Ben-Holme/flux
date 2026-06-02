@@ -38,8 +38,8 @@ function Layer({ src, progress, speed }: LayerProps) {
 }
 
 const PRE_HEADING_GLOW: React.CSSProperties = {
-  color: "#ffd98f",
-  textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+  color: "#c8923a",
+  textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px",
   fontSize: "1rem",
   fontFamily: "var(--font-heading)",
   textTransform: "uppercase",

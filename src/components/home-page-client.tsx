@@ -220,9 +220,9 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                         alignItems: "center",
                         justifyContent: "flex-start",
                         gap: "0.5rem",
-                        color: "#ffd98f",
+                        color: "#c8923a",
                         textShadow:
-                          "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
+                          "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px",
                         marginBottom: "1.5rem",
                         whiteSpace: "nowrap",
                         textTransform: "uppercase",
@@ -276,8 +276,8 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
       {posts.length > 0 && (
         <section className="mx-auto max-w-[1200px] px-6 py-16 md:py-20">
           <div
-            className="relative mb-6 flex items-center justify-start gap-2 whitespace-nowrap font-heading text-base font-normal uppercase tracking-[0.2em] text-[#ffd98f]"
-            style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+            className="relative mb-6 flex items-center justify-start gap-2 whitespace-nowrap font-heading text-base font-normal uppercase tracking-[0.2em] text-[#c8923a]"
+            style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
           >
             <span>Latest</span>
             <svg width="285" height="12" viewBox="0 0 285 12" fill="none">
@@ -312,7 +312,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               return (
                 <div key={post.sys.id} className="relative">
                   <Link href={`/devlog/${post.fields?.slug}`} className="group">
-                    <p className="mt-0 mb-2 font-heading text-xs uppercase tracking-[0.1em] text-[#ffd98f]">
+                    <p className="mt-0 mb-2 font-heading text-xs uppercase tracking-[0.1em] text-[#c8923a]">
                       {post.fields?.categry?.fields?.name ?? "news"}
                     </p>
                     <div className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']">

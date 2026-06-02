@@ -94,8 +94,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
         <div
-          className="mb-3 flex justify-center font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
-          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+          className="mb-3 flex justify-center font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
+          style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
         >
           Play Test
         </div>

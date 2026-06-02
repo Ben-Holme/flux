@@ -4,7 +4,7 @@ const EVENT_TYPES: Record<string, { label: string; symbol: string; color: string
   owch:       { label: "Item",     symbol: "✦", color: "#e1a965" },
   tome:       { label: "Tome",     symbol: "▣", color: "#7fa8e1" },
   ench:       { label: "Enchant",  symbol: "✧", color: "#7fe1a8" },
-  minigame:   { label: "Activity", symbol: "◉", color: "#ffd98f" },
+  minigame:   { label: "Activity", symbol: "◉", color: "#c8923a" },
   season:     { label: "Season",   symbol: "◇", color: "#f4a86a" },
 };
 

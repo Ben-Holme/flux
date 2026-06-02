@@ -36,7 +36,7 @@ export default function ItemDisplay({ itemStr }: { itemStr: string }) {
             </span>
           )}
           {item.value && (
-            <span style={{ fontSize: "0.62rem", letterSpacing: ".06em", color: "#ffd98f", opacity: 0.7 }}>
+            <span style={{ fontSize: "0.62rem", letterSpacing: ".06em", color: "#c8923a", opacity: 0.7 }}>
               {item.value}g
             </span>
           )}

@@ -94,7 +94,7 @@ export default function EventCard({ event, players, items }: Props) {
         {(event.story_points ?? 0) > 0 && (
           <>
             <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.72rem" }}>·</span>
-            <span style={{ color: "#ffd98f", fontSize: "0.68rem", opacity: 0.65 }}>{event.story_points} sp</span>
+            <span style={{ color: "#c8923a", fontSize: "0.68rem", opacity: 0.65 }}>{event.story_points} sp</span>
           </>
         )}
       </div>

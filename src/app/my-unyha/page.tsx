@@ -110,8 +110,8 @@ function MyUnyhaContent() {
           </Link>
         ) : (
           <div
-            className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
-            style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+            className="font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
+            style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
           >
             My Unyha
           </div>
@@ -218,8 +218,8 @@ function CharacterDetail({ char }: { char: Character }) {
     <>
       <div className="mt-6">
         <div
-          className="font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
-          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+          className="font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
+          style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
         >
           Character
         </div>
