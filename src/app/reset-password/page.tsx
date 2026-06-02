@@ -50,7 +50,7 @@ function ResetForm() {
       const res = await fetch("https://api.unyhagame.com/ueserv/resetPassword-w.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, new_password: password }),
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
