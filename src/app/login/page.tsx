@@ -4,29 +4,11 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 
-const inputStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  boxSizing: "border-box",
-  background: "rgba(0,0,0,0.4)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "6px",
-  color: "rgba(255,255,255,0.85)",
-  fontFamily: "inherit",
-  fontSize: "1rem",
-  padding: "10px 14px",
-  outline: "none",
-  marginTop: "6px",
-};
+const inputClass =
+  "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: "0.62rem",
-  textTransform: "uppercase",
-  letterSpacing: ".12em",
-  color: "rgba(255,255,255,0.35)",
-  marginBottom: "2px",
-};
+const labelClass =
+  "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
 function LoginForm() {
   const { login } = useAuth();
@@ -55,40 +37,34 @@ function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      style={{
-        background: "rgba(0,0,0,0.45)",
-        backdropFilter: "blur(14px)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "10px",
-        padding: "28px",
-      }}
+      className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 backdrop-blur-[14px]"
     >
-      <div style={{ marginBottom: "20px" }}>
-        <label style={labelStyle}>Username</label>
+      <div className="mb-5">
+        <label className={labelClass}>Username</label>
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
           required
-          style={inputStyle}
+          className={inputClass}
         />
       </div>
 
-      <div style={{ marginBottom: "24px" }}>
-        <label style={labelStyle}>Password</label>
+      <div className="mb-6">
+        <label className={labelClass}>Password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
           required
-          style={inputStyle}
+          className={inputClass}
         />
       </div>
 
       {error && (
-        <p style={{ margin: "0 0 18px", fontSize: "0.85rem", color: "#e16565" }}>
+        <p className="mb-[18px] mt-0 text-[0.85rem] text-[#e16565]">
           {error}
         </p>
       )}
@@ -96,21 +72,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        style={{
-          display: "block",
-          width: "100%",
-          padding: "11px",
-          background: loading ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          borderRadius: "6px",
-          color: loading ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.85)",
-          fontFamily: "var(--font-heading)",
-          fontSize: "0.85rem",
-          letterSpacing: ".15em",
-          textTransform: "uppercase",
-          cursor: loading ? "not-allowed" : "pointer",
-          transition: "all 0.15s",
-        }}
+        className="block w-full rounded-[6px] border border-white/15 px-3 py-[11px] font-heading text-[0.85rem] uppercase tracking-[0.15em] transition-all duration-150 disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-white/35 enabled:cursor-pointer enabled:bg-white/[0.08] enabled:text-white/85"
       >
         {loading ? "Signing in…" : "Sign In"}
       </button>
@@ -120,28 +82,15 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px",
-    }}>
-      <div style={{ width: "100%", maxWidth: "380px" }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#ffd98f",
-          textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-          display: "flex",
-          justifyContent: "center",
-          marginBottom: "12px",
-        }}>
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="w-full max-w-[380px]">
+        <div
+          className="mb-3 flex justify-center font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+          style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+        >
           Play Test
         </div>
-        <h1 style={{ textAlign: "center", marginBottom: "32px", fontSize: "3rem" }}>
+        <h1 className="mb-8 text-center text-[3rem]">
           Sign In
         </h1>
         <Suspense>
