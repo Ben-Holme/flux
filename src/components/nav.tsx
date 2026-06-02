@@ -6,7 +6,6 @@ import { useEffect, useLayoutEffect, useState } from "react";
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./nav.module.css";
 
 const MENU_LINKS = [
   { href: "/", label: "About" },
@@ -63,15 +62,17 @@ export default function Nav() {
   return (
     <>
       {/* Full-screen menu overlay */}
-      <div className={`${styles.menu} ${open ? styles.menuOpen : ""}`}>
+      <div
+        className={`fixed inset-0 z-[5] flex flex-col items-center justify-center bg-black transition-[opacity,visibility] duration-[400ms] ${
+          open ? "visible opacity-100" : "invisible opacity-0"
+        }`}
+      >
         {MENU_LINKS.map(({ href, label, external, discord, small }) => {
-          const linkStyle: React.CSSProperties = small
-            ? {
-                fontSize: ".9em",
-                opacity: 0.5,
-                ...(label === "Realspawn Studios" ? { marginTop: "50px" } : {}),
-              }
-            : {};
+          const linkClass = small
+            ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[0.75em] text-white opacity-50${
+                label === "Realspawn Studios" ? " mt-[50px]" : ""
+              }`
+            : "no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[0.75em] text-white";
           const inner = discord ? (
             <span style={{ display: "flex", alignItems: "center" }}>
               {DISCORD_SVG}
@@ -81,11 +82,11 @@ export default function Nav() {
             label
           );
           return external ? (
-            <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
               {inner}
             </a>
           ) : (
-            <Link key={href} href={href} style={linkStyle} onClick={() => setOpen(false)}>
+            <Link key={href} href={href} className={linkClass} onClick={() => setOpen(false)}>
               {inner}
             </Link>
           );
@@ -93,10 +94,12 @@ export default function Nav() {
       </div>
 
       {/* Nav bar */}
-      <div className={styles.nav}>
-        {/* Background ball — desktop hidden, mobile shown via CSS */}
+      <div
+        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4"
+      >
+        {/* Background ball — desktop hidden, mobile shown */}
         <div
-          className={styles.ball}
+          className="hidden max-[1248px]:block"
           style={{
             transition: ".25s",
             position: "absolute",
@@ -151,15 +154,23 @@ export default function Nav() {
 
         {/* Hamburger / cross button */}
         <div
-          className={`${styles.button} ${open ? styles.cross : ""}`}
+          className="relative z-[1] flex h-12 w-12 cursor-pointer flex-col items-center justify-center"
           onClick={() => setOpen((v) => !v)}
           role="button"
           aria-label={open ? "Close menu" : "Open menu"}
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)}
         >
-          <span />
-          <span />
+          <span
+            className={`mb-[3px] block h-[3px] w-[30px] bg-white transition-transform duration-300 ${
+              open ? "translate-y-[3px] -rotate-45 skew-x-0" : "skew-x-[45deg]"
+            }`}
+          />
+          <span
+            className={`mb-[3px] block h-[3px] w-[30px] bg-white transition-transform duration-300 ${
+              open ? "-translate-y-[3px] rotate-45 skew-x-0" : "skew-x-[45deg]"
+            }`}
+          />
         </div>
       </div>
     </>

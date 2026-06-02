@@ -10,7 +10,6 @@ import Button from "@/components/button";
 import VideoModal from "@/components/video-modal";
 import HeroScene from "@/components/hero-scene";
 import RichText from "@/components/rich-text";
-import sectionStyles from "@/components/section.module.css";
 
 const VIDEOS = [
   { name: "gameplay trailer", id: "okXJWVGoaeo" },
@@ -190,14 +189,24 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           const imgUrl = getAssetUrl(item.fields.image);
           const imgAlt = getAssetTitle(item.fields.image);
           return (
-            <section key={item.sys.id} className={sectionStyles.section}>
+            <section
+              key={item.sys.id}
+              className="relative box-border flex min-h-screen items-center justify-center overflow-hidden bg-[url(/img/bg.jpg)] px-6 py-20
+                max-[768px]:block max-[768px]:min-h-0 max-[768px]:py-16 max-[768px]:pb-24
+                [&_ul]:m-0 [&_ul]:mt-8 [&_ul]:grid [&_ul]:w-[200%] [&_ul]:grid-cols-2 [&_ul]:gap-6 [&_ul]:p-0
+                max-[768px]:[&_ul]:w-full max-[768px]:[&_ul]:grid-cols-1 max-[768px]:[&_ul]:gap-4
+                [&_li]:relative [&_li]:flex [&_li]:list-none [&_li]:flex-col [&_li]:justify-end [&_li]:overflow-hidden [&_li]:rounded-lg [&_li]:bg-[#111] [&_li]:px-10 [&_li]:pb-10 [&_li]:pt-[25%]
+                max-[768px]:[&_li]:px-6 max-[768px]:[&_li]:pb-6
+                [&_li]:after:pointer-events-none [&_li]:after:absolute [&_li]:after:inset-1 [&_li]:after:rounded [&_li]:after:border [&_li]:after:border-white/10 [&_li]:after:content-[''] [&_li]:after:z-[2]
+                [&_li>p_strong]:mb-[0.6em] [&_li>p_strong]:block [&_li>p_strong]:font-heading [&_li>p_strong]:text-[1.7rem] [&_li>p_strong]:font-normal [&_li>p_strong]:uppercase [&_li>p_strong]:tracking-[0.1em]"
+            >
               {imgUrl && (
-                <div className={sectionStyles.image}>
+                <div className="absolute top-0 left-[42%] right-0 bottom-0 [&>*]:h-full [&>*]:w-full [&>*]:object-cover [&>*]:object-top max-[768px]:hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imgUrl} alt={imgAlt} />
                 </div>
               )}
-              <div className={sectionStyles.text}>
+              <div className="relative z-[1] flex w-full max-w-[1200px] items-center [&>div]:grow [&>div]:basis-0 [&_p]:text-left max-[768px]:block">
                 <div>
                   {item.fields.preHeading && (
                     <div

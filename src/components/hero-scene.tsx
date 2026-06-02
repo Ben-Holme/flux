@@ -7,7 +7,6 @@ import RichText from "@/components/rich-text";
 import SkillsCarousel from "@/components/skills-carousel";
 import LeadForm from "@/components/lead-form";
 import Button from "@/components/button";
-import styles from "@/components/hero-scene.module.css";
 
 interface LayerProps {
   src: string;
@@ -20,6 +19,7 @@ function Layer({ src, progress, speed }: LayerProps) {
   const y = useTransform(progress, [0, 1], [`-${shift}vh`, `${shift}vh`]);
   return (
     <motion.img
+      className="max-[768px]:hidden"
       src={src}
       alt=""
       draggable={false}
@@ -110,7 +110,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
         <>
           {/* Parallax background layers */}
           <div className="absolute inset-0">
-            <div className={styles.layers}>
+            <div>
               <Layer src="/img/1/5.png" progress={scrollYProgress} speed={1} />
               <Layer src="/img/1/4.png" progress={scrollYProgress} speed={0.99} />
               <Layer src="/img/1/3.png" progress={scrollYProgress} speed={0.95} />
@@ -118,7 +118,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
               <Layer src="/img/1/1.png" progress={scrollYProgress} speed={0.6} />
             </div>
             <div
-              className={styles.mobileLayer}
+              className="hidden max-[768px]:absolute max-[768px]:inset-0 max-[768px]:block max-[768px]:bg-cover max-[768px]:bg-center"
               style={{
                 backgroundImage:
                   'url("/img/1/1.png"), url("/img/1/2.png"), url("/img/1/3.png"), url("/img/1/4.png"), url("/img/1/5.png")',
@@ -136,8 +136,8 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
           />
 
           {/* Content zone — no z-index so no stacking context; sf img blends through */}
-          <div className={`relative ${styles.zoom}`}>
-            <div className="z-2">
+          <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center gap-24 px-6 [&>div]:grow [&>div]:basis-0 max-[768px]:flex-col max-[768px]:px-6 max-[768px]:pt-16 max-[768px]:pb-20 max-[768px]:min-h-0">
+            <div className="z-2 max-[768px]:order-2">
               {preHeading && (
                 <p style={PRE_HEADING_GLOW}>
                   {preHeading}
@@ -155,14 +155,21 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
               )}
             </div>
             {/* Spritfolk character */}
-            <div className={styles.sf}>
+            <div className="relative after:absolute after:inset-0 after:scale-150 after:bg-[url(/img/paint.png)] after:bg-contain after:bg-center after:bg-no-repeat after:content-[''] max-[768px]:absolute max-[768px]:right-[-5%] max-[768px]:top-[-2%] max-[768px]:w-[60%] max-[768px]:after:scale-[1.3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/img/sf.png" alt="" draggable={false} />
-              <p className={styles.sfCaption}>Create your spritfolk bloodline</p>
+              <img
+                src="/img/sf.png"
+                alt=""
+                draggable={false}
+                className="relative z-[2] block -translate-x-5 scale-90 mix-blend-screen max-[768px]:translate-x-0 max-[768px]:scale-[0.7]"
+              />
+              <p className="absolute left-0 right-0 bottom-[100px] z-[3] mt-0 text-center text-[0.5rem] uppercase tracking-[0.1em] text-white/40 max-[768px]:hidden">
+                Create your spritfolk bloodline
+              </p>
             </div>
           </div>
 
-          <div className={styles.caption}>
+          <div className="absolute left-[30px] bottom-[30px] z-[2] flex items-center text-xs uppercase tracking-[0.1em] text-white/40 [&_svg]:mr-2 [&_svg]:block [&_svg]:w-2 max-[768px]:left-0 max-[768px]:right-0 max-[768px]:bottom-6 max-[768px]:justify-center max-[768px]:text-[0.65rem] max-[768px]:[&_svg]:mr-[6px] max-[768px]:[&_svg]:w-[6px]">
             {CAPTION_ICON}
             Elder Forest
           </div>
@@ -172,14 +179,14 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
       {scene === 2 && (
         <>
           <div className="absolute inset-0">
-            <div className={styles.layers}>
+            <div>
               <Layer src="/img/2/4.png" progress={scrollYProgress} speed={1} />
               <Layer src="/img/2/3.png" progress={scrollYProgress} speed={0.95} />
               <Layer src="/img/2/2.png" progress={scrollYProgress} speed={0.87} />
               <Layer src="/img/2/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
             <div
-              className={styles.mobileLayer}
+              className="hidden max-[768px]:absolute max-[768px]:inset-0 max-[768px]:block max-[768px]:bg-cover max-[768px]:bg-center"
               style={{
                 backgroundImage:
                   'url("/img/2/1.png"), url("/img/2/2.png"), url("/img/2/3.png"), url("/img/2/4.png")',
@@ -195,8 +202,8 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
             style={{ background: "#00a2ff", opacity: 0.6 }}
           />
 
-          <div className={`relative ${styles.skills}`}>
-            <div className={styles.text}>
+          <div className="relative z-[2] flex min-h-screen flex-col items-start justify-center gap-12 max-[768px]:block max-[768px]:min-h-0">
+            <div className="box-border w-full max-w-[1200px] basis-0 mx-auto mt-20 pr-[600px] max-[768px]:px-6 max-[768px]:py-16 max-[768px]:m-0 max-[768px]:mb-8">
               {preHeading && (
                 <p style={PRE_HEADING_GLOW}>
                   {preHeading}
@@ -208,7 +215,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
             <SkillsCarousel />
           </div>
 
-          <div className={styles.caption}>
+          <div className="absolute left-[30px] bottom-[30px] z-[2] flex items-center text-xs uppercase tracking-[0.1em] text-white/40 [&_svg]:mr-2 [&_svg]:block [&_svg]:w-2 max-[768px]:left-0 max-[768px]:right-0 max-[768px]:bottom-6 max-[768px]:justify-center max-[768px]:text-[0.65rem] max-[768px]:[&_svg]:mr-[6px] max-[768px]:[&_svg]:w-[6px]">
             {CAPTION_ICON}
             Great Glizum Ravine
           </div>
@@ -218,14 +225,14 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
       {scene === 3 && (
         <>
           <div className="absolute inset-0">
-            <div className={styles.layers}>
+            <div>
               <Layer src="/img/3/4.png" progress={scrollYProgress} speed={1} />
               <Layer src="/img/3/3.png" progress={scrollYProgress} speed={0.95} />
               <Layer src="/img/3/2.png" progress={scrollYProgress} speed={0.8} />
               <Layer src="/img/3/1.png" progress={scrollYProgress} speed={0.7} />
             </div>
             <div
-              className={styles.mobileLayer}
+              className="hidden max-[768px]:absolute max-[768px]:inset-0 max-[768px]:block max-[768px]:bg-cover max-[768px]:bg-center"
               style={{
                 backgroundImage:
                   'url("/img/3/1.png"), url("/img/3/2.png"), url("/img/3/3.png"), url("/img/3/4.png")',
@@ -241,7 +248,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
             style={{ background: "#00a2ff", opacity: 0.6 }}
           />
 
-          <div className={`relative ${styles.zoom}`}>
+          <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center gap-24 px-6 [&>div]:grow [&>div]:basis-0 max-[768px]:flex-col max-[768px]:px-6 max-[768px]:pt-16 max-[768px]:pb-20 max-[768px]:min-h-0">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               {copy && (
                 <div className="mb-8 w-full max-w-md">
@@ -252,7 +259,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
             </div>
           </div>
 
-          <div className={styles.caption}>
+          <div className="absolute left-[30px] bottom-[30px] z-[2] flex items-center text-xs uppercase tracking-[0.1em] text-white/40 [&_svg]:mr-2 [&_svg]:block [&_svg]:w-2 max-[768px]:left-0 max-[768px]:right-0 max-[768px]:bottom-6 max-[768px]:justify-center max-[768px]:text-[0.65rem] max-[768px]:[&_svg]:mr-[6px] max-[768px]:[&_svg]:w-[6px]">
             {CAPTION_ICON}
             The Black Mine
           </div>

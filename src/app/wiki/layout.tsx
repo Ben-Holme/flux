@@ -1,15 +1,17 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { getWikiNav } from "@/lib/contentful";
-import styles from "./wiki.module.css";
 import WikiNavLinks from "./wiki-nav-links";
 
 async function WikiSidebar() {
   const links = await getWikiNav();
   return (
     <div>
-      <div className={styles.wikiNav}>
-        <Link href="/wiki" className={styles.wikiNavHeading}>
+      <div className="fixed w-[300px] max-[1200px]:w-[200px] max-[768px]:relative max-[768px]:w-auto max-[768px]:p-6 max-[768px]:pt-[120px]">
+        <Link
+          href="/wiki"
+          className="mb-2 block font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
+        >
           Unyha Wiki
         </Link>
         <WikiNavLinks links={links} />
@@ -22,12 +24,19 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={styles.wikiImg} src="/img/wiki.png" alt="" aria-hidden="true" />
-      <div className={styles.layout}>
-        <Suspense fallback={<div className={styles.sidebarSkeleton} />}>
+      <img
+        className="fixed inset-0 -z-[1] h-full w-full object-cover"
+        src="/img/wiki.png"
+        alt=""
+        aria-hidden="true"
+      />
+      <div className="mx-auto box-content grid max-w-[1200px] grid-cols-[300px_1fr] px-8 pt-[100px] max-[1200px]:grid-cols-[200px_1fr] max-[768px]:block max-[768px]:p-0">
+        <Suspense fallback={<div className="w-[300px] shrink-0" />}>
           <WikiSidebar />
         </Suspense>
-        <div className={styles.content}>{children}</div>
+        <div className="pb-[100px] max-[768px]:px-6 max-[768px]:py-6 max-[768px]:pb-20">
+          {children}
+        </div>
       </div>
     </>
   );

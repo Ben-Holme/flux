@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./wiki.module.css";
 
 interface WikiLink {
   slug: string;
@@ -23,7 +22,11 @@ export default function WikiNavLinks({ links }: { links: WikiLink[] }) {
           <Link
             key={link.slug}
             href={href}
-            className={`${styles.wikiItem}${isActive ? ` ${styles.wikiItemActive}` : ""}`}
+            className={`-ml-4 mb-0.5 block rounded-[2px] py-2 no-underline transition-colors duration-200 ${
+              isActive
+                ? "border-l-2 border-current bg-white/10 pl-[14px] pr-4 text-white"
+                : "px-4 text-white/60 hover:bg-white/5"
+            }`}
             aria-current={isActive ? "page" : undefined}
           >
             {link.title}
