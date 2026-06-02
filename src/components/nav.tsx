@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+
+// useLayoutEffect on client (synchronous, no flash); useEffect on server (avoids SSR warning)
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./nav.module.css";
@@ -36,7 +39,7 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(!isFirst);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isFirst) {
       setScrolled(true);
       return;
