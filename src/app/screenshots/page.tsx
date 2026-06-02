@@ -21,13 +21,7 @@ async function ScreenshotsContent() {
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-20">
-      <p
-        className="mt-0 mb-2 font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
-        style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
-      >
-        Unyha
-      </p>
-      <h1 className="mb-12">Screenshots</h1>
+      <h1 className="mb-12 text-[3em]">Screenshots</h1>
 
       {assets.length === 0 ? (
         <p className="text-white/40">No screenshots yet.</p>
