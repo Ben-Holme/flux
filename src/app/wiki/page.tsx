@@ -6,7 +6,7 @@ import PlainPage from "@/components/plain-page";
 import type { Document } from "@contentful/rich-text-types";
 
 export const metadata: Metadata = {
-  title: "Unyha Wiki",
+  title: "Wiki",
   description: "Your go-to resource for everything about Unyha.",
 };
 

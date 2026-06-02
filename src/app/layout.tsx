@@ -20,13 +20,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Unyha",
+  title: {
+    template: "%s | Unyha",
+    default: "Unyha",
+  },
   description: "A medieval gothic online MMO RPG",
+  openGraph: {
+    siteName: "Unyha",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

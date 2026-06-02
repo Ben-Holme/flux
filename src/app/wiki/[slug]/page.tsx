@@ -31,9 +31,14 @@ export async function generateMetadata({
   const entry = post ?? page;
   if (!entry) return {};
   const title = String(entry.fields.title ?? "");
+  const heroImg = post ? getAssetUrl(post.fields.image) : null;
   return {
-    title: `${title} — Unyha Wiki`,
+    title,
     description: `Unyha Wiki: ${title}`,
+    ...(heroImg ? {
+      openGraph: { images: [heroImg] },
+      twitter: { card: "summary_large_image" as const, images: [heroImg] },
+    } : {}),
   };
 }
 

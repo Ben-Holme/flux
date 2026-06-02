@@ -9,7 +9,7 @@ function formatDate(dateStr: string | undefined) {
 }
 
 export const metadata = {
-  title: "Devlog – Unyha",
+  title: "Devlog",
   description: "Development updates and news from the Unyha team.",
 };
 

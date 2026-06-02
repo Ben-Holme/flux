@@ -5,7 +5,7 @@ import type { PageSkeleton } from "@/types/contentful";
 import type { Entry } from "contentful";
 
 export const metadata: Metadata = {
-  title: "Screenshots — Unyha",
+  title: "Screenshots",
   description: "Screenshots from Unyha, the medieval gothic online MMO RPG.",
 };
 
