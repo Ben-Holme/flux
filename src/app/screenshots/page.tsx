@@ -20,59 +20,38 @@ async function ScreenshotsContent() {
     : [];
 
   return (
-    <>
-      <style>{`
-        .screenshot-link img { transition: transform 0.4s; display: block; width: 100%; height: 100%; object-fit: cover; }
-        .screenshot-link:hover img { transform: scale(1.04); }
-      `}</style>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "80px 24px" }}>
-        <p
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "1rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.2em",
-            color: "#ffd98f",
-            textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px",
-            margin: "0 0 0.5rem",
-          }}
-        >
-          Unyha
-        </p>
-        <h1 style={{ marginBottom: "3rem" }}>Screenshots</h1>
+    <div className="mx-auto max-w-[1200px] px-6 py-20">
+      <p
+        className="mt-0 mb-2 font-heading text-base uppercase tracking-[0.2em] text-[#ffd98f]"
+        style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+      >
+        Unyha
+      </p>
+      <h1 className="mb-12">Screenshots</h1>
 
-        {assets.length === 0 ? (
-          <p style={{ color: "var(--fg3)" }}>No screenshots yet.</p>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-              gap: "16px",
-            }}
-          >
-            {assets.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="screenshot-link"
-                style={{
-                  display: "block",
-                  aspectRatio: "16/9",
-                  overflow: "hidden",
-                  borderRadius: "4px",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Screenshot ${i + 1}`} />
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </>
+      {assets.length === 0 ? (
+        <p className="text-white/40">No screenshots yet.</p>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4">
+          {assets.map((url, i) => (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group block aspect-video overflow-hidden rounded"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Screenshot ${i + 1}`}
+                className="block h-full w-full object-cover transition-transform duration-[400ms] group-hover:scale-[1.04]"
+              />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -93,9 +72,8 @@ function extractImages(doc: any): string[] {
 
 export default function ScreenshotsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "80px 24px" }} />}>
+    <Suspense fallback={<div className="px-6 py-20" />}>
       <ScreenshotsContent />
     </Suspense>
   );
 }
-
