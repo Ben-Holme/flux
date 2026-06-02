@@ -13,7 +13,7 @@ const VARIANT_CLASS: Record<BadgeVariant, string> = {
   default: "bg-white/[0.06] text-white/55",
   accent: "bg-accent/15 text-accent",
   success: "bg-green-500/15 text-green-400",
-  warning: "bg-gold/15 text-gold",
+  warning: "bg-orange/15 text-orange",
   error: "bg-ember/15 text-ember",
 };
 

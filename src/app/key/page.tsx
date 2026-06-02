@@ -65,7 +65,7 @@ function KeyContent() {
         <div className="relative mt-7 mb-9 rounded-lg bg-[#111] p-7">
           <h2 className="mt-0 mb-[0.4em]">Your Invite Key</h2>
           <p className="mb-[0.6em] opacity-70">Use this when asked for your access key:</p>
-          <p className="mt-0 break-all rounded-[6px] bg-[rgba(101,202,225,0.09)] px-4 py-3.5 text-[1.2rem] tracking-[0.06em]">
+          <p className="mt-0 break-all rounded-[6px] bg-accent/[0.09] px-4 py-3.5 text-[1.2rem] tracking-[0.06em]">
             {key || "No key provided in URL. Add ?key=YOUR_KEY to this page URL."}
           </p>
         </div>

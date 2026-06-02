@@ -10,7 +10,8 @@
   --gold: #c9a86c;
   --gold-dim: #7a6440;
   --ember: #b8442a;
-  --accent: #65cae1;
+  --orange: #d97320;
+  --accent: #c9a86c;
   /* Original fg variables used across CSS modules */
   --fg1: rgba(255, 255, 255, 1);
   --fg2: rgba(255, 255, 255, 0.6);
@@ -28,6 +29,7 @@
   --color-gold: var(--gold);
   --color-gold-dim: var(--gold-dim);
   --color-ember: var(--ember);
+  --color-orange: var(--orange);
   --color-accent: var(--accent);
 
   --font-heading: var(--font-odibee), Impact, sans-serif;
