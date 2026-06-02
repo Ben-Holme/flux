@@ -3,7 +3,6 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/auth-context";
 
 const inputStyle: React.CSSProperties = {
   display: "block",
@@ -29,28 +28,63 @@ const labelStyle: React.CSSProperties = {
   marginBottom: "2px",
 };
 
-function LoginForm() {
-  const { login } = useAuth();
+function ResetForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [username, setUsername] = useState("");
+  const token = searchParams.get("token") ?? "";
+
   const [password, setPassword] = useState("");
-  const [error, setError]   = useState<string | null>(null);
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
-      await login(username, password);
-      const redirect = searchParams.get("redirect") ?? "/play-test";
-      router.push(redirect);
+      const res = await fetch("https://api.unyhagame.com/ueserv/resetPassword-w.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      router.push("/login");
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!token) {
+    return (
+      <div style={{
+        background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: "10px",
+        padding: "28px",
+        textAlign: "center",
+      }}>
+        <p style={{ color: "#e16565", marginBottom: "20px" }}>
+          Invalid or missing reset token.
+        </p>
+        <Link href="/forgot-password" style={{
+          color: "rgba(255,255,255,0.35)",
+          fontSize: "0.8rem",
+          letterSpacing: ".08em",
+          textDecoration: "none",
+        }}>
+          Request a new link
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -65,34 +99,24 @@ function LoginForm() {
       }}
     >
       <div style={{ marginBottom: "20px" }}>
-        <label style={labelStyle}>Username</label>
+        <label style={labelStyle}>New Password</label>
         <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
           required
           style={inputStyle}
         />
       </div>
 
       <div style={{ marginBottom: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <label style={labelStyle}>Password</label>
-          <Link href="/forgot-password" style={{
-            fontSize: "0.7rem",
-            letterSpacing: ".06em",
-            color: "rgba(255,255,255,0.3)",
-            textDecoration: "none",
-          }}>
-            Forgot password?
-          </Link>
-        </div>
+        <label style={labelStyle}>Confirm Password</label>
         <input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
           required
           style={inputStyle}
         />
@@ -123,13 +147,13 @@ function LoginForm() {
           transition: "all 0.15s",
         }}
       >
-        {loading ? "Signing in…" : "Sign In"}
+        {loading ? "Resetting…" : "Reset Password"}
       </button>
     </form>
   );
 }
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   return (
     <div style={{
       minHeight: "100vh",
@@ -153,10 +177,10 @@ export default function LoginPage() {
           Play Test
         </div>
         <h1 style={{ textAlign: "center", marginBottom: "32px", fontSize: "3rem" }}>
-          Sign In
+          Reset Password
         </h1>
         <Suspense>
-          <LoginForm />
+          <ResetForm />
         </Suspense>
       </div>
     </div>
