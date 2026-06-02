@@ -77,6 +77,10 @@ Wiki articles live at `/wiki/[slug]` in this port. In the original Gatsby site t
 
 **Remaining intentional inline styles**: `textShadow` on the `#ffd98f` glow label pattern (multi-comma CSS Tailwind can't express cleanly), and Framer Motion dynamic values in `hero-scene.tsx` and `nav.tsx`.
 
+## My Unyha / Play Test API
+
+The account and story-events pages (`/my-unyha`, `/play-test`) call PHP endpoints at `https://api.unyhagame.com/ueserv/`. These are hosted on Ben's local server machine and exposed to the internet via a **Cloudflare Tunnel** — there is no cloud backend. If the API is unreachable, the tunnel is likely down rather than the code being broken.
+
 ## Original Gatsby source
 
 Available at https://bitbucket.org/benjamin_holme/unyhaweb2/src/main/ — useful reference for any behaviour that's unclear.
