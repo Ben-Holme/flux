@@ -14,10 +14,15 @@ export async function generateMetadata(
   const post = await getPost(slug);
   if (!post) return {};
   const heroImg = getAssetUrl(post.fields.image);
+  const description = post.fields.short as string | undefined;
   return {
-    title: `${post.fields.title} — Unyha Devlog`,
-    description: post.fields.short as string | undefined,
-    openGraph: heroImg ? { images: [heroImg] } : undefined,
+    title: post.fields.title as string,
+    description,
+    openGraph: {
+      type: "article",
+      ...(heroImg ? { images: [heroImg] } : {}),
+    },
+    twitter: heroImg ? { card: "summary_large_image", images: [heroImg] } : undefined,
   };
 }
 
