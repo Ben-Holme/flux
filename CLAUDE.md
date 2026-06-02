@@ -52,7 +52,7 @@ All queries are in `src/lib/contentful.ts`. TypeScript shapes in `src/types/cont
 | `/devlog` | `app/devlog/page.tsx` | Lists all posts |
 | `/devlog/[slug]` | `app/devlog/[slug]/page.tsx` | Individual post |
 | `/wiki` | `app/wiki/page.tsx` | Tries Contentful page slug `"wiki"`, falls back to hardcoded welcome text |
-| `/wiki/[slug]` | `app/wiki/[slug]/page.tsx` | Individual wiki article (uses `plain-page` class) |
+| `/wiki/[slug]` | `app/wiki/[slug]/page.tsx` | Individual wiki article (uses `<PlainPage>` component) |
 | `/[slug]` | `app/[slug]/page.tsx` | Catch-all for other `page` entries (privacy policy, etc.) |
 | `/screenshots` | `app/screenshots/page.tsx` | Pulls embedded assets from the `screenshots` page entry |
 | `/login` `/key` `/play-test` | `app/*/page.tsx` | Auth-gated pages using `AuthContext` |
@@ -69,7 +69,13 @@ Wiki articles live at `/wiki/[slug]` in this port. In the original Gatsby site t
 
 **Caching**: All Contentful fetches use `"use cache"` + `cacheLife("hours")` + `cacheTag(...)`. Revalidation: 1h revalidate, 1d expire (set in `next.config.ts`).
 
-**CSS**: Design tokens in `globals.css` under `:root` and `@theme inline`. Custom colours: `--void`, `--surface`, `--parchment`, `--ash`, `--gold`, `--ember`. Fonts: `--font-heading` (Odibee Sans), `--font-body` (Inter). `plain-page` global class for wiki/static content pages (max-width 800px, specific heading overrides).
+**CSS**: Design tokens in `globals.css` under `:root` and `@theme inline`. Custom colours: `--void`, `--surface`, `--parchment`, `--ash`, `--gold`, `--ember`. Fonts: `--font-heading` (Odibee Sans), `--font-body` (Inter). All tokens are mapped to Tailwind via `@theme inline`, so use `bg-void`, `text-gold`, `font-heading` etc. as Tailwind utilities directly.
+
+**Styling conventions**: Prefer Tailwind utilities co-located on elements. Use CSS modules only for components that genuinely need pseudo-elements, `@keyframes`, or complex interactive states (`button`, `nav`, `hero-scene`, `lead-form`, etc.). Avoid global CSS utility classes and inline `style={}` objects — both hide styling from the callsite.
+
+**`PlainPage` component** (`src/components/plain-page.tsx`): wrapper for wiki/static content pages. Applies max-width 800px, horizontal padding, and heading size overrides via Tailwind `[&_h1]:` selectors. Accepts `as` prop (`div`/`article`/`main`) and `className` for per-page overrides (e.g. `className="pt-[120px] !pb-20"` for auth pages that need nav clearance).
+
+**Remaining intentional inline styles**: `textShadow` on the `#ffd98f` glow label pattern (multi-comma CSS Tailwind can't express cleanly), and Framer Motion dynamic values in `hero-scene.tsx` and `nav.tsx`.
 
 ## Original Gatsby source
 
