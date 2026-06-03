@@ -65,7 +65,7 @@ const SKILL_LABELS: Record<string, string> = {
 
 const SKILL_KEYS = Object.keys(SKILL_LABELS) as (keyof Character)[];
 
-function MyUnyhaContent() {
+function AccountContent() {
   const { session, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,7 +78,7 @@ function MyUnyhaContent() {
 
   useEffect(() => {
     if (!session) {
-      const redirect = activeCharId ? `/my-unyha?char=${activeCharId}` : "/my-unyha";
+      const redirect = activeCharId ? `/account?char=${activeCharId}` : "/account";
       router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
@@ -105,15 +105,15 @@ function MyUnyhaContent() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         {activeChar ? (
-          <Link href="/my-unyha" className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline">
-            ← My Unyha
+          <Link href="/account" className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline">
+            ← My Account
           </Link>
         ) : (
           <div
             className="font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
             style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
           >
-            My Unyha
+            My Account
           </div>
         )}
         <button
@@ -160,10 +160,10 @@ function MyUnyhaContent() {
   );
 }
 
-export default function MyUnyhaPage() {
+export default function AccountPage() {
   return (
     <Suspense>
-      <MyUnyhaContent />
+      <AccountContent />
     </Suspense>
   );
 }
@@ -185,7 +185,7 @@ function CharacterCard({ char }: { char: Character }) {
     <div className="rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
       <div className={`flex items-baseline justify-between${skills.length > 0 ? " mb-4" : ""}`}>
         <Link
-          href={`/my-unyha?char=${char.id}`}
+          href={`/account?char=${char.id}`}
           className="font-heading text-[1.1rem] uppercase tracking-[0.15em] text-white/90 no-underline"
         >
           {displayName}
