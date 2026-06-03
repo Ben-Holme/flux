@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { User } from "lucide-react";
 
 const MENU_LINKS = [
   { href: "/", label: "About" },
@@ -76,6 +77,11 @@ export default function Nav() {
           const inner = discord ? (
             <span style={{ display: "flex", alignItems: "center" }}>
               {DISCORD_SVG}
+              {label}
+            </span>
+          ) : href === "/account" ? (
+            <span className="flex items-center gap-3">
+              <User size={18} className="opacity-60" />
               {label}
             </span>
           ) : (

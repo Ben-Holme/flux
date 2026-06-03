@@ -4,6 +4,8 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
+import { Eyebrow } from "@/components/ui";
+import Button from "@/components/button";
 
 const inputClass =
   "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
@@ -78,13 +80,9 @@ function LoginForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="block w-full rounded-[6px] border border-white/15 px-3 py-[11px] font-heading text-[0.85rem] uppercase tracking-[0.15em] transition-all duration-150 disabled:cursor-not-allowed disabled:bg-white/5 disabled:text-white/35 enabled:cursor-pointer enabled:bg-white/[0.08] enabled:text-white/85"
-      >
+      <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
         {loading ? "Signing in…" : "Sign In"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -93,15 +91,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
-        <div
-          className="mb-3 flex justify-center font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
-          style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
-        >
-          Play Test
-        </div>
-        <h1 className="mb-8 text-center text-[3rem]">
-          Sign In
-        </h1>
+        <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
+        <h1 className="mb-8 text-center text-[3rem]">Sign In</h1>
         <Suspense>
           <LoginForm />
         </Suspense>
