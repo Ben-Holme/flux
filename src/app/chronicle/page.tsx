@@ -275,13 +275,22 @@ export default function ChroniclePage() {
     dirLight.position.set(cam.x + 2, cam.y + 5, cam.z + 3);
 
     // Animation loop
+    const PITCH_NEAR = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (close)
+    const PITCH_FAR  = -Math.PI / 2;                          // straight down (far)
+    const Y_NEAR = 0.3, Y_FAR = 80;
+
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
       // Keep directional light near camera
       const cp = camPosRef.current;
-      const ls = Math.max(1, cp.y); // scale light offset with view distance
+      const ls = Math.max(1, cp.y);
       dirLight.position.set(cp.x + ls * 0.375, cp.y + ls * 0.75, cp.z + ls * 0.5);
       fillLight.position.set(cp.x - ls * 0.375, cp.y + ls * 0.25, cp.z - ls * 0.25);
+      // Tilt camera toward straight-down as zoom distance increases
+      const raw = (camera.position.y - Y_NEAR) / (Y_FAR - Y_NEAR);
+      const t = Math.max(0, Math.min(1, raw));
+      const st = t * t * (3 - 2 * t); // smoothstep
+      camera.rotation.x = PITCH_NEAR + (PITCH_FAR - PITCH_NEAR) * st;
       renderer.render(scene, camera);
     }
     animate();
@@ -358,7 +367,7 @@ export default function ChroniclePage() {
     if (!camera) return;
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
-    const step = Math.max(0.5, camPosRef.current.y) * 0.2;
+    const step = Math.max(0.5, camPosRef.current.y) * 0.02;
     camera.position.addScaledVector(dir, factor < 1 ? step : -step);
     camera.position.y = Math.min(80, Math.max(0.3, camera.position.y));
     camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
