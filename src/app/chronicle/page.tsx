@@ -37,64 +37,6 @@ function buildNorm() {
 }
 const normalize = buildNorm();
 
-// Simple value noise for heightmap (no external deps)
-function makeNoise() {
-  const p = new Uint8Array(512);
-  const base = new Uint8Array(256);
-  for (let i = 0; i < 256; i++) base[i] = i;
-  for (let i = 255; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [base[i], base[j]] = [base[j], base[i]];
-  }
-  for (let i = 0; i < 512; i++) p[i] = base[i & 255];
-
-  function fade(t: number) { return t * t * t * (t * (t * 6 - 15) + 10); }
-  function lerp(a: number, b: number, t: number) { return a + t * (b - a); }
-  function grad(hash: number, x: number, y: number) {
-    const h = hash & 3;
-    const u = h < 2 ? x : y;
-    const v = h < 2 ? y : x;
-    return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
-  }
-  return function noise(x: number, y: number): number {
-    const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
-    const xf = x - Math.floor(x), yf = y - Math.floor(y);
-    const u = fade(xf), v = fade(yf);
-    const aa = p[p[xi] + yi], ab = p[p[xi] + yi + 1];
-    const ba = p[p[xi + 1] + yi], bb = p[p[xi + 1] + yi + 1];
-    return lerp(
-      lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
-      lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
-      v,
-    );
-  };
-}
-
-function buildDisplacementData(size: number): { data: Float32Array; heightAt: (nx: number, ny: number) => number } {
-  const noise = makeNoise();
-  const data = new Float32Array(size * size);
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const nx = x / size, ny = y / size;
-      let h = 0;
-      h += 0.50 * noise(nx * 3, ny * 3);
-      h += 0.25 * noise(nx * 6, ny * 6);
-      h += 0.12 * noise(nx * 12, ny * 12);
-      h += 0.06 * noise(nx * 24, ny * 24);
-      h += 0.03 * noise(nx * 48, ny * 48);
-      data[y * size + x] = (h + 1) * 0.5; // normalize to [0,1]
-    }
-  }
-
-  function heightAt(nx: number, ny: number): number {
-    const px = Math.min(size - 1, Math.max(0, Math.round(nx * (size - 1))));
-    const py = Math.min(size - 1, Math.max(0, Math.round(ny * (size - 1))));
-    return data[py * size + px];
-  }
-
-  return { data, heightAt };
-}
 
 export default function ChroniclePage() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -183,25 +125,8 @@ export default function ChroniclePage() {
     fillLight.position.set(-3, 2, -2);
     scene.add(fillLight);
 
-    // Heightmap
-    const hmSize = 256;
-    const { data: hmData, heightAt } = buildDisplacementData(hmSize);
-
-    // Displacement texture from heightmap data
-    const hmCanvas = document.createElement("canvas");
-    hmCanvas.width = hmSize;
-    hmCanvas.height = hmSize;
-    const hmCtx = hmCanvas.getContext("2d")!;
-    const imgData = hmCtx.createImageData(hmSize, hmSize);
-    for (let i = 0; i < hmSize * hmSize; i++) {
-      const v = Math.floor(hmData[i] * 255);
-      imgData.data[i * 4 + 0] = v;
-      imgData.data[i * 4 + 1] = v;
-      imgData.data[i * 4 + 2] = v;
-      imgData.data[i * 4 + 3] = 255;
-    }
-    hmCtx.putImageData(imgData, 0, 0);
-    const dispTexture = new THREE.CanvasTexture(hmCanvas);
+    // Load real heightmap PNG as displacement texture
+    const dispTexture = new THREE.TextureLoader().load("/heightmap.png");
 
     // Terrain plane: 20×20 world units, 256×256 segments
     const terrainSize = 20;
@@ -258,17 +183,40 @@ export default function ChroniclePage() {
       const sprite = new THREE.Sprite(mat2);
       sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
 
-      // World position on terrain
+      // World position on terrain — place at mid-height until PNG decodes
       const wx = (nx - 0.5) * terrainSize;
       const wz = (ny - 0.5) * terrainSize;
-      const h = heightAt(nx, ny) * dispScale;
-      sprite.position.set(wx, h + 0.08, wz);
+      sprite.position.set(wx, dispScale * 0.5 + 0.08, wz);
       (sprite as THREE.Sprite & { locIdx: number }).locIdx = locations.indexOf(loc);
 
       scene.add(sprite);
       sprites.push(sprite);
     });
     spritesRef.current = sprites;
+
+    // Async: decode heightmap PNG pixels and reposition sprites on real terrain elevation
+    const hmDecodeCanvas = document.createElement("canvas");
+    hmDecodeCanvas.width = 256; hmDecodeCanvas.height = 256;
+    const hmDecodeCtx = hmDecodeCanvas.getContext("2d")!;
+    const hmDecodeImg = new Image();
+    hmDecodeImg.onload = () => {
+      hmDecodeCtx.drawImage(hmDecodeImg, 0, 0, 256, 256);
+      const px = hmDecodeCtx.getImageData(0, 0, 256, 256);
+      function heightAt(nx: number, ny: number) {
+        const ix = Math.min(255, Math.max(0, Math.round(nx * 255)));
+        const iy = Math.min(255, Math.max(0, Math.round(ny * 255)));
+        return px.data[(iy * 256 + ix) * 4] / 255;
+      }
+      sprites.forEach((sprite) => {
+        const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
+        const loc = locations[idx];
+        const { nx, ny } = normalize(loc);
+        const wx = (nx - 0.5) * terrainSize;
+        const wz = (ny - 0.5) * terrainSize;
+        sprite.position.set(wx, heightAt(nx, ny) * dispScale + 0.08, wz);
+      });
+    };
+    hmDecodeImg.src = "/heightmap.png";
 
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
