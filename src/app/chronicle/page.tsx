@@ -167,7 +167,7 @@ export default function ChroniclePage() {
     cameraRef.current = camera;
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0x334455, 1.2);
+    const ambient = new THREE.AmbientLight(0x334455, 0.1);
     scene.add(ambient);
 
     // Directional light attached to camera rig so it moves with pan
