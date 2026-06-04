@@ -212,7 +212,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 12,
+      displacementScale: 4,
       roughness: 0.85,
       metalness: 0.05,
     });
@@ -245,7 +245,7 @@ export default function ChroniclePage() {
 
     // Place sprites
     const half = terrainSize / 2;
-    const dispScale = 12;
+    const dispScale = 4;
     const sprites: THREE.Sprite[] = [];
 
     locations.forEach((loc) => {
@@ -278,7 +278,7 @@ export default function ChroniclePage() {
     // Animation loop
     const PITCH_NEAR = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (close)
     const PITCH_FAR  = -Math.PI / 2;                          // straight down (far)
-    const Y_NEAR = 0.3, Y_FAR = 80;
+    const Y_NEAR = 7, Y_FAR = 35;
 
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
@@ -369,9 +369,9 @@ export default function ChroniclePage() {
     if (!camera) return;
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
-    const step = Math.max(0.5, camPosRef.current.y) * 0.02;
+    const step = Math.max(0.5, camPosRef.current.y) * 0.00667;
     camera.position.addScaledVector(dir, factor < 1 ? step : -step);
-    camera.position.y = Math.min(80, Math.max(0.3, camera.position.y));
+    camera.position.y = Math.min(35, Math.max(7, camera.position.y));
     camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   }
 
