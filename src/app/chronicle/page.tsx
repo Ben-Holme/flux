@@ -167,7 +167,7 @@ export default function ChroniclePage() {
     cameraRef.current = camera;
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0x334455, 0.1);
+    const ambient = new THREE.AmbientLight(0x334455, 0.5);
     scene.add(ambient);
 
     // Directional light attached to camera rig so it moves with pan
@@ -357,22 +357,19 @@ export default function ChroniclePage() {
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
-    const scale = camPosRef.current.y / mount.clientHeight * 0.8;
+    const scale = camPosRef.current.y / mount.clientHeight * 1.6;
     camPosRef.current.x -= dx * scale;
     camPosRef.current.z -= dy * scale;
     updateCamera();
   }
 
-  // Zoom: dolly camera along its own look direction
+  // Zoom: move camera along world Y axis
   function zoomCamera(factor: number) {
     const camera = cameraRef.current;
     if (!camera) return;
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    const step = Math.max(0.5, camPosRef.current.y) * 0.00667;
-    camera.position.addScaledVector(dir, factor < 1 ? step : -step);
-    camera.position.y = Math.min(35, Math.max(7, camera.position.y));
-    camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    const step = Math.max(0.5, camPosRef.current.y) * 0.01334;
+    camPosRef.current.y = Math.min(35, Math.max(7, camPosRef.current.y + (factor < 1 ? -step : step)));
+    camera.position.y = camPosRef.current.y;
   }
 
   // Raycasting for location selection
