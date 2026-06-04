@@ -147,12 +147,6 @@ export default function ChroniclePage() {
     }).catch(() => {}).finally(() => setEventsLoading(false));
   }, []);
 
-  useEffect(() => {
-    const img = new Image();
-    img.src = "/worldMap.jpg";
-    img.onload = () => { imgRef.current = img; redraw(); };
-  }, [redraw]);
-
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
   const redraw = useCallback(() => {
@@ -166,6 +160,12 @@ export default function ChroniclePage() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawMap(ctx, cssW, cssH, panRef.current, zoomRef.current, eventLocNames, hoveredRef.current, selectedIdx, imgRef.current);
   }, [eventLocNames, selectedIdx]);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/worldMap.jpg";
+    img.onload = () => { imgRef.current = img; redraw(); };
+  }, [redraw]);
 
   const initDone = useRef(false);
   useEffect(() => {
