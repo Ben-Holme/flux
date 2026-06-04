@@ -162,7 +162,7 @@ export default function ChroniclePage() {
     // Pitch: rotate camera so it looks steeply down-forward
     // We'll position camera above and slightly behind, looking forward-down
     camera.rotation.order = "YXZ";
-    camera.rotation.x = -Math.PI * 0.42; // ~75° tilt
+    camera.rotation.x = -Math.PI * 0.44; // ~20° from horizontal (almost top-down, subtle forward lean)
     cameraRef.current = camera;
 
     // Lighting
@@ -346,7 +346,7 @@ export default function ChroniclePage() {
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
-    const scale = camPosRef.current.y / mount.clientHeight * 8;
+    const scale = camPosRef.current.y / mount.clientHeight * 4;
     camPosRef.current.x -= dx * scale;
     camPosRef.current.z -= dy * scale;
     updateCamera();
@@ -494,6 +494,9 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Vignette */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)" }} />
 
       {/* Header overlay */}
       <div style={{
