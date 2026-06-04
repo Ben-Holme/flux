@@ -279,8 +279,9 @@ export default function ChroniclePage() {
       rafRef.current = requestAnimationFrame(animate);
       // Keep directional light near camera
       const cp = camPosRef.current;
-      dirLight.position.set(cp.x + 3, cp.y + 6, cp.z + 4);
-      fillLight.position.set(cp.x - 3, cp.y + 2, cp.z - 2);
+      const ls = Math.max(1, cp.y); // scale light offset with view distance
+      dirLight.position.set(cp.x + ls * 0.375, cp.y + ls * 0.75, cp.z + ls * 0.5);
+      fillLight.position.set(cp.x - ls * 0.375, cp.y + ls * 0.25, cp.z - ls * 0.25);
       renderer.render(scene, camera);
     }
     animate();
@@ -359,7 +360,7 @@ export default function ChroniclePage() {
     camera.getWorldDirection(dir);
     const step = Math.max(0.5, camPosRef.current.y) * 0.2;
     camera.position.addScaledVector(dir, factor < 1 ? step : -step);
-    camera.position.y = Math.max(0.3, camera.position.y);
+    camera.position.y = Math.min(80, Math.max(0.3, camera.position.y));
     camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   }
 
