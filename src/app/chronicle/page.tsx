@@ -162,7 +162,7 @@ export default function ChroniclePage() {
     // Pitch: rotate camera so it looks steeply down-forward
     // We'll position camera above and slightly behind, looking forward-down
     camera.rotation.order = "YXZ";
-    camera.rotation.x = -(Math.PI / 2 - Math.PI * (20 / 180)); // 20° from horizontal (~-1.22 rad)
+    camera.rotation.x = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (~-0.698 rad)
     cameraRef.current = camera;
 
     // Lighting
@@ -211,7 +211,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 1.2,
+      displacementScale: 12,
       roughness: 0.85,
       metalness: 0.05,
     });
@@ -244,7 +244,7 @@ export default function ChroniclePage() {
 
     // Place sprites
     const half = terrainSize / 2;
-    const dispScale = 1.2;
+    const dispScale = 12;
     const sprites: THREE.Sprite[] = [];
 
     locations.forEach((loc) => {
@@ -346,7 +346,7 @@ export default function ChroniclePage() {
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
-    const scale = camPosRef.current.y / mount.clientHeight * 4;
+    const scale = camPosRef.current.y / mount.clientHeight * 0.8;
     camPosRef.current.x -= dx * scale;
     camPosRef.current.z -= dy * scale;
     updateCamera();
