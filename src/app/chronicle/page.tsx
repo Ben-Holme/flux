@@ -349,7 +349,8 @@ export default function ChroniclePage() {
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: "#0a0c0e" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0c0e", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "80px" }}>
+    <div style={{ position: "relative", width: "min(100vw, 800px)", aspectRatio: "1", overflow: "hidden", flexShrink: 0 }}>
       {/* Header overlay */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
@@ -506,6 +507,7 @@ export default function ChroniclePage() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }
