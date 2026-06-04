@@ -15,7 +15,6 @@ interface Location {
 }
 
 const locations = LOCATIONS as Location[];
-
 const GOLD = "#c8923a";
 
 function buildNorm() {
@@ -26,12 +25,16 @@ function buildNorm() {
   const pad = 0.05;
   return (l: Location) => ({
     nx: pad + ((parseFloat(l.x) - minX) / (maxX - minX)) * (1 - 2 * pad),
-    // Do NOT negate: high game-y maps to bottom of canvas (south at top → north at bottom is wrong;
-    // game y increases southward in screen space, so no flip needed)
     ny: pad + ((parseFloat(l.y) - minY) / (maxY - minY)) * (1 - 2 * pad),
   });
 }
 const normalize = buildNorm();
+
+// Square map bounds centered in the viewport
+function getMapBounds(cssW: number, cssH: number) {
+  const S = Math.min(cssW, cssH);
+  return { S, ox: (cssW - S) / 2, oy: (cssH - S) / 2 };
+}
 
 function drawMap(
   ctx: CanvasRenderingContext2D,
@@ -45,21 +48,24 @@ function drawMap(
   img: HTMLImageElement | null,
 ) {
   ctx.clearRect(0, 0, cssW, cssH);
-
   ctx.fillStyle = "#0a0c0e";
   ctx.fillRect(0, 0, cssW, cssH);
 
+  const { S, ox, oy } = getMapBounds(cssW, cssH);
+  const imgX = pan.x + ox;
+  const imgY = pan.y + oy;
+  const imgS = S * zoom;
+
   if (img) {
-    ctx.drawImage(img, pan.x, pan.y, cssW * zoom, cssH * zoom);
-    // Darken so dots remain readable against the map
+    ctx.drawImage(img, imgX, imgY, imgS, imgS);
     ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(pan.x, pan.y, cssW * zoom, cssH * zoom);
+    ctx.fillRect(imgX, imgY, imgS, imgS);
   }
 
   locations.forEach((loc, i) => {
     const { nx, ny } = normalize(loc);
-    const cx = pan.x + nx * cssW * zoom;
-    const cy = pan.y + ny * cssH * zoom;
+    const cx = imgX + nx * imgS;
+    const cy = imgY + ny * imgS;
 
     const hasEvent = eventLocNames.has(loc.name);
     const isHovered = hoveredIdx === i;
@@ -95,11 +101,15 @@ function hitTest(
   zoom: number,
   cssW: number, cssH: number,
 ): number | null {
+  const { S, ox, oy } = getMapBounds(cssW, cssH);
+  const imgX = pan.x + ox;
+  const imgY = pan.y + oy;
+  const imgS = S * zoom;
   let best = -1, bestDist = 18;
   locations.forEach((loc, i) => {
     const { nx, ny } = normalize(loc);
-    const cx = pan.x + nx * cssW * zoom;
-    const cy = pan.y + ny * cssH * zoom;
+    const cx = imgX + nx * imgS;
+    const cy = imgY + ny * imgS;
     const d = Math.hypot(cssX - cx, cssY - cy);
     if (d < bestDist) { bestDist = d; best = i; }
   });
@@ -117,7 +127,6 @@ export default function ChroniclePage() {
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  // Multi-touch tracking for pinch-to-zoom
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDistRef = useRef<number | null>(null);
   const pinchMidRef = useRef<{ x: number; y: number } | null>(null);
@@ -172,11 +181,9 @@ export default function ChroniclePage() {
     if (initDone.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const cssW = canvas.clientWidth;
-    const cssH = canvas.clientHeight;
-    if (cssW === 0) return;
+    if (canvas.clientWidth === 0) return;
     initDone.current = true;
-    panRef.current = { x: cssW * 0.5 * (1 - zoomRef.current), y: cssH * 0.5 * (1 - zoomRef.current) };
+    panRef.current = { x: 0, y: 0 };
     redraw();
   });
 
@@ -185,10 +192,8 @@ export default function ChroniclePage() {
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const ro = new ResizeObserver(() => {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
       redraw();
     });
     ro.observe(canvas);
@@ -199,37 +204,38 @@ export default function ChroniclePage() {
 
   const scheduleRedraw = useCallback(() => {
     if (rafRef.current !== null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      redraw();
-    });
+    rafRef.current = requestAnimationFrame(() => { rafRef.current = null; redraw(); });
   }, [redraw]);
 
-  // Non-passive wheel listener so we can preventDefault and block page scroll
+  // applyZoom: keep the world point under (mx, my) fixed, centered on the square
+  function applyZoom(mx: number, my: number, factor: number) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const { ox, oy } = getMapBounds(canvas.clientWidth, canvas.clientHeight);
+    const newZoom = Math.max(0.3, Math.min(8, zoomRef.current * factor));
+    const ratio = newZoom / zoomRef.current;
+    const fmx = mx - ox;
+    const fmy = my - oy;
+    panRef.current = {
+      x: fmx + (panRef.current.x - fmx) * ratio,
+      y: fmy + (panRef.current.y - fmy) * ratio,
+    };
+    zoomRef.current = newZoom;
+    scheduleRedraw();
+  }
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      applyZoom(mx, my, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+      applyZoom(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleRedraw]);
-
-  function applyZoom(mx: number, my: number, factor: number) {
-    const newZoom = Math.max(0.3, Math.min(8, zoomRef.current * factor));
-    panRef.current = {
-      x: mx + (panRef.current.x - mx) * (newZoom / zoomRef.current),
-      y: my + (panRef.current.y - my) * (newZoom / zoomRef.current),
-    };
-    zoomRef.current = newZoom;
-    scheduleRedraw();
-  }
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -241,11 +247,10 @@ export default function ChroniclePage() {
     activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
 
     if (activePointersRef.current.size === 2) {
-      // Second finger down — begin pinch
       const pts = Array.from(activePointersRef.current.values());
       lastPinchDistRef.current = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       pinchMidRef.current = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      draggingRef.current = true; // suppress tap-select when fingers lift
+      draggingRef.current = true;
     } else {
       lastPosRef.current = { x: cssX, y: cssY };
       pointerStartRef.current = { x: cssX, y: cssY };
@@ -262,20 +267,29 @@ export default function ChroniclePage() {
     activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
 
     if (activePointersRef.current.size >= 2) {
-      // Pinch zoom — compute distance between first two tracked pointers
       const pts = Array.from(activePointersRef.current.values());
       const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-      const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      const newMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
 
-      if (lastPinchDistRef.current !== null && lastPinchDistRef.current > 0) {
-        applyZoom(mid.x, mid.y, newDist / lastPinchDistRef.current);
+      if (lastPinchDistRef.current !== null && lastPinchDistRef.current > 0 && pinchMidRef.current) {
+        const prevMid = pinchMidRef.current;
+        const { ox, oy } = getMapBounds(canvas.clientWidth, canvas.clientHeight);
+        const newZoom = Math.max(0.3, Math.min(8, zoomRef.current * (newDist / lastPinchDistRef.current)));
+        const ratio = newZoom / zoomRef.current;
+        // Zoom centered on prevMid, then translate so prevMid world point lands at newMid
+        panRef.current = {
+          x: (newMid.x - ox) + (panRef.current.x - (prevMid.x - ox)) * ratio,
+          y: (newMid.y - oy) + (panRef.current.y - (prevMid.y - oy)) * ratio,
+        };
+        zoomRef.current = newZoom;
+        scheduleRedraw();
       }
+
       lastPinchDistRef.current = newDist;
-      pinchMidRef.current = mid;
+      pinchMidRef.current = newMid;
       return;
     }
 
-    // Single pointer — pan or hover
     if (draggingRef.current) {
       panRef.current = {
         x: panRef.current.x + (cssX - lastPosRef.current.x),
@@ -293,7 +307,6 @@ export default function ChroniclePage() {
       return;
     }
 
-    // Hover hit-test (mouse only — skip on touch to avoid stale highlights)
     if (e.pointerType !== "touch") {
       const newHovered = hitTest(cssX, cssY, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
       if (newHovered !== hoveredRef.current) {
@@ -302,7 +315,6 @@ export default function ChroniclePage() {
         scheduleRedraw();
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleRedraw]);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -314,12 +326,11 @@ export default function ChroniclePage() {
     if (wasPinching) {
       lastPinchDistRef.current = null;
       pinchMidRef.current = null;
-      // If one finger remains, seed it as a pan continuation (not a tap)
       if (activePointersRef.current.size === 1) {
         const [remaining] = Array.from(activePointersRef.current.values());
         lastPosRef.current = remaining;
         pointerStartRef.current = remaining;
-        draggingRef.current = true; // prevent accidental tap-select on pinch release
+        draggingRef.current = true;
       }
       return;
     }
@@ -327,9 +338,7 @@ export default function ChroniclePage() {
     canvas.style.cursor = hoveredRef.current !== null ? "pointer" : "grab";
     if (!draggingRef.current) {
       const rect = canvas.getBoundingClientRect();
-      const cssX = e.clientX - rect.left;
-      const cssY = e.clientY - rect.top;
-      const idx = hitTest(cssX, cssY, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
+      const idx = hitTest(e.clientX - rect.left, e.clientY - rect.top, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
       setSelectedIdx(idx);
     }
     draggingRef.current = false;
@@ -349,8 +358,7 @@ export default function ChroniclePage() {
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0c0e", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "80px" }}>
-    <div style={{ position: "relative", width: "min(100vw, 800px)", aspectRatio: "1", overflow: "hidden", flexShrink: 0 }}>
+    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#0a0c0e" }}>
       {/* Header overlay */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
@@ -507,7 +515,6 @@ export default function ChroniclePage() {
           )}
         </div>
       )}
-    </div>
     </div>
   );
 }
