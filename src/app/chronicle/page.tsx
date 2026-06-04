@@ -42,22 +42,18 @@ function drawMap(
   eventLocNames: Set<string>,
   hoveredIdx: number | null,
   selectedIdx: number | null,
+  img: HTMLImageElement | null,
 ) {
   ctx.clearRect(0, 0, cssW, cssH);
 
   ctx.fillStyle = "#0a0c0e";
   ctx.fillRect(0, 0, cssW, cssH);
 
-  ctx.strokeStyle = "rgba(255,255,255,0.03)";
-  ctx.lineWidth = 1;
-  const gridStep = 80 * zoom;
-  const offX = (pan.x % gridStep + gridStep) % gridStep;
-  const offY = (pan.y % gridStep + gridStep) % gridStep;
-  for (let x = offX; x < cssW; x += gridStep) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cssH); ctx.stroke();
-  }
-  for (let y = offY; y < cssH; y += gridStep) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cssW, y); ctx.stroke();
+  if (img) {
+    ctx.drawImage(img, pan.x, pan.y, cssW * zoom, cssH * zoom);
+    // Darken so dots remain readable against the map
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(pan.x, pan.y, cssW * zoom, cssH * zoom);
   }
 
   locations.forEach((loc, i) => {
@@ -112,6 +108,7 @@ function hitTest(
 
 export default function ChroniclePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const panRef = useRef({ x: 0, y: 0 });
   const zoomRef = useRef(1);
   const hoveredRef = useRef<number | null>(null);
@@ -150,6 +147,12 @@ export default function ChroniclePage() {
     }).catch(() => {}).finally(() => setEventsLoading(false));
   }, []);
 
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/worldMap.jpg";
+    img.onload = () => { imgRef.current = img; redraw(); };
+  }, [redraw]);
+
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
   const redraw = useCallback(() => {
@@ -161,7 +164,7 @@ export default function ChroniclePage() {
     const cssW = canvas.clientWidth;
     const cssH = canvas.clientHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawMap(ctx, cssW, cssH, panRef.current, zoomRef.current, eventLocNames, hoveredRef.current, selectedIdx);
+    drawMap(ctx, cssW, cssH, panRef.current, zoomRef.current, eventLocNames, hoveredRef.current, selectedIdx, imgRef.current);
   }, [eventLocNames, selectedIdx]);
 
   const initDone = useRef(false);
