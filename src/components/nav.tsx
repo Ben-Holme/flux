@@ -7,7 +7,7 @@ const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffec
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 const CRAFTER_ICON = (
-  <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
     <path
       d="M24.667 14L20.667 18L27.3337 24.6667V31.3333L17.3337 21.3333L6.66699 32V25.3333L14.0003 18L9.33366 13.3333L2.66699 20V9.33333L12.0003 0L17.3337 5.33333L12.667 10L17.3337 14.6667L21.3337 10.6667V6.66667L24.667 3.33333H28.667L24.667 7.33333V10.6364H28.0003L32.0002 6.66667V10.6364L29.3337 14H24.667Z"
       fill="currentColor"
@@ -19,9 +19,9 @@ const MENU_LINKS = [
   { href: "/", label: "About" },
   { href: "/screenshots", label: "Screenshots" },
   { href: "/devlog", label: "News & Devlog" },
-  { href: "/wiki", label: "Unyha Wiki" },
+  { href: "/wiki", label: "Wiki" },
   { href: "/account", label: "My Account" },
-  { href: "https://discord.gg/BRd7y3P5Xg", label: "Unyha Discord", external: true, discord: true },
+  { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
   { href: "/privacy-policy", label: "Privacy Policy", small: true },
 ];
@@ -88,7 +88,7 @@ export default function Nav() {
             </span>
           ) : href === "/account" ? (
             <span className="flex items-center gap-3">
-              <span className="opacity-60">{CRAFTER_ICON}</span>
+              {CRAFTER_ICON}
               {label}
             </span>
           ) : (
