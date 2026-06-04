@@ -26,8 +26,9 @@ function buildNorm() {
   const pad = 0.05;
   return (l: Location) => ({
     nx: pad + ((parseFloat(l.x) - minX) / (maxX - minX)) * (1 - 2 * pad),
-    // Game y increases upward → flip to canvas coords
-    ny: pad + ((maxY - parseFloat(l.y)) / (maxY - minY)) * (1 - 2 * pad),
+    // Do NOT negate: high game-y maps to bottom of canvas (south at top → north at bottom is wrong;
+    // game y increases southward in screen space, so no flip needed)
+    ny: pad + ((parseFloat(l.y) - minY) / (maxY - minY)) * (1 - 2 * pad),
   });
 }
 const normalize = buildNorm();
@@ -116,7 +117,13 @@ export default function ChroniclePage() {
   const hoveredRef = useRef<number | null>(null);
   const draggingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // Multi-touch tracking for pinch-to-zoom
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const lastPinchDistRef = useRef<number | null>(null);
+  const pinchMidRef = useRef<{ x: number; y: number } | null>(null);
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -195,6 +202,7 @@ export default function ChroniclePage() {
     });
   }, [redraw]);
 
+  // Non-passive wheel listener so we can preventDefault and block page scroll
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -203,18 +211,44 @@ export default function ChroniclePage() {
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-      const newZoom = Math.max(0.3, Math.min(8, zoomRef.current * factor));
-      panRef.current = {
-        x: mx + (panRef.current.x - mx) * (newZoom / zoomRef.current),
-        y: my + (panRef.current.y - my) * (newZoom / zoomRef.current),
-      };
-      zoomRef.current = newZoom;
-      scheduleRedraw();
+      applyZoom(mx, my, e.deltaY < 0 ? 1.12 : 1 / 1.12);
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleRedraw]);
+
+  function applyZoom(mx: number, my: number, factor: number) {
+    const newZoom = Math.max(0.3, Math.min(8, zoomRef.current * factor));
+    panRef.current = {
+      x: mx + (panRef.current.x - mx) * (newZoom / zoomRef.current),
+      y: my + (panRef.current.y - my) * (newZoom / zoomRef.current),
+    };
+    zoomRef.current = newZoom;
+    scheduleRedraw();
+  }
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.setPointerCapture(e.pointerId);
+    const rect = canvas.getBoundingClientRect();
+    const cssX = e.clientX - rect.left;
+    const cssY = e.clientY - rect.top;
+    activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
+
+    if (activePointersRef.current.size === 2) {
+      // Second finger down — begin pinch
+      const pts = Array.from(activePointersRef.current.values());
+      lastPinchDistRef.current = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      pinchMidRef.current = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      draggingRef.current = true; // suppress tap-select when fingers lift
+    } else {
+      lastPosRef.current = { x: cssX, y: cssY };
+      pointerStartRef.current = { x: cssX, y: cssY };
+      draggingRef.current = false;
+    }
+  }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -222,7 +256,23 @@ export default function ChroniclePage() {
     const rect = canvas.getBoundingClientRect();
     const cssX = e.clientX - rect.left;
     const cssY = e.clientY - rect.top;
+    activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
 
+    if (activePointersRef.current.size >= 2) {
+      // Pinch zoom — compute distance between first two tracked pointers
+      const pts = Array.from(activePointersRef.current.values());
+      const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+
+      if (lastPinchDistRef.current !== null && lastPinchDistRef.current > 0) {
+        applyZoom(mid.x, mid.y, newDist / lastPinchDistRef.current);
+      }
+      lastPinchDistRef.current = newDist;
+      pinchMidRef.current = mid;
+      return;
+    }
+
+    // Single pointer — pan or hover
     if (draggingRef.current) {
       panRef.current = {
         x: panRef.current.x + (cssX - lastPosRef.current.x),
@@ -233,39 +283,44 @@ export default function ChroniclePage() {
       return;
     }
 
-    const newHovered = hitTest(cssX, cssY, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
-    if (newHovered !== hoveredRef.current) {
-      hoveredRef.current = newHovered;
-      canvas.style.cursor = newHovered !== null ? "pointer" : "grab";
-      scheduleRedraw();
+    if (pointerStartRef.current && Math.hypot(cssX - pointerStartRef.current.x, cssY - pointerStartRef.current.y) > 4) {
+      draggingRef.current = true;
+      lastPosRef.current = { x: cssX, y: cssY };
+      canvas.style.cursor = "grabbing";
+      return;
     }
-  }, [scheduleRedraw]);
 
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.setPointerCapture(e.pointerId);
-    draggingRef.current = false;
-    const rect = canvas.getBoundingClientRect();
-    lastPosRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    canvas.style.cursor = "grabbing";
-    const startX = e.clientX, startY = e.clientY;
-    const onMove = (ev: PointerEvent) => {
-      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 4) {
-        draggingRef.current = true;
+    // Hover hit-test (mouse only — skip on touch to avoid stale highlights)
+    if (e.pointerType !== "touch") {
+      const newHovered = hitTest(cssX, cssY, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
+      if (newHovered !== hoveredRef.current) {
+        hoveredRef.current = newHovered;
+        canvas.style.cursor = newHovered !== null ? "pointer" : "grab";
+        scheduleRedraw();
       }
-    };
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  }, []);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleRedraw]);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const wasPinching = activePointersRef.current.size >= 2;
+    activePointersRef.current.delete(e.pointerId);
+
+    if (wasPinching) {
+      lastPinchDistRef.current = null;
+      pinchMidRef.current = null;
+      // If one finger remains, seed it as a pan continuation (not a tap)
+      if (activePointersRef.current.size === 1) {
+        const [remaining] = Array.from(activePointersRef.current.values());
+        lastPosRef.current = remaining;
+        pointerStartRef.current = remaining;
+        draggingRef.current = true; // prevent accidental tap-select on pinch release
+      }
+      return;
+    }
+
     canvas.style.cursor = hoveredRef.current !== null ? "pointer" : "grab";
     if (!draggingRef.current) {
       const rect = canvas.getBoundingClientRect();
@@ -273,6 +328,16 @@ export default function ChroniclePage() {
       const cssY = e.clientY - rect.top;
       const idx = hitTest(cssX, cssY, panRef.current, zoomRef.current, canvas.clientWidth, canvas.clientHeight);
       setSelectedIdx(idx);
+    }
+    draggingRef.current = false;
+    pointerStartRef.current = null;
+  }, []);
+
+  const onPointerCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    if (activePointersRef.current.size < 2) {
+      lastPinchDistRef.current = null;
+      pinchMidRef.current = null;
     }
     draggingRef.current = false;
   }, []);
@@ -329,7 +394,7 @@ export default function ChroniclePage() {
           <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>Location</span>
         </div>
         <div style={{ marginTop: "4px", fontSize: "0.62rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
-          Scroll to zoom · drag to pan
+          Scroll / pinch to zoom · drag to pan
         </div>
       </div>
 
@@ -340,6 +405,7 @@ export default function ChroniclePage() {
         onPointerMove={onPointerMove}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       />
 
       {/* Side panel */}
