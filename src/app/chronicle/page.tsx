@@ -278,7 +278,7 @@ export default function ChroniclePage() {
     // Animation loop
     const PITCH_NEAR = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (close)
     const PITCH_FAR  = -Math.PI / 2;                          // straight down (far)
-    const Y_NEAR = 7, Y_FAR = 35;
+    const Y_NEAR = 4, Y_FAR = 35;
 
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
@@ -368,7 +368,7 @@ export default function ChroniclePage() {
     const camera = cameraRef.current;
     if (!camera) return;
     const step = Math.max(0.5, camPosRef.current.y) * 0.01334;
-    camPosRef.current.y = Math.min(35, Math.max(7, camPosRef.current.y + (factor < 1 ? -step : step)));
+    camPosRef.current.y = Math.min(35, Math.max(4, camPosRef.current.y + (factor < 1 ? -step : step)));
     camera.position.y = camPosRef.current.y;
   }
 
