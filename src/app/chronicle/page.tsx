@@ -269,7 +269,7 @@ export default function ChroniclePage() {
 
     // Initial camera position
     const cam = camPosRef.current;
-    camera.position.set(cam.x, cam.y, cam.z + cam.y * 0.6);
+    camera.position.set(cam.x, cam.y, cam.z);
     scene.add(camera);
     // Move lights with camera
     dirLight.position.set(cam.x + 2, cam.y + 5, cam.z + 3);
@@ -338,8 +338,7 @@ export default function ChroniclePage() {
     const camera = cameraRef.current;
     if (!camera) return;
     const { x, y, z } = camPosRef.current;
-    // Camera is above and slightly behind its look-at point
-    camera.position.set(x, y, z + y * 0.55);
+    camera.position.set(x, y, z);
   }, []);
 
   // Pan: move camera in world XZ
@@ -352,10 +351,16 @@ export default function ChroniclePage() {
     updateCamera();
   }
 
-  // Zoom: adjust camera height
+  // Zoom: dolly camera along its own look direction
   function zoomCamera(factor: number) {
-    camPosRef.current.y = Math.max(1.5, Math.min(25, camPosRef.current.y * factor));
-    updateCamera();
+    const camera = cameraRef.current;
+    if (!camera) return;
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    const step = Math.max(0.5, camPosRef.current.y) * 0.2;
+    camera.position.addScaledVector(dir, factor < 1 ? step : -step);
+    camera.position.y = Math.max(0.3, camera.position.y);
+    camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   }
 
   // Raycasting for location selection
