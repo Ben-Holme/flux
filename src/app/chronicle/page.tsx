@@ -19,6 +19,11 @@ const locations = LOCATIONS as Location[];
 const GOLD = "#c8923a";
 const GOLD_NUM = 0xc8923a;
 
+// Orbit constants
+const R_MIN = 4, R_MAX = 35;
+const ELEV_NEAR = Math.PI * (50 / 180); // camera elevation when close (50° from horizontal)
+const ELEV_FAR  = Math.PI / 2;           // camera elevation when far (straight down)
+
 function buildNorm() {
   const xs = locations.map((l) => parseFloat(l.x));
   const ys = locations.map((l) => parseFloat(l.y));
@@ -98,7 +103,9 @@ export default function ChroniclePage() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const spritesRef = useRef<THREE.Sprite[]>([]);
   const rafRef = useRef<number | null>(null);
-  const camPosRef = useRef({ x: 0, z: 0, y: 8 }); // camera position in world
+  const camPosRef = useRef({ x: 0, z: 0, y: 8 }); // synced each frame for light positioning
+  const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
+  const radiusRef = useRef(15); // orbit radius (camera → target distance)
   const debugRef = useRef<HTMLDivElement | null>(null);
 
   // Interaction state
@@ -158,12 +165,7 @@ export default function ChroniclePage() {
     scene.fog = new THREE.Fog(0x0a0c0e, 15, 35);
     sceneRef.current = scene;
 
-    // Camera — perspective, pitched 80° down (nearly top-down but slightly angled)
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    // Pitch: rotate camera so it looks steeply down-forward
-    // We'll position camera above and slightly behind, looking forward-down
-    camera.rotation.order = "YXZ";
-    camera.rotation.x = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (~-0.698 rad)
     cameraRef.current = camera;
 
     // Lighting
@@ -268,31 +270,18 @@ export default function ChroniclePage() {
     });
     spritesRef.current = sprites;
 
-    // Initial camera position
-    const cam = camPosRef.current;
-    camera.position.set(cam.x, cam.y, cam.z);
     scene.add(camera);
-    // Move lights with camera
-    dirLight.position.set(cam.x + 2, cam.y + 5, cam.z + 3);
+    updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
     // Animation loop
-    const PITCH_NEAR = -(Math.PI / 2 - Math.PI * (50 / 180)); // 50° from horizontal (close)
-    const PITCH_FAR  = -Math.PI / 2;                          // straight down (far)
-    const Y_NEAR = 4, Y_FAR = 35;
-
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
-      // Keep directional light near camera
+      updateCameraFromOrbit();
       const cp = camPosRef.current;
       const ls = Math.max(1, cp.y);
       dirLight.position.set(cp.x + ls * 0.375, cp.y + ls * 0.75, cp.z + ls * 0.5);
       fillLight.position.set(cp.x - ls * 0.375, cp.y + ls * 0.25, cp.z - ls * 0.25);
-      // Tilt camera toward straight-down as zoom distance increases
-      const raw = (camera.position.y - Y_NEAR) / (Y_FAR - Y_NEAR);
-      const t = Math.max(0, Math.min(1, raw));
-      const st = t * t * (3 - 2 * t); // smoothstep
-      camera.rotation.x = PITCH_NEAR + (PITCH_FAR - PITCH_NEAR) * st;
-      if (debugRef.current) debugRef.current.textContent = `y: ${camera.position.y.toFixed(2)}`;
+      if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
       renderer.render(scene, camera);
     }
     animate();
@@ -345,31 +334,33 @@ export default function ChroniclePage() {
     });
   }, [eventLocNames]);
 
-  // Camera update helper
-  const updateCamera = useCallback(() => {
+  // Orbit helper: position camera and lookAt from target + radius
+  function updateCameraFromOrbit() {
     const camera = cameraRef.current;
     if (!camera) return;
-    const { x, y, z } = camPosRef.current;
-    camera.position.set(x, y, z);
-  }, []);
+    const target = targetRef.current;
+    const r = radiusRef.current;
+    const raw = (r - R_MIN) / (R_MAX - R_MIN);
+    const t = Math.max(0, Math.min(1, raw));
+    const elev = ELEV_NEAR + (ELEV_FAR - ELEV_NEAR) * (t * t * (3 - 2 * t));
+    camera.position.set(target.x, target.y + r * Math.sin(elev), target.z + r * Math.cos(elev));
+    camera.lookAt(target);
+    camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+  }
 
-  // Pan: move camera in world XZ
+  // Pan: translate target (and camera follows) horizontally
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
-    const scale = camPosRef.current.y / mount.clientHeight * 1.6;
-    camPosRef.current.x -= dx * scale;
-    camPosRef.current.z -= dy * scale;
-    updateCamera();
+    const scale = radiusRef.current / mount.clientHeight * 1.6;
+    targetRef.current.x -= dx * scale;
+    targetRef.current.z -= dy * scale;
   }
 
-  // Zoom: move camera along world Y axis
+  // Zoom: change orbit radius, keeping target fixed
   function zoomCamera(factor: number) {
-    const camera = cameraRef.current;
-    if (!camera) return;
-    const step = Math.max(0.5, camPosRef.current.y) * 0.01334;
-    camPosRef.current.y = Math.min(35, Math.max(4, camPosRef.current.y + (factor < 1 ? -step : step)));
-    camera.position.y = camPosRef.current.y;
+    const step = Math.max(0.5, radiusRef.current) * 0.01334;
+    radiusRef.current = Math.min(R_MAX, Math.max(R_MIN, radiusRef.current + (factor < 1 ? -step : step)));
   }
 
   // Raycasting for location selection
