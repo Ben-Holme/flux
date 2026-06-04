@@ -99,6 +99,7 @@ export default function ChroniclePage() {
   const spritesRef = useRef<THREE.Sprite[]>([]);
   const rafRef = useRef<number | null>(null);
   const camPosRef = useRef({ x: 0, z: 0, y: 8 }); // camera position in world
+  const debugRef = useRef<HTMLDivElement | null>(null);
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -291,6 +292,7 @@ export default function ChroniclePage() {
       const t = Math.max(0, Math.min(1, raw));
       const st = t * t * (3 - 2 * t); // smoothstep
       camera.rotation.x = PITCH_NEAR + (PITCH_FAR - PITCH_NEAR) * st;
+      if (debugRef.current) debugRef.current.textContent = `y: ${camera.position.y.toFixed(2)}`;
       renderer.render(scene, camera);
     }
     animate();
@@ -509,6 +511,9 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Debug overlay */}
+      <div ref={debugRef} style={{ position: "absolute", bottom: 8, left: 8, zIndex: 30, fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.5)", pointerEvents: "none" }} />
 
       {/* Vignette */}
       <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)" }} />
