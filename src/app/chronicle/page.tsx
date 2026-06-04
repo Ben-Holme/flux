@@ -162,7 +162,7 @@ export default function ChroniclePage() {
     // Pitch: rotate camera so it looks steeply down-forward
     // We'll position camera above and slightly behind, looking forward-down
     camera.rotation.order = "YXZ";
-    camera.rotation.x = -Math.PI * 0.44; // ~20° from horizontal (almost top-down, subtle forward lean)
+    camera.rotation.x = -(Math.PI / 2 - Math.PI * (20 / 180)); // 20° from horizontal (~-1.22 rad)
     cameraRef.current = camera;
 
     // Lighting
