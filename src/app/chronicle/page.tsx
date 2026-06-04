@@ -287,6 +287,7 @@ export default function ChroniclePage() {
 
     // Resize handler
     function onResize() {
+      if (!mount) return;
       const w = mount.clientWidth, h = mount.clientHeight;
       renderer.setSize(w, h);
       camera.aspect = w / h;
