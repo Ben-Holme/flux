@@ -20,6 +20,7 @@ const MENU_LINKS = [
   { href: "/screenshots", label: "Screenshots" },
   { href: "/devlog", label: "News & Devlog" },
   { href: "/wiki", label: "Wiki" },
+  { href: "/chronicle", label: "Chronicle" },
   { href: "/account", label: "My Account" },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
