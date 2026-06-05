@@ -175,13 +175,13 @@ export default function ChroniclePage() {
     // Sea plane — sits at y=0.3 so ocean pixels (near 0) are submerged, coastal land just breaks the surface
     const seaGeo = new THREE.PlaneGeometry(500, 500);
     const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x0a1a2a,
-      roughness: 0.1,
-      metalness: 0.3,
+      color: 0x3a3a3a,
+      roughness: 0.8,
+      metalness: 0,
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
-    sea.position.y = 0;
+    sea.position.y = 0.05;
     scene.add(sea);
 
     // Sprite material for location dots
