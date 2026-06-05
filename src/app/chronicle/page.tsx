@@ -5,6 +5,10 @@ import LOCATIONS from "@/data/locations.json";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 interface Location {
   name: string;
@@ -100,6 +104,16 @@ export default function ChroniclePage() {
     renderer.shadowMap.enabled = true;
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+
+    // Post-processing: SSAO for terrain crevice shading
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const ssaoPass = new SSAOPass(scene, camera, W, H);
+    ssaoPass.kernelRadius = 16;   // broad enough to catch terrain valleys
+    ssaoPass.minDistance = 0.001;
+    ssaoPass.maxDistance = 0.25;  // subtle — only dark in deep crevices
+    composer.addPass(ssaoPass);
+    composer.addPass(new OutputPass());
 
     // Scene
     const scene = new THREE.Scene();
@@ -230,7 +244,7 @@ export default function ChroniclePage() {
       dirLight.position.set(cp.x + ls * 0.375, cp.y + ls * 0.75, cp.z + ls * 0.5);
       fillLight.position.set(cp.x - ls * 0.375, cp.y + ls * 0.25, cp.z - ls * 0.25);
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
-      renderer.render(scene, camera);
+      composer.render();
     }
     animate();
 
@@ -239,6 +253,8 @@ export default function ChroniclePage() {
       if (!mount) return;
       const w = mount.clientWidth, h = mount.clientHeight;
       renderer.setSize(w, h);
+      composer.setSize(w, h);
+      ssaoPass.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
