@@ -186,7 +186,7 @@ export default function ChroniclePage() {
     seaAlphaCtx.fillStyle = seaGrad;
     seaAlphaCtx.fillRect(0, 0, 512, 512);
     const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x4a5a5c,
+      color: 0x607070,
       roughness: 0.1,
       metalness: 0.4,
       transparent: true,
