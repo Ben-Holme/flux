@@ -172,12 +172,24 @@ export default function ChroniclePage() {
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Sea plane — sits at y=0.3 so ocean pixels (near 0) are submerged, coastal land just breaks the surface
+    // Sea plane — radial alpha fade so edges dissolve into fog rather than hard-cutting
     const seaGeo = new THREE.PlaneGeometry(500, 500);
+    const seaAlphaCanvas = document.createElement("canvas");
+    seaAlphaCanvas.width = 256; seaAlphaCanvas.height = 256;
+    const seaAlphaCtx = seaAlphaCanvas.getContext("2d")!;
+    const seaGrad = seaAlphaCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    seaGrad.addColorStop(0, "white");
+    seaGrad.addColorStop(0.5, "white");
+    seaGrad.addColorStop(1, "black");
+    seaAlphaCtx.fillStyle = seaGrad;
+    seaAlphaCtx.fillRect(0, 0, 256, 256);
+    const seaAlphaMap = new THREE.CanvasTexture(seaAlphaCanvas);
     const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3a3a,
+      color: 0x2d3d3f,
       roughness: 0.1,
       metalness: 0.4,
+      transparent: true,
+      alphaMap: seaAlphaMap,
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
