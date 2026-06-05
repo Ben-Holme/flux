@@ -105,16 +105,6 @@ export default function ChroniclePage() {
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Post-processing: SSAO for terrain crevice shading
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    const ssaoPass = new SSAOPass(scene, camera, W, H);
-    ssaoPass.kernelRadius = 16;   // broad enough to catch terrain valleys
-    ssaoPass.minDistance = 0.001;
-    ssaoPass.maxDistance = 0.25;  // subtle — only dark in deep crevices
-    composer.addPass(ssaoPass);
-    composer.addPass(new OutputPass());
-
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0c0e);
@@ -123,6 +113,16 @@ export default function ChroniclePage() {
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
     cameraRef.current = camera;
+
+    // Post-processing: SSAO for terrain crevice shading
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const ssaoPass = new SSAOPass(scene, camera, W, H);
+    ssaoPass.kernelRadius = 16;
+    ssaoPass.minDistance = 0.001;
+    ssaoPass.maxDistance = 0.25;
+    composer.addPass(ssaoPass);
+    composer.addPass(new OutputPass());
 
     // Lighting
     const ambient = new THREE.AmbientLight(0x334455, 0.5);
