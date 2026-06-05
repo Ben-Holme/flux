@@ -49,7 +49,6 @@ export default function ChroniclePage() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const spritesRef = useRef<THREE.Sprite[]>([]);
   const rafRef = useRef<number | null>(null);
-  const camPosRef = useRef({ x: 0, z: 0, y: 8 }); // synced each frame for light positioning
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
   const debugRef = useRef<HTMLDivElement | null>(null);
@@ -128,19 +127,16 @@ export default function ChroniclePage() {
     const ambient = new THREE.AmbientLight(0x334455, 0.5);
     scene.add(ambient);
 
-    // Directional light attached to camera rig so it moves with pan
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(2, 5, 3);
+    dirLight.position.set(5, 10, 5);
     scene.add(dirLight);
 
-    // Secondary fill light from opposite side
     const fillLight = new THREE.DirectionalLight(0x4466aa, 0.5);
-    fillLight.position.set(-3, 2, -2);
+    fillLight.position.set(-5, 5, -3);
     scene.add(fillLight);
 
-    // Left-side key light at 45° — casts shadows across terrain relief
     const leftLight = new THREE.DirectionalLight(0xfff8f0, 1.2);
-    leftLight.position.set(-1, 1, 0); // left side, 45° elevation
+    leftLight.position.set(-8, 8, 0);
     leftLight.castShadow = true;
     scene.add(leftLight);
 
@@ -274,10 +270,6 @@ export default function ChroniclePage() {
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
       updateCameraFromOrbit();
-      const cp = camPosRef.current;
-      const ls = Math.max(1, cp.y);
-      dirLight.position.set(cp.x + ls * 0.375, cp.y + ls * 0.75, cp.z + ls * 0.5);
-      fillLight.position.set(cp.x - ls * 0.375, cp.y + ls * 0.25, cp.z - ls * 0.25);
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
       composer.render();
     }
@@ -344,7 +336,6 @@ export default function ChroniclePage() {
     const elev = ELEV_NEAR + (ELEV_FAR - ELEV_NEAR) * (t * t * (3 - 2 * t));
     camera.position.set(target.x, target.y + r * Math.sin(elev), target.z + r * Math.cos(elev));
     camera.lookAt(target);
-    camPosRef.current = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   }
 
   // Pan: translate target (and camera follows) horizontally
