@@ -168,26 +168,13 @@ export default function ChroniclePage() {
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Sea plane — MeshStandardMaterial with canvas radial alphaMap for edge fade
-    const seaGeo = new THREE.PlaneGeometry(500, 500);
-    const seaAlphaCanvas = document.createElement("canvas");
-    seaAlphaCanvas.width = 512; seaAlphaCanvas.height = 512;
-    const seaAlphaCtx = seaAlphaCanvas.getContext("2d")!;
-    seaAlphaCtx.fillStyle = "black";
-    seaAlphaCtx.fillRect(0, 0, 512, 512);
-    const seaGrad = seaAlphaCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
-    seaGrad.addColorStop(0, "white");
-    seaGrad.addColorStop(0.55, "white");
-    seaGrad.addColorStop(1, "black");
-    seaAlphaCtx.fillStyle = seaGrad;
-    seaAlphaCtx.fillRect(0, 0, 512, 512);
+    // Sea plane — fog (same color as scene background) fades the edges naturally
+    const seaGeo = new THREE.PlaneGeometry(50, 50);
     const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x607070,
-      roughness: 0.1,
-      metalness: 0.4,
-      transparent: true,
+      color: 0x6a6a6a,
+      roughness: 0.9,
+      metalness: 0.0,
       depthWrite: false, // must not write depth — SSAOPass sees this as a huge near-coplanar occluder otherwise
-      alphaMap: new THREE.CanvasTexture(seaAlphaCanvas),
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
