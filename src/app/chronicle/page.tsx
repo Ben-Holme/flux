@@ -190,6 +190,7 @@ export default function ChroniclePage() {
       roughness: 0.1,
       metalness: 0.4,
       transparent: true,
+      depthWrite: false, // must not write depth — SSAOPass sees this as a huge near-coplanar occluder otherwise
       alphaMap: new THREE.CanvasTexture(seaAlphaCanvas),
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
