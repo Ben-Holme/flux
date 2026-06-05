@@ -172,24 +172,28 @@ export default function ChroniclePage() {
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Sea plane — radial alpha fade so edges dissolve into fog rather than hard-cutting
+    // Sea plane — ShaderMaterial with radial UV fade so edges dissolve into fog
     const seaGeo = new THREE.PlaneGeometry(500, 500);
-    const seaAlphaCanvas = document.createElement("canvas");
-    seaAlphaCanvas.width = 256; seaAlphaCanvas.height = 256;
-    const seaAlphaCtx = seaAlphaCanvas.getContext("2d")!;
-    const seaGrad = seaAlphaCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    seaGrad.addColorStop(0, "white");
-    seaGrad.addColorStop(0.5, "white");
-    seaGrad.addColorStop(1, "black");
-    seaAlphaCtx.fillStyle = seaGrad;
-    seaAlphaCtx.fillRect(0, 0, 256, 256);
-    const seaAlphaMap = new THREE.CanvasTexture(seaAlphaCanvas);
-    const seaMat = new THREE.MeshStandardMaterial({
-      color: 0x2d3d3f,
-      roughness: 0.1,
-      metalness: 0.4,
+    const seaMat = new THREE.ShaderMaterial({
       transparent: true,
-      alphaMap: seaAlphaMap,
+      depthWrite: false,
+      uniforms: { color: { value: new THREE.Color(0x4a5a5c) } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 color;
+        varying vec2 vUv;
+        void main() {
+          float d = length(vUv - 0.5) * 2.0;
+          float alpha = 1.0 - smoothstep(0.6, 1.0, d);
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
