@@ -22,7 +22,6 @@ interface Location {
 const locations = LOCATIONS as Location[];
 const GOLD = "#c8923a";
 const GOLD_NUM = 0xc8923a;
-const SHORE_FEATHER = 0.05;
 
 // Orbit constants
 const R_MIN = 4, R_MAX = 35;
@@ -53,8 +52,6 @@ export default function ChroniclePage() {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
   const debugRef = useRef<HTMLDivElement | null>(null);
-  const depthRTRef = useRef<THREE.WebGLRenderTarget | null>(null);
-  const seaRef = useRef<THREE.Mesh | null>(null);
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -171,86 +168,20 @@ export default function ChroniclePage() {
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Sea plane — always created with a safe fallback material first
+    // Sea plane — fog (same color as scene background) fades the edges naturally
     const seaGeo = new THREE.PlaneGeometry(50, 50);
-    const seaFallbackMat = new THREE.MeshStandardMaterial({
+    const seaMat = new THREE.MeshStandardMaterial({
       color: 0x6a6a6a,
       roughness: 0.9,
       metalness: 0.0,
+      transparent: true,
+      opacity: 1,
       depthWrite: false,
     });
-    const sea = new THREE.Mesh<THREE.PlaneGeometry, THREE.Material>(seaGeo, seaFallbackMat);
+    const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = 0.005;
     scene.add(sea);
-    seaRef.current = sea;
-
-    // Depth render target + shore intersection shader — with graceful fallback
-    try {
-      // Explicitly load depth texture extension for WebGL 1 contexts
-      renderer.getContext().getExtension('WEBGL_depth_texture');
-
-      const depthRT = new THREE.WebGLRenderTarget(W, H, {
-        depthBuffer: true,
-        depthTexture: new THREE.DepthTexture(W, H, THREE.UnsignedShortType),
-      });
-      depthRTRef.current = depthRT;
-
-      sea.material = new THREE.ShaderMaterial({
-        uniforms: {
-          tDepth:     { value: depthRT.depthTexture },
-          cameraNear: { value: camera.near },
-          cameraFar:  { value: camera.far },
-          seaColor:   { value: new THREE.Color(0x6a6a6a) },
-        },
-        vertexShader: `
-          varying vec4 vClipPos;
-          #include <fog_pars_vertex>
-          void main() {
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
-            vClipPos = gl_Position;
-            #include <fog_vertex>
-          }
-        `,
-        fragmentShader: `
-          uniform sampler2D tDepth;
-          uniform float cameraNear;
-          uniform float cameraFar;
-          uniform vec3 seaColor;
-          varying vec4 vClipPos;
-          #include <fog_pars_fragment>
-
-          float linearizeDepth(float d) {
-            float ndcZ = d * 2.0 - 1.0;
-            return (2.0 * cameraNear * cameraFar) / (cameraFar + cameraNear - ndcZ * (cameraFar - cameraNear));
-          }
-
-          void main() {
-            vec2 screenUV = (vClipPos.xy / vClipPos.w) * 0.5 + 0.5;
-            float terrainDepth = texture2D(tDepth, screenUV).r;
-            float seaDepth = gl_FragCoord.z;
-
-            float depthDiff = linearizeDepth(terrainDepth) - linearizeDepth(seaDepth);
-            float alpha = smoothstep(0.0, ${SHORE_FEATHER}, depthDiff);
-
-            vec3 leftLightDir = normalize(vec3(-8.0, 8.0, 0.0));
-            vec3 dirLightDir  = normalize(vec3(5.0, 10.0, 5.0));
-            float diff = 0.4 * max(0.0, dot(vec3(0.0, 1.0, 0.0), leftLightDir))
-                       + 0.3 * max(0.0, dot(vec3(0.0, 1.0, 0.0), dirLightDir));
-            vec3 litColor = seaColor * (0.15 + diff);
-
-            gl_FragColor = vec4(litColor, alpha);
-            #include <fog_fragment>
-          }
-        `,
-        transparent: true,
-        depthWrite: false,
-        fog: true,
-      });
-    } catch (e) {
-      console.warn('[Chronicle] Shore intersection effect unavailable, using fallback:', e);
-    }
 
     // Sprite material for location dots
     function makeSpriteMaterial(hasEvent: boolean, color: number) {
@@ -330,24 +261,6 @@ export default function ChroniclePage() {
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
-      // Depth pre-pass: render scene without sea to capture terrain depth for shore intersection
-      if (depthRTRef.current && seaRef.current) {
-        try {
-          seaRef.current.visible = false;
-          renderer.autoClear = true;
-          renderer.setRenderTarget(depthRTRef.current);
-          renderer.render(scene, camera);
-          renderer.setRenderTarget(null);
-        } catch (e) {
-          console.warn('[Chronicle] Depth pre-pass failed, disabling shore effect:', e);
-          renderer.setRenderTarget(null);
-          depthRTRef.current?.dispose();
-          depthRTRef.current = null;
-        } finally {
-          if (seaRef.current) seaRef.current.visible = true;
-        }
-      }
-
       composer.render();
     }
     animate();
@@ -361,7 +274,6 @@ export default function ChroniclePage() {
       ssaoPass.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      depthRTRef.current?.setSize(w, h);
     }
     const ro = new ResizeObserver(onResize);
     ro.observe(mount);
@@ -370,7 +282,6 @@ export default function ChroniclePage() {
       ro.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       renderer.dispose();
-      depthRTRef.current?.dispose();
       mount.removeChild(renderer.domElement);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
