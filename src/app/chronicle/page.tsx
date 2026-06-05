@@ -360,7 +360,8 @@ export default function ChroniclePage() {
     if (!mount) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      zoomCamera(e.deltaY < 0 ? 0.92 : 1.08);
+      const dir = e.deltaY < 0 ? 0.92 : 1.08;
+      for (let i = 0; i < 10; i++) zoomCamera(dir);
     };
     mount.addEventListener("wheel", onWheel, { passive: false });
     return () => mount.removeEventListener("wheel", onWheel);
