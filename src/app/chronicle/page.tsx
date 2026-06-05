@@ -193,7 +193,7 @@ export default function ChroniclePage() {
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
-    sea.position.y = 0.001;
+    sea.position.y = 0.005;
     scene.add(sea);
 
     // Sprite material for location dots
