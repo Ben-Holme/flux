@@ -139,6 +139,12 @@ export default function ChroniclePage() {
     fillLight.position.set(-3, 2, -2);
     scene.add(fillLight);
 
+    // Left-side key light at 45° — casts shadows across terrain relief
+    const leftLight = new THREE.DirectionalLight(0xfff8f0, 1.2);
+    leftLight.position.set(-1, 1, 0); // left side, 45° elevation
+    leftLight.castShadow = true;
+    scene.add(leftLight);
+
     // Load real heightmap PNG as displacement texture
     const dispTexture = new THREE.TextureLoader().load("/heightmap.png");
 
