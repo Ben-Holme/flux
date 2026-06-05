@@ -129,9 +129,8 @@ export default function ChroniclePage() {
     scene.add(ambient);
 
     // Directional light attached to camera rig so it moves with pan
-    const dirLight = new THREE.DirectionalLight(0xfff4e0, 2.5);
+    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
     dirLight.position.set(2, 5, 3);
-    dirLight.castShadow = true;
     scene.add(dirLight);
 
     // Secondary fill light from opposite side
@@ -156,10 +155,14 @@ export default function ChroniclePage() {
     // Color texture from world map jpg
     const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
 
+    const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
+
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
       displacementScale: 2,
+      normalMap: normalTexture,
+      normalScale: new THREE.Vector2(3, 3), // amplify terrain relief in lighting
       roughness: 0.85,
       metalness: 0.05,
     });

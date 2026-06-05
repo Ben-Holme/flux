@@ -139,3 +139,48 @@ const outPath = resolve(root, "public/heightmap.png");
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, png);
 console.log(`Written ${png.length} bytes → public/heightmap.png`);
+
+// ── Normal map from height gradient (finite differences) ───────────────────
+// Terrain: 20 world units wide, dispScale 2, OUT×OUT texture.
+// Slope = height_diff_in_world_units / horizontal_dist_in_world_units
+// K = dispScale * OUT / (255 * terrainSize)  (converts pixel delta to world slope)
+const terrainSize = 20, dispScale = 2;
+const K = dispScale * OUT / (255 * terrainSize); // ≈ 0.1
+
+const normScanlines = Buffer.allocUnsafe(OUT * (1 + OUT * 3)); // RGB
+for (let py = 0; py < OUT; py++) {
+  normScanlines[py * (1 + OUT * 3)] = 0; // filter byte
+  for (let px = 0; px < OUT; px++) {
+    const hL = pixels[py  * OUT + Math.max(0, px - 1)];
+    const hR = pixels[py  * OUT + Math.min(OUT - 1, px + 1)];
+    const hU = pixels[Math.max(0, py - 1) * OUT + px];
+    const hD = pixels[Math.min(OUT - 1, py + 1) * OUT + px];
+
+    // Tangent-space surface normal: -slope in X, -slope in Y, 1
+    const dx = (hR - hL) * K;
+    const dy = (hD - hU) * K; // image Y = world -Z, kept consistent
+    const len = Math.sqrt(dx * dx + dy * dy + 1);
+    const nx = -dx / len, ny = -dy / len, nz = 1 / len;
+
+    // Encode to [0, 255]: 0.5+x*0.5 maps [-1,1] → [0,1]
+    const base = py * (1 + OUT * 3) + 1 + px * 3;
+    normScanlines[base + 0] = Math.round((nx * 0.5 + 0.5) * 255);
+    normScanlines[base + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+    normScanlines[base + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+  }
+}
+
+const nmIhdr = Buffer.allocUnsafe(13);
+nmIhdr.writeUInt32BE(OUT, 0); nmIhdr.writeUInt32BE(OUT, 4);
+nmIhdr[8]=8; nmIhdr[9]=2; nmIhdr[10]=0; nmIhdr[11]=0; nmIhdr[12]=0; // color type 2 = RGB
+
+const nmPng = Buffer.concat([
+  Buffer.from([137,80,78,71,13,10,26,10]),
+  pngChunk("IHDR", nmIhdr),
+  pngChunk("IDAT", deflateSync(normScanlines)),
+  pngChunk("IEND", Buffer.alloc(0)),
+]);
+
+const nmPath = resolve(root, "public/normalmap.png");
+writeFileSync(nmPath, nmPng);
+console.log(`Written ${nmPng.length} bytes → public/normalmap.png`);
