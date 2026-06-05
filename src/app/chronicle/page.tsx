@@ -176,14 +176,12 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.PlaneGeometry(500, 500);
     const seaMat = new THREE.MeshStandardMaterial({
       color: 0x0a1a2a,
-      transparent: true,
-      opacity: 0.85,
       roughness: 0.1,
       metalness: 0.3,
     });
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
-    sea.position.y = 0.3;
+    sea.position.y = 0;
     scene.add(sea);
 
     // Sprite material for location dots
