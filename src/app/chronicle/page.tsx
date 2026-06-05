@@ -139,7 +139,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 4,
+      displacementScale: 2,
       roughness: 0.85,
       metalness: 0.05,
     });
@@ -172,7 +172,7 @@ export default function ChroniclePage() {
 
     // Place sprites
     const half = terrainSize / 2;
-    const dispScale = 4;
+    const dispScale = 2;
     const sprites: THREE.Sprite[] = [];
 
     locations.forEach((loc) => {
