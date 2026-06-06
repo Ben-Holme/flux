@@ -36,9 +36,9 @@ for (const line of raw.split("\n")) {
 }
 console.log(`Parsed ${points.length} points`);
 
-// Round coordinates to nearest 10000 to normalise floating-point grid values
-// (some entries are -269999.938 instead of -270000 etc.)
-const STEP = 10000;
+// Round coordinates to nearest 100 to absorb any floating-point parse noise
+// without collapsing the actual 1600-unit grid spacing in the new data.
+const STEP = 100;
 const rounded = points.map(({ x, y, z }) => ({
   x: Math.round(x / STEP) * STEP,
   y: Math.round(y / STEP) * STEP,
@@ -77,8 +77,8 @@ console.log(`z range: ${zMin.toFixed(1)} → ${zMax.toFixed(1)}`);
 const normGrid = new Float32Array(GW * GH);
 for (let i = 0; i < grid.length; i++) normGrid[i] = (grid[i] - zMin) / (zMax - zMin);
 
-// ── Bilinear upscale to 256×256 ────────────────────────────────────────────
-const OUT = 256;
+// ── Bilinear resample to 512×512 (matches ~513×513 source, power-of-two) ───
+const OUT = 512;
 const pixels = new Uint8Array(OUT * OUT);
 
 function sample(gx, gy) {
