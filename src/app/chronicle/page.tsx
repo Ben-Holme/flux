@@ -29,18 +29,14 @@ const R_MIN = 4, R_MAX = 35;
 const ELEV_NEAR = Math.PI * (50 / 180); // camera elevation when close (50° from horizontal)
 const ELEV_FAR  = Math.PI / 2;           // camera elevation when far (straight down)
 
-function buildNorm() {
-  const xs = locations.map((l) => parseFloat(l.x));
-  const ys = locations.map((l) => parseFloat(l.y));
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const pad = 0.05;
-  return (l: Location) => ({
-    nx: pad + ((parseFloat(l.x) - minX) / (maxX - minX)) * (1 - 2 * pad),
-    ny: pad + ((parseFloat(l.y) - minY) / (maxY - minY)) * (1 - 2 * pad),
-  });
+const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
+
+function normalize(l: Location) {
+  return {
+    nx: (parseFloat(l.x) / MAP_EXTENT + 1) / 2,
+    ny: (parseFloat(l.y) / MAP_EXTENT + 1) / 2,
+  };
 }
-const normalize = buildNorm();
 
 
 export default function ChroniclePage() {
@@ -269,16 +265,16 @@ export default function ChroniclePage() {
 
     // Async: decode heightmap PNG pixels and reposition sprites on real terrain elevation
     const hmDecodeCanvas = document.createElement("canvas");
-    hmDecodeCanvas.width = 256; hmDecodeCanvas.height = 256;
+    hmDecodeCanvas.width = 512; hmDecodeCanvas.height = 512;
     const hmDecodeCtx = hmDecodeCanvas.getContext("2d")!;
     const hmDecodeImg = new Image();
     hmDecodeImg.onload = () => {
-      hmDecodeCtx.drawImage(hmDecodeImg, 0, 0, 256, 256);
-      const px = hmDecodeCtx.getImageData(0, 0, 256, 256);
+      hmDecodeCtx.drawImage(hmDecodeImg, 0, 0, 512, 512);
+      const px = hmDecodeCtx.getImageData(0, 0, 512, 512);
       function heightAt(nx: number, ny: number) {
-        const ix = Math.min(255, Math.max(0, Math.round(nx * 255)));
-        const iy = Math.min(255, Math.max(0, Math.round(ny * 255)));
-        return px.data[(iy * 256 + ix) * 4] / 255;
+        const ix = Math.min(511, Math.max(0, Math.round(nx * 511)));
+        const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
+        return px.data[(iy * 512 + ix) * 4] / 255;
       }
       sprites.forEach((sprite) => {
         const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
