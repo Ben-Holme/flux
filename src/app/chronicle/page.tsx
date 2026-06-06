@@ -51,6 +51,14 @@ export default function ChroniclePage() {
   const debugRef = useRef<HTMLDivElement | null>(null);
   const focusTargetRef = useRef<THREE.Vector3 | null>(null); // destination for smooth pan
 
+  // Scene object refs for debug panel
+  const ambientRef   = useRef<THREE.AmbientLight | null>(null);
+  const dirLightRef  = useRef<THREE.DirectionalLight | null>(null);
+  const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const ssaoPassRef  = useRef<SSAOPass | null>(null);
+  const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
+
   // Interaction state
   const draggingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
@@ -65,6 +73,12 @@ export default function ChroniclePage() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [dbgOpen, setDbgOpen] = useState(false);
+  const [dbg, setDbg] = useState({
+    ambient: true, dirLight: true, fillLight: true,
+    leftLight: true, leftShadow: true, ssao: true, heightFog: true,
+  });
+  const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) => r.json());
@@ -94,6 +108,18 @@ export default function ChroniclePage() {
   }, []);
 
   useEffect(() => { setSheetExpanded(false); }, [selectedIdx]);
+
+  useEffect(() => {
+    dbgRef.current = dbg;
+    if (ambientRef.current)  ambientRef.current.visible  = dbg.ambient;
+    if (dirLightRef.current)  dirLightRef.current.visible  = dbg.dirLight;
+    if (fillLightRef.current) fillLightRef.current.visible = dbg.fillLight;
+    if (leftLightRef.current) {
+      leftLightRef.current.visible    = dbg.leftLight;
+      leftLightRef.current.castShadow = dbg.leftShadow;
+    }
+    heightFogUniformRef.current.value = dbg.heightFog ? 1.0 : 0.0;
+  }, [dbg]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -131,23 +157,28 @@ export default function ChroniclePage() {
     ssaoPass.maxDistance = 0.25;
     composer.addPass(ssaoPass);
     composer.addPass(new OutputPass());
+    ssaoPassRef.current = ssaoPass;
 
     // Lighting
     const ambient = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambient);
+    ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
     dirLight.position.set(5, 10, 5);
     scene.add(dirLight);
+    dirLightRef.current = dirLight;
 
     const fillLight = new THREE.DirectionalLight(0x4466aa, 0.5);
     fillLight.position.set(-5, 5, -3);
     scene.add(fillLight);
+    fillLightRef.current = fillLight;
 
     const leftLight = new THREE.DirectionalLight(0xfff8f0, 1.2);
     leftLight.position.set(-8, 8, 0);
     leftLight.castShadow = true;
     scene.add(leftLight);
+    leftLightRef.current = leftLight;
 
     // Load real heightmap PNG as displacement texture
     const dispTexture = new THREE.TextureLoader().load("/heightmap.png");
@@ -174,6 +205,7 @@ export default function ChroniclePage() {
 
     // Height-based fog: vWorldY carries the displaced world-Y per vertex
     mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <fog_pars_vertex>',
@@ -186,13 +218,13 @@ export default function ChroniclePage() {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <fog_pars_fragment>',
-          '#include <fog_pars_fragment>\nvarying float vWorldY;',
+          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;',
         )
         .replace(
           '#include <fog_fragment>',
           `#include <fog_fragment>
           {
-            float heightFog = exp(-vWorldY * ${HEIGHT_FOG_DENSITY});
+            float heightFog = exp(-vWorldY * ${HEIGHT_FOG_DENSITY}) * uHeightFogEnabled;
             heightFog = clamp(heightFog, 0.0, 0.8);
             vec3 heightFogColor = vec3(0.04, 0.05, 0.06);
             gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, heightFog);
@@ -276,11 +308,17 @@ export default function ChroniclePage() {
     });
     // Sea is always at y≈0 so it sits at full fog density (capped 80%)
     seaMat.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <fog_fragment>',
-        `#include <fog_fragment>
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.06), 0.8);`,
-      );
+      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <fog_pars_fragment>',
+          '#include <fog_pars_fragment>\nuniform float uHeightFogEnabled;',
+        )
+        .replace(
+          '#include <fog_fragment>',
+          `#include <fog_fragment>
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.06), 0.8 * uHeightFogEnabled);`,
+        );
     };
     seaMat.customProgramCacheKey = () => 'sea-height-fog';
     const sea = new THREE.Mesh(seaGeo, seaMat);
@@ -376,7 +414,7 @@ export default function ChroniclePage() {
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
-      ssaoPass.enabled = radiusRef.current <= 20;
+      ssaoPass.enabled = dbgRef.current.ssao && radiusRef.current <= 20;
       ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
       ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
@@ -607,6 +645,35 @@ export default function ChroniclePage() {
 
       {/* Debug overlay */}
       <div ref={debugRef} style={{ position: "absolute", bottom: 8, left: 8, zIndex: 30, fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.5)", pointerEvents: "none" }} />
+
+      {/* Debug panel */}
+      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 30, userSelect: "none" }}>
+        <button
+          onClick={() => setDbgOpen(o => !o)}
+          style={{ display: "block", marginLeft: "auto", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", fontSize: "0.75rem", cursor: "pointer", borderRadius: "4px", padding: "3px 8px", fontFamily: "monospace" }}
+        >⚙</button>
+        {dbgOpen && (() => {
+          const row = (key: keyof typeof dbg, label: string) => (
+            <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, cursor: "pointer" }}>
+              <input type="checkbox" checked={dbg[key]} onChange={e => setDbg(p => ({ ...p, [key]: e.target.checked }))} style={{ cursor: "pointer", accentColor: GOLD }} />
+              <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{label}</span>
+            </label>
+          );
+          return (
+            <div style={{ marginTop: 4, background: "rgba(6,8,10,0.93)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "10px 12px", minWidth: 152 }}>
+              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>Lights</div>
+              {row("ambient",  "Ambient")}
+              {row("dirLight",  "Dir light")}
+              {row("fillLight", "Fill light")}
+              {row("leftLight", "Left light")}
+              {row("leftShadow", "└ castShadow")}
+              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
+              {row("ssao",      "SSAO")}
+              {row("heightFog", "Height fog")}
+            </div>
+          );
+        })()}
+      </div>
 
       {/* Vignette */}
       <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)" }} />
