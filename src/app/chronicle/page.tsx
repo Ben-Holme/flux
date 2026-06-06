@@ -206,12 +206,70 @@ export default function ChroniclePage() {
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Sea plane — fog (same color as scene background) fades the edges naturally
+    // Procedural noise normal map for the sea surface
+    function buildSeaNormalMap(): THREE.CanvasTexture {
+      const SIZE = 256;
+      const canvas = document.createElement("canvas");
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext("2d")!;
+
+      const hash = (x: number, y: number) => {
+        const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+        return n - Math.floor(n);
+      };
+      const valueNoise = (x: number, y: number) => {
+        const ix = Math.floor(x), iy = Math.floor(y);
+        const fx = x - ix, fy = y - iy;
+        const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+        const a = hash(ix, iy), b = hash(ix + 1, iy);
+        const c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
+        return a + (b - a) * ux + (c - a) * uy + (d - b - c + a) * ux * uy;
+      };
+
+      // 4-octave fBm height field
+      const SCALE = 8;
+      const heights = new Float32Array(SIZE * SIZE);
+      for (let py = 0; py < SIZE; py++) {
+        for (let px = 0; px < SIZE; px++) {
+          const sx = px / SIZE * SCALE, sy = py / SIZE * SCALE;
+          let v = 0, amp = 0.5, freq = 1;
+          for (let i = 0; i < 4; i++) { v += valueNoise(sx * freq, sy * freq) * amp; amp *= 0.5; freq *= 2; }
+          heights[py * SIZE + px] = v;
+        }
+      }
+
+      // Tangent-space normals via finite differences
+      const K = 2;
+      const img = ctx.createImageData(SIZE, SIZE);
+      for (let py = 0; py < SIZE; py++) {
+        for (let px = 0; px < SIZE; px++) {
+          const hL = heights[py * SIZE + Math.max(0, px - 1)];
+          const hR = heights[py * SIZE + Math.min(SIZE - 1, px + 1)];
+          const hU = heights[Math.max(0, py - 1) * SIZE + px];
+          const hD = heights[Math.min(SIZE - 1, py + 1) * SIZE + px];
+          const dx = (hR - hL) * K, dy = (hD - hU) * K;
+          const len = Math.sqrt(dx * dx + dy * dy + 1);
+          const base = (py * SIZE + px) * 4;
+          img.data[base]     = Math.round((-dx / len * 0.5 + 0.5) * 255);
+          img.data[base + 1] = Math.round((-dy / len * 0.5 + 0.5) * 255);
+          img.data[base + 2] = Math.round((1   / len * 0.5 + 0.5) * 255);
+          img.data[base + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    // Sea plane — specular dark water with subtle noise normals
     const seaGeo = new THREE.PlaneGeometry(50, 50);
     const seaMat = new THREE.MeshStandardMaterial({
       color: 0x6a6a6a,
-      roughness: 0.9,
-      metalness: 0.0,
+      roughness: 0.05,
+      metalness: 0.6,
+      normalMap: buildSeaNormalMap(),
+      normalScale: new THREE.Vector2(0.3, 0.3),
       transparent: true,
       opacity: 1,
       depthWrite: false,
