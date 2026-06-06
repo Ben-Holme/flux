@@ -124,7 +124,7 @@ export default function ChroniclePage() {
     composer.addPass(new OutputPass());
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0x334455, 0.8);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambient);
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
@@ -262,7 +262,7 @@ export default function ChroniclePage() {
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
-      ssaoPass.enabled = radiusRef.current < 25;
+      ssaoPass.enabled = radiusRef.current <= 20;
       ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
       ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
