@@ -261,7 +261,10 @@ export default function ChroniclePage() {
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
-      ssaoPass.enabled = camera.position.y < 20;
+      const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
+      ssaoPass.enabled = radiusRef.current < 25;
+      ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
+      ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
     }
     animate();
