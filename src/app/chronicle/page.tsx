@@ -228,6 +228,7 @@ export default function ChroniclePage() {
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = 0.005;
+    sea.renderOrder = 0;
     scene.add(sea);
 
     // Sprite material for location dots
@@ -262,6 +263,7 @@ export default function ChroniclePage() {
       const color = hasEvent ? GOLD_NUM : 0x888888;
       const mat2 = makeSpriteMaterial(hasEvent, color);
       const sprite = new THREE.Sprite(mat2);
+      sprite.renderOrder = 1;
       sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
 
       // World position on terrain — place at mid-height until PNG decodes
