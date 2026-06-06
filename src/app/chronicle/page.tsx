@@ -49,6 +49,7 @@ export default function ChroniclePage() {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
   const debugRef = useRef<HTMLDivElement | null>(null);
+  const focusTargetRef = useRef<THREE.Vector3 | null>(null); // destination for smooth pan
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -62,6 +63,8 @@ export default function ChroniclePage() {
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) => r.json());
@@ -82,6 +85,15 @@ export default function ChroniclePage() {
       }
     }).catch(() => {}).finally(() => setEventsLoading(false));
   }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => { setSheetExpanded(false); }, [selectedIdx]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -293,6 +305,13 @@ export default function ChroniclePage() {
     // Animation loop
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
+      if (focusTargetRef.current) {
+        targetRef.current.lerp(focusTargetRef.current, 0.08);
+        if (targetRef.current.distanceTo(focusTargetRef.current) < 0.01) {
+          targetRef.current.copy(focusTargetRef.current);
+          focusTargetRef.current = null;
+        }
+      }
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
@@ -492,7 +511,13 @@ export default function ChroniclePage() {
     }
 
     if (!draggingRef.current) {
-      setSelectedIdx(pickLocation(e.clientX, e.clientY));
+      const idx = pickLocation(e.clientX, e.clientY);
+      setSelectedIdx(idx);
+      if (idx !== null) {
+        const loc = locations[idx];
+        const { nx, ny } = normalize(loc);
+        focusTargetRef.current = new THREE.Vector3((nx - 0.5) * 20, 0, (ny - 0.5) * 20);
+      }
     }
     draggingRef.current = false;
     pointerStartRef.current = null;
@@ -559,8 +584,8 @@ export default function ChroniclePage() {
         </div>
       </div>
 
-      {/* Side panel */}
-      {selectedLoc && (
+      {/* Desktop side panel */}
+      {!isMobile && selectedLoc && (
         <div style={{
           position: "absolute", top: 0, right: 0, bottom: 0,
           width: "min(340px, 90vw)",
@@ -613,6 +638,86 @@ export default function ChroniclePage() {
           )}
           {locEvents.length === 0 && !eventsLoading && (
             <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>No recorded events at this location.</p>
+          )}
+        </div>
+      )}
+
+      {/* Mobile bottom sheet */}
+      {isMobile && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0,
+          height: "50vh",
+          background: "rgba(6,8,10,0.96)",
+          backdropFilter: "blur(16px)",
+          borderRadius: "16px 16px 0 0",
+          zIndex: 20,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          transform: !selectedLoc ? "translateY(100%)" : sheetExpanded ? "translateY(0)" : "translateY(calc(100% - 120px))",
+          transition: "transform 0.3s ease",
+        }}>
+          {/* Drag handle — tap to expand */}
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer", flexShrink: 0 }}
+            onClick={() => selectedLoc && setSheetExpanded(true)}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.25)" }} />
+          </div>
+
+          {selectedLoc && (
+            <>
+              {/* Peek header: location name + close — always visible in peek */}
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 20px 12px", flexShrink: 0, cursor: sheetExpanded ? "default" : "pointer" }}
+                onClick={() => !sheetExpanded && setSheetExpanded(true)}
+              >
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.15em", color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)", textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none", lineHeight: 1.3 }}>
+                  {selectedLoc.name}
+                </div>
+                <button
+                  onClick={(ev) => { ev.stopPropagation(); setSelectedIdx(null); }}
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", cursor: "pointer", lineHeight: 1, padding: "4px 4px 4px 16px", flexShrink: 0 }}
+                  aria-label="Close"
+                >×</button>
+              </div>
+
+              {/* Expanded content — scrollable */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 24px", opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}>
+                {selectedLoc.description && (
+                  <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.6, margin: "0 0 12px" }}>{selectedLoc.description}</p>
+                )}
+                {selectedLoc.keywords && (
+                  <p style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", lineHeight: 1.5, margin: "0 0 20px", fontStyle: "italic" }}>{selectedLoc.keywords}</p>
+                )}
+                {locEvents.length > 0 && (
+                  <>
+                    <div style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", marginBottom: "10px" }}>
+                      {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {locEvents.map((ev, i) => {
+                        const et = EVENT_TYPES[ev.type] ?? { label: ev.type, symbol: "·", color: "rgba(255,255,255,0.4)" };
+                        const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
+                        return (
+                          <div key={i} style={{ borderRadius: "4px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", padding: "10px 12px" }}>
+                            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "4px" }}>
+                              <span style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}>{et.symbol} {et.label}</span>
+                              <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>{ev.date}</span>
+                            </div>
+                            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>{charName}</div>
+                            {ev.special && <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "4px", fontStyle: "italic" }}>{ev.special}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                {locEvents.length === 0 && !eventsLoading && (
+                  <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>No recorded events at this location.</p>
+                )}
+              </div>
+            </>
           )}
         </div>
       )}
