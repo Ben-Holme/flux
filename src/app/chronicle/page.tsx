@@ -124,7 +124,7 @@ export default function ChroniclePage() {
     composer.addPass(new OutputPass());
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0x334455, 0.5);
+    const ambient = new THREE.AmbientLight(0x334455, 0.8);
     scene.add(ambient);
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
@@ -261,6 +261,7 @@ export default function ChroniclePage() {
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
+      ssaoPass.enabled = camera.position.y < 20;
       composer.render();
     }
     animate();
