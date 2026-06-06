@@ -22,6 +22,7 @@ interface Location {
 const locations = LOCATIONS as Location[];
 const GOLD = "#c8923a";
 const GOLD_NUM = 0xc8923a;
+const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
 
 // Orbit constants
 const R_MIN = 4, R_MAX = 35;
@@ -107,7 +108,7 @@ export default function ChroniclePage() {
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0c0e);
-    scene.fog = new THREE.Fog(0x0a0c0e, 15, 35);
+    // No distance fog — height-based fog is injected via onBeforeCompile below
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
@@ -163,6 +164,35 @@ export default function ChroniclePage() {
       metalness: 0.05,
     });
 
+    // Height-based fog: vWorldY carries the displaced world-Y per vertex
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <fog_pars_vertex>',
+          '#include <fog_pars_vertex>\nvarying float vWorldY;',
+        )
+        .replace(
+          '#include <displacementmap_vertex>',
+          '#include <displacementmap_vertex>\nvWorldY = (modelMatrix * vec4(transformed, 1.0)).y;',
+        );
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <fog_pars_fragment>',
+          '#include <fog_pars_fragment>\nvarying float vWorldY;',
+        )
+        .replace(
+          '#include <fog_fragment>',
+          `#include <fog_fragment>
+          {
+            float heightFog = exp(-vWorldY * ${HEIGHT_FOG_DENSITY});
+            heightFog = clamp(heightFog, 0.0, 0.8);
+            vec3 heightFogColor = vec3(0.04, 0.05, 0.06);
+            gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, heightFog);
+          }`,
+        );
+    };
+    mat.customProgramCacheKey = () => 'terrain-height-fog';
+
     const terrain = new THREE.Mesh(geo, mat);
     terrain.rotation.x = -Math.PI / 2; // lay flat
     terrain.receiveShadow = true;
@@ -178,6 +208,15 @@ export default function ChroniclePage() {
       opacity: 1,
       depthWrite: false,
     });
+    // Sea is always at y≈0 so it sits at full fog density (capped 80%)
+    seaMat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <fog_fragment>',
+        `#include <fog_fragment>
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.06), 0.8);`,
+      );
+    };
+    seaMat.customProgramCacheKey = () => 'sea-height-fog';
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = 0.005;
