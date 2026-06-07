@@ -163,7 +163,7 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 5, 25);
+    dirLight.position.set(0, 45, 10);
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
