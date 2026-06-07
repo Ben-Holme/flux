@@ -56,10 +56,13 @@ export default function ChroniclePage() {
   const dirLightRef  = useRef<THREE.DirectionalLight | null>(null);
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
-  const seaMatRef     = useRef<THREE.MeshPhongMaterial | null>(null);
-  const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
-  const ssaoPassRef  = useRef<SSAOPass | null>(null);
-  const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
+  const seaMatRef          = useRef<THREE.MeshPhongMaterial | null>(null);
+  const terrainMatRef      = useRef<THREE.MeshStandardMaterial | null>(null);
+  const ssaoPassRef        = useRef<SSAOPass | null>(null);
+  const heightFogUniformRef    = useRef<{ value: number }>({ value: 1.0 });
+  const heightFogDensityRef    = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
+  const dispScaleRef           = useRef(1);
+  const spriteHeightsRef       = useRef<number[]>([]);
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -82,8 +85,9 @@ export default function ChroniclePage() {
   });
   const [dirLightY,     setDirLightY]     = useState(45);
   const [dirLightZ,     setDirLightZ]     = useState(10);
-  const [seaSpec,       setSeaSpec]       = useState(0.5);
+  const [seaSpec,       setSeaSpec]       = useState(0.05);
   const [terrainNormal, setTerrainNormal] = useState(3);
+  const [heightScale,   setHeightScale]   = useState(1);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
   const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
@@ -136,6 +140,17 @@ export default function ChroniclePage() {
   useEffect(() => {
     if (terrainMatRef.current) terrainMatRef.current.normalScale.set(terrainNormal, terrainNormal);
   }, [terrainNormal]);
+
+  useEffect(() => {
+    dispScaleRef.current = heightScale;
+    if (terrainMatRef.current) terrainMatRef.current.displacementScale = heightScale;
+    heightFogDensityRef.current.value = heightScale > 0 ? HEIGHT_FOG_DENSITY / heightScale : HEIGHT_FOG_DENSITY;
+    spritesRef.current.forEach((sprite) => {
+      const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
+      const h = spriteHeightsRef.current[idx] ?? 0.5;
+      sprite.position.setY(h * heightScale + 0.08);
+    });
+  }, [heightScale]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -221,7 +236,8 @@ export default function ChroniclePage() {
 
     // Height-based fog: vWorldY carries the displaced world-Y per vertex
     mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
+      shader.uniforms.uHeightFogEnabled  = heightFogUniformRef.current;
+      shader.uniforms.uHeightFogDensity  = heightFogDensityRef.current;
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <fog_pars_vertex>',
@@ -234,13 +250,13 @@ export default function ChroniclePage() {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <fog_pars_fragment>',
-          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;',
+          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;',
         )
         .replace(
           '#include <fog_fragment>',
           `#include <fog_fragment>
           {
-            float heightFog = exp(-vWorldY * ${HEIGHT_FOG_DENSITY}) * uHeightFogEnabled;
+            float heightFog = exp(-vWorldY * uHeightFogDensity) * uHeightFogEnabled;
             heightFog = clamp(heightFog, 0.0, 0.8);
             vec3 heightFogColor = vec3(0.04, 0.05, 0.06);
             gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, heightFog);
@@ -316,7 +332,7 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.PlaneGeometry(50, 50);
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
-      specular: new THREE.Color(0.5, 0.5, 0.5),
+      specular: new THREE.Color(0.05, 0.05, 0.05),
       shininess: 750,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.8, 0.8),
@@ -354,7 +370,7 @@ export default function ChroniclePage() {
 
     // Place sprites
     const half = terrainSize / 2;
-    const dispScale = 2;
+    const dispScale = dispScaleRef.current;
     const sprites: THREE.Sprite[] = [];
 
     locations.forEach((loc) => {
@@ -390,14 +406,18 @@ export default function ChroniclePage() {
         const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
         return px.data[(iy * 512 + ix) * 4] / 255;
       }
+      const heights: number[] = new Array(locations.length).fill(0.5);
       sprites.forEach((sprite) => {
         const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
         const loc = locations[idx];
         const { nx, ny } = normalize(loc);
         const wx = (nx - 0.5) * terrainSize;
         const wz = (ny - 0.5) * terrainSize;
-        sprite.position.set(wx, heightAt(nx, ny) * dispScale + 0.08, wz);
+        const h = heightAt(nx, ny);
+        heights[idx] = h;
+        sprite.position.set(wx, h * dispScaleRef.current + 0.08, wz);
       });
+      spriteHeightsRef.current = heights;
     };
     hmDecodeImg.src = "/heightmap.png";
 
@@ -684,9 +704,10 @@ export default function ChroniclePage() {
               {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
               {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Terrain</div>
-              {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
+              {sliderRow("Normals",      terrainNormal, 0, 3,   0.05, setTerrainNormal)}
+              {sliderRow("Height scale", heightScale,   0, 5,   0.1,  setHeightScale)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
-              {sliderRow("Specular", seaSpec, 0, 1, 0.05, setSeaSpec)}
+              {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
               {row("ssao",      "SSAO", v => { ssaoOverrideRef.current = v; })}
               {row("heightFog", "Height fog")}
