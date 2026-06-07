@@ -56,7 +56,8 @@ export default function ChroniclePage() {
   const dirLightRef  = useRef<THREE.DirectionalLight | null>(null);
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
-  const seaMatRef    = useRef<THREE.MeshPhongMaterial | null>(null);
+  const seaMatRef     = useRef<THREE.MeshPhongMaterial | null>(null);
+  const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const ssaoPassRef  = useRef<SSAOPass | null>(null);
   const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
 
@@ -79,9 +80,10 @@ export default function ChroniclePage() {
     ambient: true, dirLight: true, fillLight: true,
     leftLight: true, ssao: true, heightFog: true,
   });
-  const [dirLightY, setDirLightY] = useState(45);
-  const [dirLightZ, setDirLightZ] = useState(10);
-  const [seaSpec,   setSeaSpec]   = useState(0.5);
+  const [dirLightY,     setDirLightY]     = useState(45);
+  const [dirLightZ,     setDirLightZ]     = useState(10);
+  const [seaSpec,       setSeaSpec]       = useState(0.5);
+  const [terrainNormal, setTerrainNormal] = useState(3);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
   const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
@@ -130,6 +132,10 @@ export default function ChroniclePage() {
   useEffect(() => {
     if (seaMatRef.current) seaMatRef.current.specular.setRGB(seaSpec, seaSpec, seaSpec);
   }, [seaSpec]);
+
+  useEffect(() => {
+    if (terrainMatRef.current) terrainMatRef.current.normalScale.set(terrainNormal, terrainNormal);
+  }, [terrainNormal]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -243,6 +249,7 @@ export default function ChroniclePage() {
     };
     mat.customProgramCacheKey = () => 'terrain-height-fog';
 
+    terrainMatRef.current = mat;
     const terrain = new THREE.Mesh(geo, mat);
     terrain.rotation.x = -Math.PI / 2; // lay flat
     terrain.receiveShadow = true;
@@ -676,6 +683,8 @@ export default function ChroniclePage() {
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Dir light pos</div>
               {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
               {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
+              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Terrain</div>
+              {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
               {sliderRow("Specular", seaSpec, 0, 1, 0.05, setSeaSpec)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
