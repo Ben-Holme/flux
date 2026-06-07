@@ -76,9 +76,10 @@ export default function ChroniclePage() {
   const [dbgOpen, setDbgOpen] = useState(false);
   const [dbg, setDbg] = useState({
     ambient: true, dirLight: true, fillLight: true,
-    leftLight: true, leftShadow: true, ssao: true, heightFog: true,
+    leftLight: true, ssao: true, heightFog: true,
   });
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+  const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) => r.json());
@@ -114,10 +115,7 @@ export default function ChroniclePage() {
     if (ambientRef.current)  ambientRef.current.visible  = dbg.ambient;
     if (dirLightRef.current)  dirLightRef.current.visible  = dbg.dirLight;
     if (fillLightRef.current) fillLightRef.current.visible = dbg.fillLight;
-    if (leftLightRef.current) {
-      leftLightRef.current.visible    = dbg.leftLight;
-      leftLightRef.current.castShadow = dbg.leftShadow;
-    }
+    if (leftLightRef.current) leftLightRef.current.visible = dbg.leftLight;
     heightFogUniformRef.current.value = dbg.heightFog ? 1.0 : 0.0;
   }, [dbg]);
 
@@ -160,16 +158,16 @@ export default function ChroniclePage() {
     ssaoPassRef.current = ssaoPass;
 
     // Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.13);
     scene.add(ambient);
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(5, 10, 5);
+    dirLight.position.set(0, 8, 15); // in front of default camera angle — makes water specularity visible
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
-    const fillLight = new THREE.DirectionalLight(0x4466aa, 0.5);
+    const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5);
     fillLight.position.set(-5, 5, -3);
     scene.add(fillLight);
     fillLightRef.current = fillLight;
@@ -414,7 +412,9 @@ export default function ChroniclePage() {
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
-      ssaoPass.enabled = dbgRef.current.ssao && radiusRef.current <= 20;
+      ssaoPass.enabled = ssaoOverrideRef.current !== null
+        ? ssaoOverrideRef.current
+        : radiusRef.current <= 20;
       ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
       ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
@@ -653,9 +653,9 @@ export default function ChroniclePage() {
           style={{ display: "block", marginLeft: "auto", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", fontSize: "0.75rem", cursor: "pointer", borderRadius: "4px", padding: "3px 8px", fontFamily: "monospace" }}
         >⚙</button>
         {dbgOpen && (() => {
-          const row = (key: keyof typeof dbg, label: string) => (
+          const row = (key: keyof typeof dbg, label: string, extra?: (v: boolean) => void) => (
             <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, cursor: "pointer" }}>
-              <input type="checkbox" checked={dbg[key]} onChange={e => setDbg(p => ({ ...p, [key]: e.target.checked }))} style={{ cursor: "pointer", accentColor: GOLD }} />
+              <input type="checkbox" checked={dbg[key]} onChange={e => { const v = e.target.checked; setDbg(p => ({ ...p, [key]: v })); extra?.(v); }} style={{ cursor: "pointer", accentColor: GOLD }} />
               <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{label}</span>
             </label>
           );
@@ -666,9 +666,8 @@ export default function ChroniclePage() {
               {row("dirLight",  "Dir light")}
               {row("fillLight", "Fill light")}
               {row("leftLight", "Left light")}
-              {row("leftShadow", "└ castShadow")}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
-              {row("ssao",      "SSAO")}
+              {row("ssao",      "SSAO", v => { ssaoOverrideRef.current = v; })}
               {row("heightFog", "Height fog")}
             </div>
           );
