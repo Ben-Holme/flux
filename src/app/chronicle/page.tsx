@@ -675,7 +675,7 @@ export default function ChroniclePage() {
               {row("leftLight", "Left light")}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Dir light pos</div>
               {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
-              {sliderRow("Z", dirLightZ, 0, 50, 1, setDirLightZ)}
+              {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
               {sliderRow("Specular", seaSpec, 0, 1, 0.05, setSeaSpec)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
