@@ -304,21 +304,6 @@ export default function ChroniclePage() {
       opacity: 1,
       depthWrite: false,
     });
-    // Sea is always at y≈0 so it sits at full fog density (capped 80%)
-    seaMat.onBeforeCompile = (shader) => {
-      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <fog_pars_fragment>',
-          '#include <fog_pars_fragment>\nuniform float uHeightFogEnabled;',
-        )
-        .replace(
-          '#include <fog_fragment>',
-          `#include <fog_fragment>
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.04, 0.05, 0.06), 0.8 * uHeightFogEnabled);`,
-        );
-    };
-    seaMat.customProgramCacheKey = () => 'sea-height-fog';
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = 0.005;
