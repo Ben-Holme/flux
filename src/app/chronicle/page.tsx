@@ -289,6 +289,7 @@ export default function ChroniclePage() {
       ctx.putImageData(img, 0, 0);
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 4);
       return tex;
     }
 
@@ -297,9 +298,9 @@ export default function ChroniclePage() {
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
       specular: new THREE.Color(0xffffff),
-      shininess: 400,
+      shininess: 80,
       normalMap: buildSeaNormalMap(),
-      normalScale: new THREE.Vector2(0.3, 0.3),
+      normalScale: new THREE.Vector2(2.5, 2.5),
       transparent: true,
       opacity: 1,
       depthWrite: false,
