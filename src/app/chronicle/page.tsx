@@ -163,7 +163,7 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 15, 2);
+    dirLight.position.set(0, 12, 4);
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
@@ -238,7 +238,7 @@ export default function ChroniclePage() {
 
     // Procedural noise normal map for the sea surface
     function buildSeaNormalMap(): THREE.CanvasTexture {
-      const SIZE = 256;
+      const SIZE = 512;
       const canvas = document.createElement("canvas");
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext("2d")!;
@@ -256,8 +256,8 @@ export default function ChroniclePage() {
         return a + (b - a) * ux + (c - a) * uy + (d - b - c + a) * ux * uy;
       };
 
-      // 4-octave fBm height field
-      const SCALE = 8;
+      // 4-octave fBm height field — higher SCALE = finer waves, lower K = less steep
+      const SCALE = 16;
       const heights = new Float32Array(SIZE * SIZE);
       for (let py = 0; py < SIZE; py++) {
         for (let px = 0; px < SIZE; px++) {
@@ -269,7 +269,7 @@ export default function ChroniclePage() {
       }
 
       // Tangent-space normals via finite differences
-      const K = 2;
+      const K = 1;
       const img = ctx.createImageData(SIZE, SIZE);
       for (let py = 0; py < SIZE; py++) {
         for (let px = 0; px < SIZE; px++) {
@@ -298,9 +298,9 @@ export default function ChroniclePage() {
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
       specular: new THREE.Color(0xffffff),
-      shininess: 80,
+      shininess: 160,
       normalMap: buildSeaNormalMap(),
-      normalScale: new THREE.Vector2(2.5, 2.5),
+      normalScale: new THREE.Vector2(1.2, 1.2),
       transparent: true,
       opacity: 1,
       depthWrite: false,
