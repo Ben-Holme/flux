@@ -297,7 +297,7 @@ export default function ChroniclePage() {
     const seaMat = new THREE.MeshStandardMaterial({
       color: 0x6a6a6a,
       roughness: 0.05,
-      metalness: 0.6,
+      metalness: 0,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.3, 0.3),
       transparent: true,
