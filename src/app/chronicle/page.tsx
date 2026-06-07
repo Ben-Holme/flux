@@ -163,7 +163,7 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 8, 15); // in front of default camera angle — makes water specularity visible
+    dirLight.position.set(0, 15, 3); // near-overhead with slight forward lean — aligns specular lobe with camera angle on horizontal surface
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
@@ -294,10 +294,9 @@ export default function ChroniclePage() {
 
     // Sea plane — specular dark water with subtle noise normals
     const seaGeo = new THREE.PlaneGeometry(50, 50);
-    const seaMat = new THREE.MeshStandardMaterial({
+    const seaMat = new THREE.MeshPhongMaterial({
       color: 0x6a6a6a,
-      roughness: 0.05,
-      metalness: 0,
+      shininess: 200,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.3, 0.3),
       transparent: true,
