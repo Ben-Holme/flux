@@ -61,6 +61,7 @@ export default function ChroniclePage() {
   const ssaoPassRef        = useRef<SSAOPass | null>(null);
   const heightFogUniformRef    = useRef<{ value: number }>({ value: 1.0 });
   const heightFogDensityRef    = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
+  const contrastUniformRef     = useRef<{ value: number }>({ value: 1.0 });
   const dispScaleRef           = useRef(1);
   const spriteHeightsRef       = useRef<number[]>([]);
 
@@ -88,6 +89,7 @@ export default function ChroniclePage() {
   const [seaSpec,       setSeaSpec]       = useState(0.05);
   const [terrainNormal, setTerrainNormal] = useState(3);
   const [heightScale,   setHeightScale]   = useState(1);
+  const [contrast,      setContrast]      = useState(1);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
   const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
@@ -140,6 +142,10 @@ export default function ChroniclePage() {
   useEffect(() => {
     if (terrainMatRef.current) terrainMatRef.current.normalScale.set(terrainNormal, terrainNormal);
   }, [terrainNormal]);
+
+  useEffect(() => {
+    contrastUniformRef.current.value = contrast;
+  }, [contrast]);
 
   useEffect(() => {
     dispScaleRef.current = heightScale;
@@ -238,6 +244,7 @@ export default function ChroniclePage() {
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uHeightFogEnabled  = heightFogUniformRef.current;
       shader.uniforms.uHeightFogDensity  = heightFogDensityRef.current;
+      shader.uniforms.uContrast          = contrastUniformRef.current;
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <fog_pars_vertex>',
@@ -250,7 +257,11 @@ export default function ChroniclePage() {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <fog_pars_fragment>',
-          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;',
+          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;',
+        )
+        .replace(
+          '#include <map_fragment>',
+          '#include <map_fragment>\ndiffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;',
         )
         .replace(
           '#include <fog_fragment>',
@@ -706,6 +717,7 @@ export default function ChroniclePage() {
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Terrain</div>
               {sliderRow("Normals",      terrainNormal, 0, 3,   0.05, setTerrainNormal)}
               {sliderRow("Height scale", heightScale,   0, 5,   0.1,  setHeightScale)}
+              {sliderRow("Contrast",     contrast,      0.5, 4, 0.05, setContrast)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
               {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
