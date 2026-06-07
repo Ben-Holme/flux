@@ -295,8 +295,9 @@ export default function ChroniclePage() {
     // Sea plane — specular dark water with subtle noise normals
     const seaGeo = new THREE.PlaneGeometry(50, 50);
     const seaMat = new THREE.MeshPhongMaterial({
-      color: 0x6a6a6a,
-      shininess: 200,
+      color: 0x1a2020,
+      specular: new THREE.Color(0xffffff),
+      shininess: 400,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.3, 0.3),
       transparent: true,
