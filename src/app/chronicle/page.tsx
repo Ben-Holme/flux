@@ -163,7 +163,7 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 25, 2);
+    dirLight.position.set(0, 35, 2);
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
@@ -194,7 +194,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 2,
+      displacementScale: 1,
       normalMap: normalTexture,
       normalScale: new THREE.Vector2(3, 3), // amplify terrain relief in lighting
       roughness: 0.85,
@@ -289,7 +289,7 @@ export default function ChroniclePage() {
       ctx.putImageData(img, 0, 0);
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(4, 4);
+      tex.repeat.set(8, 8);
       return tex;
     }
 
