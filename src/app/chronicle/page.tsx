@@ -163,7 +163,7 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 12, 4);
+    dirLight.position.set(0, 15, 2);
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
@@ -298,9 +298,9 @@ export default function ChroniclePage() {
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
       specular: new THREE.Color(0xffffff),
-      shininess: 160,
+      shininess: 300,
       normalMap: buildSeaNormalMap(),
-      normalScale: new THREE.Vector2(1.2, 1.2),
+      normalScale: new THREE.Vector2(0.8, 0.8),
       transparent: true,
       opacity: 1,
       depthWrite: false,
