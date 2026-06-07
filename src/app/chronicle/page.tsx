@@ -298,7 +298,7 @@ export default function ChroniclePage() {
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
       specular: new THREE.Color(0xffffff),
-      shininess: 30,
+      shininess: 750,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.8, 0.8),
       transparent: true,
