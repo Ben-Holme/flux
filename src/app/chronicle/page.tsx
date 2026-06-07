@@ -56,6 +56,7 @@ export default function ChroniclePage() {
   const dirLightRef  = useRef<THREE.DirectionalLight | null>(null);
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const seaMatRef    = useRef<THREE.MeshPhongMaterial | null>(null);
   const ssaoPassRef  = useRef<SSAOPass | null>(null);
   const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
 
@@ -78,6 +79,9 @@ export default function ChroniclePage() {
     ambient: true, dirLight: true, fillLight: true,
     leftLight: true, ssao: true, heightFog: true,
   });
+  const [dirLightY, setDirLightY] = useState(45);
+  const [dirLightZ, setDirLightZ] = useState(10);
+  const [seaSpec,   setSeaSpec]   = useState(0.5);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
   const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
@@ -118,6 +122,14 @@ export default function ChroniclePage() {
     if (leftLightRef.current) leftLightRef.current.visible = dbg.leftLight;
     heightFogUniformRef.current.value = dbg.heightFog ? 1.0 : 0.0;
   }, [dbg]);
+
+  useEffect(() => {
+    if (dirLightRef.current) dirLightRef.current.position.set(0, dirLightY, dirLightZ);
+  }, [dirLightY, dirLightZ]);
+
+  useEffect(() => {
+    if (seaMatRef.current) seaMatRef.current.specular.setRGB(seaSpec, seaSpec, seaSpec);
+  }, [seaSpec]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -297,7 +309,7 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.PlaneGeometry(50, 50);
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x4a5a5c,
-      specular: new THREE.Color(0xffffff),
+      specular: new THREE.Color(0.5, 0.5, 0.5),
       shininess: 750,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.8, 0.8),
@@ -305,6 +317,7 @@ export default function ChroniclePage() {
       opacity: 1,
       depthWrite: false,
     });
+    seaMatRef.current = seaMat;
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = 0.005;
@@ -645,13 +658,26 @@ export default function ChroniclePage() {
               <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{label}</span>
             </label>
           );
+          const sliderRow = (label: string, value: number, min: number, max: number, step: number, onChange: (v: number) => void) => (
+            <label style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 5 }}>
+              <span style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>
+                <span>{label}</span><span>{value}</span>
+              </span>
+              <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ width: "100%", accentColor: GOLD, cursor: "pointer" }} />
+            </label>
+          );
           return (
-            <div style={{ marginTop: 4, background: "rgba(6,8,10,0.93)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "10px 12px", minWidth: 152 }}>
+            <div style={{ marginTop: 4, background: "rgba(6,8,10,0.93)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "10px 12px", minWidth: 180 }}>
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>Lights</div>
               {row("ambient",  "Ambient")}
               {row("dirLight",  "Dir light")}
               {row("fillLight", "Fill light")}
               {row("leftLight", "Left light")}
+              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Dir light pos</div>
+              {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
+              {sliderRow("Z", dirLightZ, 0, 50, 1, setDirLightZ)}
+              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
+              {sliderRow("Specular", seaSpec, 0, 1, 0.05, setSeaSpec)}
               <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
               {row("ssao",      "SSAO", v => { ssaoOverrideRef.current = v; })}
               {row("heightFog", "Height fog")}
