@@ -25,9 +25,10 @@ const GOLD_NUM = 0xc8923a;
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
 
 // Orbit constants
-const R_MIN = 4, R_MAX = 35;
+const R_MIN = 4,
+  R_MAX = 35;
 const ELEV_NEAR = Math.PI * (50 / 180); // camera elevation when close (50° from horizontal)
-const ELEV_FAR  = Math.PI / 2;           // camera elevation when far (straight down)
+const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
 
@@ -37,7 +38,6 @@ function normalize(l: Location) {
     ny: (parseFloat(l.y) / MAP_EXTENT + 1) / 2,
   };
 }
-
 
 export default function ChroniclePage() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -52,18 +52,18 @@ export default function ChroniclePage() {
   const focusTargetRef = useRef<THREE.Vector3 | null>(null); // destination for smooth pan
 
   // Scene object refs for debug panel
-  const ambientRef   = useRef<THREE.AmbientLight | null>(null);
-  const dirLightRef  = useRef<THREE.DirectionalLight | null>(null);
+  const ambientRef = useRef<THREE.AmbientLight | null>(null);
+  const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
-  const seaMatRef          = useRef<THREE.MeshPhongMaterial | null>(null);
-  const terrainMatRef      = useRef<THREE.MeshStandardMaterial | null>(null);
-  const ssaoPassRef        = useRef<SSAOPass | null>(null);
-  const heightFogUniformRef    = useRef<{ value: number }>({ value: 1.0 });
-  const heightFogDensityRef    = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
-  const contrastUniformRef     = useRef<{ value: number }>({ value: 1.0 });
-  const dispScaleRef           = useRef(1);
-  const spriteHeightsRef       = useRef<number[]>([]);
+  const seaMatRef = useRef<THREE.MeshPhongMaterial | null>(null);
+  const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
+  const ssaoPassRef = useRef<SSAOPass | null>(null);
+  const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
+  const heightFogDensityRef = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
+  const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
+  const dispScaleRef = useRef(1);
+  const spriteHeightsRef = useRef<number[]>([]);
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -81,36 +81,47 @@ export default function ChroniclePage() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [dbgOpen, setDbgOpen] = useState(false);
   const [dbg, setDbg] = useState({
-    ambient: true, dirLight: true, fillLight: true,
-    leftLight: true, ssao: true, heightFog: true,
+    ambient: true,
+    dirLight: true,
+    fillLight: true,
+    leftLight: true,
+    ssao: true,
+    heightFog: true,
   });
-  const [dirLightY,     setDirLightY]     = useState(45);
-  const [dirLightZ,     setDirLightZ]     = useState(10);
-  const [seaSpec,       setSeaSpec]       = useState(0.05);
-  const [terrainNormal, setTerrainNormal] = useState(3);
-  const [heightScale,   setHeightScale]   = useState(1);
-  const [contrast,      setContrast]      = useState(1);
+  const [dirLightY, setDirLightY] = useState(45);
+  const [dirLightZ, setDirLightZ] = useState(-25);
+  const [seaSpec, setSeaSpec] = useState(0.005);
+  const [terrainNormal, setTerrainNormal] = useState(0.6);
+  const [heightScale, setHeightScale] = useState(1);
+  const [contrast, setContrast] = useState(1.8);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
   const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
   useEffect(() => {
-    const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) => r.json());
-    const namesReq = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php").then((r) => r.json()).catch(() => null);
-    Promise.all([eventsReq, namesReq]).then(([evData, namesData]) => {
-      const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
-      setEvents([...arr].reverse());
-      if (namesData) {
-        const playerList = namesData.players ?? namesData.chars ?? namesData;
-        if (Array.isArray(playerList)) {
-          const map: Record<string | number, { name: string }> = {};
-          (playerList as Record<string, unknown>[]).forEach((p) => {
-            const id = p.id ?? p.char_id ?? p.player_id;
-            if (id != null) map[id as string] = p as { name: string };
-          });
-          setPlayers(map);
+    const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) =>
+      r.json(),
+    );
+    const namesReq = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php")
+      .then((r) => r.json())
+      .catch(() => null);
+    Promise.all([eventsReq, namesReq])
+      .then(([evData, namesData]) => {
+        const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
+        setEvents([...arr].reverse());
+        if (namesData) {
+          const playerList = namesData.players ?? namesData.chars ?? namesData;
+          if (Array.isArray(playerList)) {
+            const map: Record<string | number, { name: string }> = {};
+            (playerList as Record<string, unknown>[]).forEach((p) => {
+              const id = p.id ?? p.char_id ?? p.player_id;
+              if (id != null) map[id as string] = p as { name: string };
+            });
+            setPlayers(map);
+          }
         }
-      }
-    }).catch(() => {}).finally(() => setEventsLoading(false));
+      })
+      .catch(() => {})
+      .finally(() => setEventsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -120,12 +131,14 @@ export default function ChroniclePage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  useEffect(() => { setSheetExpanded(false); }, [selectedIdx]);
+  useEffect(() => {
+    setSheetExpanded(false);
+  }, [selectedIdx]);
 
   useEffect(() => {
     dbgRef.current = dbg;
-    if (ambientRef.current)  ambientRef.current.visible  = dbg.ambient;
-    if (dirLightRef.current)  dirLightRef.current.visible  = dbg.dirLight;
+    if (ambientRef.current) ambientRef.current.visible = dbg.ambient;
+    if (dirLightRef.current) dirLightRef.current.visible = dbg.dirLight;
     if (fillLightRef.current) fillLightRef.current.visible = dbg.fillLight;
     if (leftLightRef.current) leftLightRef.current.visible = dbg.leftLight;
     heightFogUniformRef.current.value = dbg.heightFog ? 1.0 : 0.0;
@@ -150,7 +163,8 @@ export default function ChroniclePage() {
   useEffect(() => {
     dispScaleRef.current = heightScale;
     if (terrainMatRef.current) terrainMatRef.current.displacementScale = heightScale;
-    heightFogDensityRef.current.value = heightScale > 0 ? HEIGHT_FOG_DENSITY / heightScale : HEIGHT_FOG_DENSITY;
+    heightFogDensityRef.current.value =
+      heightScale > 0 ? HEIGHT_FOG_DENSITY / heightScale : HEIGHT_FOG_DENSITY;
     spritesRef.current.forEach((sprite) => {
       const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
       const h = spriteHeightsRef.current[idx] ?? 0.5;
@@ -178,7 +192,7 @@ export default function ChroniclePage() {
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0c0e);
+    scene.background = new THREE.Color(0x000000);
     // No distance fog — height-based fog is injected via onBeforeCompile below
     sceneRef.current = scene;
 
@@ -202,12 +216,12 @@ export default function ChroniclePage() {
     ambientRef.current = ambient;
 
     const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
-    dirLight.position.set(0, 45, 10);
+    dirLight.position.set(0, 45, -25);
     scene.add(dirLight);
     dirLightRef.current = dirLight;
 
     const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5);
-    fillLight.position.set(-5, 5, -3);
+    fillLight.position.set(0, 45, 25);
     scene.add(fillLight);
     fillLightRef.current = fillLight;
 
@@ -227,44 +241,46 @@ export default function ChroniclePage() {
 
     // Color texture from world map jpg
     const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
+    colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
+    const mapScale = 1.015;
+    const mapOffset = (1 - mapScale) / 2;
+    colorTexture.repeat.set(mapScale, mapScale);
+    colorTexture.offset.set(mapOffset, mapOffset);
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
 
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 1,
+      displacementScale: 2,
       normalMap: normalTexture,
-      normalScale: new THREE.Vector2(3, 3), // amplify terrain relief in lighting
+      normalScale: new THREE.Vector2(terrainNormal, terrainNormal),
       roughness: 0.85,
       metalness: 0.05,
     });
 
     // Height-based fog: vWorldY carries the displaced world-Y per vertex
     mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uHeightFogEnabled  = heightFogUniformRef.current;
-      shader.uniforms.uHeightFogDensity  = heightFogDensityRef.current;
-      shader.uniforms.uContrast          = contrastUniformRef.current;
+      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
+      shader.uniforms.uHeightFogDensity = heightFogDensityRef.current;
+      shader.uniforms.uContrast = contrastUniformRef.current;
       shader.vertexShader = shader.vertexShader
+        .replace("#include <fog_pars_vertex>", "#include <fog_pars_vertex>\nvarying float vWorldY;")
         .replace(
-          '#include <fog_pars_vertex>',
-          '#include <fog_pars_vertex>\nvarying float vWorldY;',
-        )
-        .replace(
-          '#include <displacementmap_vertex>',
-          '#include <displacementmap_vertex>\nvWorldY = (modelMatrix * vec4(transformed, 1.0)).y;',
+          "#include <displacementmap_vertex>",
+          "#include <displacementmap_vertex>\nvWorldY = (modelMatrix * vec4(transformed, 1.0)).y;",
         );
       shader.fragmentShader = shader.fragmentShader
         .replace(
-          '#include <fog_pars_fragment>',
-          '#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;',
+          "#include <fog_pars_fragment>",
+          "#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;",
         )
         .replace(
-          '#include <map_fragment>',
-          '#include <map_fragment>\ndiffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;',
+          "#include <map_fragment>",
+          "#include <map_fragment>\ndiffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;",
         )
         .replace(
-          '#include <fog_fragment>',
+          "#include <fog_fragment>",
           `#include <fog_fragment>
           {
             float heightFog = exp(-vWorldY * uHeightFogDensity) * uHeightFogEnabled;
@@ -274,7 +290,7 @@ export default function ChroniclePage() {
           }`,
         );
     };
-    mat.customProgramCacheKey = () => 'terrain-height-fog';
+    mat.customProgramCacheKey = () => "terrain-height-fog";
 
     terrainMatRef.current = mat;
     const terrain = new THREE.Mesh(geo, mat);
@@ -286,7 +302,8 @@ export default function ChroniclePage() {
     function buildSeaNormalMap(): THREE.CanvasTexture {
       const SIZE = 512;
       const canvas = document.createElement("canvas");
-      canvas.width = SIZE; canvas.height = SIZE;
+      canvas.width = SIZE;
+      canvas.height = SIZE;
       const ctx = canvas.getContext("2d")!;
 
       const hash = (x: number, y: number) => {
@@ -294,11 +311,16 @@ export default function ChroniclePage() {
         return n - Math.floor(n);
       };
       const valueNoise = (x: number, y: number) => {
-        const ix = Math.floor(x), iy = Math.floor(y);
-        const fx = x - ix, fy = y - iy;
-        const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
-        const a = hash(ix, iy), b = hash(ix + 1, iy);
-        const c = hash(ix, iy + 1), d = hash(ix + 1, iy + 1);
+        const ix = Math.floor(x),
+          iy = Math.floor(y);
+        const fx = x - ix,
+          fy = y - iy;
+        const ux = fx * fx * (3 - 2 * fx),
+          uy = fy * fy * (3 - 2 * fy);
+        const a = hash(ix, iy),
+          b = hash(ix + 1, iy);
+        const c = hash(ix, iy + 1),
+          d = hash(ix + 1, iy + 1);
         return a + (b - a) * ux + (c - a) * uy + (d - b - c + a) * ux * uy;
       };
 
@@ -307,9 +329,16 @@ export default function ChroniclePage() {
       const heights = new Float32Array(SIZE * SIZE);
       for (let py = 0; py < SIZE; py++) {
         for (let px = 0; px < SIZE; px++) {
-          const sx = px / SIZE * SCALE, sy = py / SIZE * SCALE;
-          let v = 0, amp = 0.5, freq = 1;
-          for (let i = 0; i < 4; i++) { v += valueNoise(sx * freq, sy * freq) * amp; amp *= 0.5; freq *= 2; }
+          const sx = (px / SIZE) * SCALE,
+            sy = (py / SIZE) * SCALE;
+          let v = 0,
+            amp = 0.5,
+            freq = 1;
+          for (let i = 0; i < 4; i++) {
+            v += valueNoise(sx * freq, sy * freq) * amp;
+            amp *= 0.5;
+            freq *= 2;
+          }
           heights[py * SIZE + px] = v;
         }
       }
@@ -323,34 +352,48 @@ export default function ChroniclePage() {
           const hR = heights[py * SIZE + Math.min(SIZE - 1, px + 1)];
           const hU = heights[Math.max(0, py - 1) * SIZE + px];
           const hD = heights[Math.min(SIZE - 1, py + 1) * SIZE + px];
-          const dx = (hR - hL) * K, dy = (hD - hU) * K;
+          const dx = (hR - hL) * K,
+            dy = (hD - hU) * K;
           const len = Math.sqrt(dx * dx + dy * dy + 1);
           const base = (py * SIZE + px) * 4;
-          img.data[base]     = Math.round((-dx / len * 0.5 + 0.5) * 255);
-          img.data[base + 1] = Math.round((-dy / len * 0.5 + 0.5) * 255);
-          img.data[base + 2] = Math.round((1   / len * 0.5 + 0.5) * 255);
+          img.data[base] = Math.round(((-dx / len) * 0.5 + 0.5) * 255);
+          img.data[base + 1] = Math.round(((-dy / len) * 0.5 + 0.5) * 255);
+          img.data[base + 2] = Math.round(((1 / len) * 0.5 + 0.5) * 255);
           img.data[base + 3] = 255;
         }
       }
       ctx.putImageData(img, 0, 0);
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(8, 8);
+      tex.repeat.set(32, 32);
       return tex;
     }
 
-    // Sea plane — specular dark water with subtle noise normals
-    const seaGeo = new THREE.PlaneGeometry(50, 50);
+    // Sea disc — specular dark water with subtle noise normals, edge fade to black
+    const seaGeo = new THREE.CircleGeometry(25, 128);
     const seaMat = new THREE.MeshPhongMaterial({
-      color: 0x4a5a5c,
-      specular: new THREE.Color(0.05, 0.05, 0.05),
+      color: 0x3c4d52,
+      specular: new THREE.Color(0.005, 0.005, 0.005),
       shininess: 750,
       normalMap: buildSeaNormalMap(),
       normalScale: new THREE.Vector2(0.8, 0.8),
       transparent: true,
-      opacity: 1,
       depthWrite: false,
     });
+    seaMat.onBeforeCompile = (shader) => {
+      shader.vertexShader = `varying float vDiscDist;\n` + shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        vDiscDist = length(position.xy) / 25.0;`,
+      );
+      shader.fragmentShader = `varying float vDiscDist;\n` + shader.fragmentShader.replace(
+        "#include <dithering_fragment>",
+        `#include <dithering_fragment>
+        float fade = smoothstep(0.7, 1.0, vDiscDist);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), fade);
+        gl_FragColor.a *= 1.0 - smoothstep(0.96, 1.0, vDiscDist);`,
+      );
+    };
     seaMatRef.current = seaMat;
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
@@ -361,7 +404,8 @@ export default function ChroniclePage() {
     // Sprite material for location dots
     function makeSpriteMaterial(hasEvent: boolean, color: number) {
       const sc = document.createElement("canvas");
-      sc.width = 64; sc.height = 64;
+      sc.width = 64;
+      sc.height = 64;
       const sctx = sc.getContext("2d")!;
       sctx.clearRect(0, 0, 64, 64);
       const r = hasEvent ? 10 : 7;
@@ -372,11 +416,19 @@ export default function ChroniclePage() {
         grd.addColorStop(0.5, hex);
         grd.addColorStop(1, "transparent");
         sctx.fillStyle = grd;
-        sctx.beginPath(); sctx.arc(32, 32, 20, 0, Math.PI * 2); sctx.fill();
+        sctx.beginPath();
+        sctx.arc(32, 32, 20, 0, Math.PI * 2);
+        sctx.fill();
       }
       sctx.fillStyle = hex;
-      sctx.beginPath(); sctx.arc(32, 32, r, 0, Math.PI * 2); sctx.fill();
-      return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sc), depthTest: false, transparent: true });
+      sctx.beginPath();
+      sctx.arc(32, 32, r, 0, Math.PI * 2);
+      sctx.fill();
+      return new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(sc),
+        depthTest: false,
+        transparent: true,
+      });
     }
 
     // Place sprites
@@ -406,7 +458,8 @@ export default function ChroniclePage() {
 
     // Async: decode heightmap PNG pixels and reposition sprites on real terrain elevation
     const hmDecodeCanvas = document.createElement("canvas");
-    hmDecodeCanvas.width = 512; hmDecodeCanvas.height = 512;
+    hmDecodeCanvas.width = 512;
+    hmDecodeCanvas.height = 512;
     const hmDecodeCtx = hmDecodeCanvas.getContext("2d")!;
     const hmDecodeImg = new Image();
     hmDecodeImg.onload = () => {
@@ -449,9 +502,8 @@ export default function ChroniclePage() {
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
-      ssaoPass.enabled = ssaoOverrideRef.current !== null
-        ? ssaoOverrideRef.current
-        : radiusRef.current <= 20;
+      ssaoPass.enabled =
+        ssaoOverrideRef.current !== null ? ssaoOverrideRef.current : radiusRef.current <= 20;
       ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
       ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
@@ -461,7 +513,8 @@ export default function ChroniclePage() {
     // Resize handler
     function onResize() {
       if (!mount) return;
-      const w = mount.clientWidth, h = mount.clientHeight;
+      const w = mount.clientWidth,
+        h = mount.clientHeight;
       renderer.setSize(w, h);
       composer.setSize(w, h);
       ssaoPass.setSize(w, h);
@@ -477,7 +530,7 @@ export default function ChroniclePage() {
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
 
   // Update sprite appearances when eventLocNames changes (after events load)
@@ -488,19 +541,26 @@ export default function ChroniclePage() {
       const hasEvent = eventLocNames.has(loc.name);
       const mat = sprite.material as THREE.SpriteMaterial;
       const sc = document.createElement("canvas");
-      sc.width = 64; sc.height = 64;
+      sc.width = 64;
+      sc.height = 64;
       const sctx = sc.getContext("2d")!;
       sctx.clearRect(0, 0, 64, 64);
       const color = hasEvent ? GOLD : "rgba(136,136,136,1)";
       const r = hasEvent ? 10 : 7;
       if (hasEvent) {
         const grd = sctx.createRadialGradient(32, 32, 0, 32, 32, 20);
-        grd.addColorStop(0, color); grd.addColorStop(0.5, color); grd.addColorStop(1, "transparent");
+        grd.addColorStop(0, color);
+        grd.addColorStop(0.5, color);
+        grd.addColorStop(1, "transparent");
         sctx.fillStyle = grd;
-        sctx.beginPath(); sctx.arc(32, 32, 20, 0, Math.PI * 2); sctx.fill();
+        sctx.beginPath();
+        sctx.arc(32, 32, 20, 0, Math.PI * 2);
+        sctx.fill();
       }
       sctx.fillStyle = color;
-      sctx.beginPath(); sctx.arc(32, 32, r, 0, Math.PI * 2); sctx.fill();
+      sctx.beginPath();
+      sctx.arc(32, 32, r, 0, Math.PI * 2);
+      sctx.fill();
       mat.map?.dispose();
       mat.map = new THREE.CanvasTexture(sc);
       mat.needsUpdate = true;
@@ -522,18 +582,22 @@ export default function ChroniclePage() {
   }
 
   // Pan: translate target (and camera follows) horizontally
+  const PAN_LIMIT = 10;
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
-    const scale = radiusRef.current / mount.clientHeight * 1.6;
-    targetRef.current.x -= dx * scale;
-    targetRef.current.z -= dy * scale;
+    const scale = (radiusRef.current / mount.clientHeight) * 1.6;
+    targetRef.current.x = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, targetRef.current.x - dx * scale));
+    targetRef.current.z = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, targetRef.current.z - dy * scale));
   }
 
   // Zoom: change orbit radius, keeping target fixed
   function zoomCamera(factor: number) {
     const step = Math.max(0.5, radiusRef.current) * 0.01334;
-    radiusRef.current = Math.min(R_MAX, Math.max(R_MIN, radiusRef.current + (factor < 1 ? -step : step)));
+    radiusRef.current = Math.min(
+      R_MAX,
+      Math.max(R_MIN, radiusRef.current + (factor < 1 ? -step : step)),
+    );
   }
 
   // Raycasting for location selection
@@ -568,7 +632,7 @@ export default function ChroniclePage() {
     };
     mount.addEventListener("wheel", onWheel, { passive: false });
     return () => mount.removeEventListener("wheel", onWheel);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -622,11 +686,18 @@ export default function ChroniclePage() {
       return;
     }
 
-    if (pointerStartRef.current && Math.hypot(cssX - pointerStartRef.current.x, cssY - pointerStartRef.current.y) > 5) {
+    if (
+      pointerStartRef.current &&
+      Math.hypot(cssX - pointerStartRef.current.x, cssY - pointerStartRef.current.y) > 5
+    ) {
       draggingRef.current = true;
       lastPosRef.current = { x: cssX, y: cssY };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // Cursor: pointer when hovering a sprite
+    const hit = pickLocation(e.clientX, e.clientY);
+    mount.style.cursor = hit !== null ? "pointer" : "grab";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -651,17 +722,24 @@ export default function ChroniclePage() {
       if (idx !== null) {
         const loc = locations[idx];
         const { nx, ny } = normalize(loc);
-        focusTargetRef.current = new THREE.Vector3((nx - 0.5) * 20, 0, (ny - 0.5) * 20);
+        focusTargetRef.current = new THREE.Vector3(
+          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
+          0,
+          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
+        );
       }
     }
     draggingRef.current = false;
     pointerStartRef.current = null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     activePointersRef.current.delete(e.pointerId);
-    if (activePointersRef.current.size < 2) { lastPinchDistRef.current = null; pinchMidRef.current = null; }
+    if (activePointersRef.current.size < 2) {
+      lastPinchDistRef.current = null;
+      pinchMidRef.current = null;
+    }
     draggingRef.current = false;
   }, []);
 
@@ -669,7 +747,15 @@ export default function ChroniclePage() {
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden", background: "#0a0c0e" }}>
+    <div
+      style={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#0a0c0e",
+      }}
+    >
       {/* Three.js mount */}
       <div
         ref={mountRef}
@@ -681,135 +767,451 @@ export default function ChroniclePage() {
       />
 
       {/* Debug overlay */}
-      <div ref={debugRef} style={{ position: "absolute", bottom: 8, left: 8, zIndex: 30, fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.5)", pointerEvents: "none" }} />
+      <div
+        ref={debugRef}
+        style={{
+          position: "absolute",
+          bottom: 8,
+          left: 8,
+          zIndex: 30,
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "rgba(255,255,255,0.5)",
+          pointerEvents: "none",
+        }}
+      />
 
       {/* Debug panel */}
       <div style={{ position: "absolute", top: 8, right: 8, zIndex: 30, userSelect: "none" }}>
         <button
-          onClick={() => setDbgOpen(o => !o)}
-          style={{ display: "block", marginLeft: "auto", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)", fontSize: "0.75rem", cursor: "pointer", borderRadius: "4px", padding: "3px 8px", fontFamily: "monospace" }}
-        >⚙</button>
-        {dbgOpen && (() => {
-          const row = (key: keyof typeof dbg, label: string, extra?: (v: boolean) => void) => (
-            <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, cursor: "pointer" }}>
-              <input type="checkbox" checked={dbg[key]} onChange={e => { const v = e.target.checked; setDbg(p => ({ ...p, [key]: v })); extra?.(v); }} style={{ cursor: "pointer", accentColor: GOLD }} />
-              <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>{label}</span>
-            </label>
-          );
-          const sliderRow = (label: string, value: number, min: number, max: number, step: number, onChange: (v: number) => void) => (
-            <label style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 5 }}>
-              <span style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", fontFamily: "monospace" }}>
-                <span>{label}</span><span>{value}</span>
-              </span>
-              <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} style={{ width: "100%", accentColor: GOLD, cursor: "pointer" }} />
-            </label>
-          );
-          return (
-            <div style={{ marginTop: 4, background: "rgba(6,8,10,0.93)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "10px 12px", minWidth: 180 }}>
-              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>Lights</div>
-              {row("ambient",  "Ambient")}
-              {row("dirLight",  "Dir light")}
-              {row("fillLight", "Fill light")}
-              {row("leftLight", "Left light")}
-              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Dir light pos</div>
-              {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
-              {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
-              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Terrain</div>
-              {sliderRow("Normals",      terrainNormal, 0, 3,   0.05, setTerrainNormal)}
-              {sliderRow("Height scale", heightScale,   0, 5,   0.1,  setHeightScale)}
-              {sliderRow("Contrast",     contrast,      0.5, 4, 0.05, setContrast)}
-              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Sea</div>
-              {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
-              <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", margin: "8px 0 6px" }}>Effects</div>
-              {row("ssao",      "SSAO", v => { ssaoOverrideRef.current = v; })}
-              {row("heightFog", "Height fog")}
-            </div>
-          );
-        })()}
+          onClick={() => setDbgOpen((o) => !o)}
+          style={{
+            display: "block",
+            marginLeft: "auto",
+            background: "rgba(0,0,0,0.55)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "rgba(255,255,255,0.45)",
+            fontSize: "0.75rem",
+            cursor: "pointer",
+            borderRadius: "4px",
+            padding: "3px 8px",
+            fontFamily: "monospace",
+          }}
+        >
+          ⚙
+        </button>
+        {dbgOpen &&
+          (() => {
+            const row = (key: keyof typeof dbg, label: string, extra?: (v: boolean) => void) => (
+              <label
+                key={key}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 3,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={dbg[key]}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setDbg((p) => ({ ...p, [key]: v }));
+                    extra?.(v);
+                  }}
+                  style={{ cursor: "pointer", accentColor: GOLD }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    color: "rgba(255,255,255,0.5)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {label}
+                </span>
+              </label>
+            );
+            const sliderRow = (
+              label: string,
+              value: number,
+              min: number,
+              max: number,
+              step: number,
+              onChange: (v: number) => void,
+            ) => (
+              <label style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 5 }}>
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.7rem",
+                    color: "rgba(255,255,255,0.5)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  <span>{label}</span>
+                  <span>{value}</span>
+                </span>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={step}
+                  value={value}
+                  onChange={(e) => onChange(parseFloat(e.target.value))}
+                  style={{ width: "100%", accentColor: GOLD, cursor: "pointer" }}
+                />
+              </label>
+            );
+            return (
+              <div
+                style={{
+                  marginTop: 4,
+                  background: "rgba(6,8,10,0.93)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "6px",
+                  padding: "10px 12px",
+                  minWidth: 180,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.58rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.25)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Lights
+                </div>
+                {row("ambient", "Ambient")}
+                {row("dirLight", "Dir light")}
+                {row("fillLight", "Fill light")}
+                {row("leftLight", "Left light")}
+                <div
+                  style={{
+                    fontSize: "0.58rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.25)",
+                    margin: "8px 0 6px",
+                  }}
+                >
+                  Dir light pos
+                </div>
+                {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
+                {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
+                <div
+                  style={{
+                    fontSize: "0.58rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.25)",
+                    margin: "8px 0 6px",
+                  }}
+                >
+                  Terrain
+                </div>
+                {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
+                {sliderRow("Height scale", heightScale, 0, 5, 0.1, setHeightScale)}
+                {sliderRow("Contrast", contrast, 0.5, 4, 0.05, setContrast)}
+                <div
+                  style={{
+                    fontSize: "0.58rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.25)",
+                    margin: "8px 0 6px",
+                  }}
+                >
+                  Sea
+                </div>
+                {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
+                <div
+                  style={{
+                    fontSize: "0.58rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.25)",
+                    margin: "8px 0 6px",
+                  }}
+                >
+                  Effects
+                </div>
+                {row("ssao", "SSAO", (v) => {
+                  ssaoOverrideRef.current = v;
+                })}
+                {row("heightFog", "Height fog")}
+              </div>
+            );
+          })()}
       </div>
 
       {/* Vignette */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)" }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 5,
+          pointerEvents: "none",
+          background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)",
+        }}
+      />
 
       {/* Header overlay */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
-        padding: "20px 24px 16px",
-        background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)",
-        pointerEvents: "none",
-      }}>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--gold)", textShadow: `${GOLD} 0px 0px 6px, ${GOLD} 0px 0px 12px` }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          padding: "20px 24px 16px",
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "0.85rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.2em",
+            color: "var(--gold)",
+            textShadow: `${GOLD} 0px 0px 6px, ${GOLD} 0px 0px 12px`,
+          }}
+        >
           Unyha
         </div>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(255,255,255,0.85)", marginTop: "2px" }}>
+        <div
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "1.5rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+            color: "rgba(255,255,255,0.85)",
+            marginTop: "2px",
+          }}
+        >
           Chronicle Map
         </div>
-        <div style={{ marginTop: "8px", fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", letterSpacing: "0.05em" }}>
-          {eventsLoading ? "Loading events…" : `${events.length} events · ${eventLocNames.size} locations visited`}
+        <div
+          style={{
+            marginTop: "8px",
+            fontSize: "0.72rem",
+            color: "rgba(255,255,255,0.3)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {eventsLoading
+            ? "Loading events…"
+            : `${events.length} events · ${eventLocNames.size} locations visited`}
         </div>
       </div>
 
       {/* Legend */}
-      <div style={{ position: "absolute", bottom: 24, left: 24, zIndex: 10, display: "flex", flexDirection: "column", gap: "6px", pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 24,
+          left: 24,
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          pointerEvents: "none",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", display: "inline-block", boxShadow: `0 0 6px ${GOLD}` }} />
-          <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>Has events</span>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--gold)",
+              display: "inline-block",
+              boxShadow: `0 0 6px ${GOLD}`,
+            }}
+          />
+          <span
+            style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
+          >
+            Has events
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(136,136,136,0.8)", display: "inline-block" }} />
-          <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>Location</span>
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "rgba(136,136,136,0.8)",
+              display: "inline-block",
+            }}
+          />
+          <span
+            style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
+          >
+            Location
+          </span>
         </div>
-        <div style={{ marginTop: "4px", fontSize: "0.62rem", color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+        <div
+          style={{
+            marginTop: "4px",
+            fontSize: "0.62rem",
+            color: "rgba(255,255,255,0.25)",
+            letterSpacing: "0.04em",
+          }}
+        >
           Scroll / pinch to zoom · drag to pan
         </div>
       </div>
 
       {/* Desktop side panel */}
       {!isMobile && selectedLoc && (
-        <div style={{
-          position: "absolute", top: 0, right: 0, bottom: 0,
-          width: "min(340px, 90vw)",
-          background: "rgba(6,8,10,0.92)",
-          backdropFilter: "blur(16px)",
-          borderLeft: "1px solid rgba(255,255,255,0.07)",
-          zIndex: 20,
-          overflowY: "auto",
-          padding: "80px 24px 32px",
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: "min(340px, 90vw)",
+            background: "rgba(6,8,10,0.92)",
+            backdropFilter: "blur(16px)",
+            borderLeft: "1px solid rgba(255,255,255,0.07)",
+            zIndex: 20,
+            overflowY: "auto",
+            padding: "80px 24px 32px",
+          }}
+        >
           <button
             onClick={() => setSelectedIdx(null)}
-            style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 20,
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.35)",
+              fontSize: "1.2rem",
+              cursor: "pointer",
+              lineHeight: 1,
+              padding: "4px 8px",
+            }}
             aria-label="Close"
-          >×</button>
+          >
+            ×
+          </button>
 
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", textTransform: "uppercase", letterSpacing: "0.15em", color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)", textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none", lineHeight: 1.3, marginBottom: "10px" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "1.1rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.15em",
+              color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
+              textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
+              lineHeight: 1.3,
+              marginBottom: "10px",
+            }}
+          >
             {selectedLoc.name}
           </div>
 
           {selectedLoc.description && (
-            <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.6, margin: "0 0 12px" }}>{selectedLoc.description}</p>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "rgba(255,255,255,0.6)",
+                lineHeight: 1.6,
+                margin: "0 0 12px",
+              }}
+            >
+              {selectedLoc.description}
+            </p>
           )}
           {selectedLoc.keywords && (
-            <p style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", lineHeight: 1.5, margin: "0 0 20px", fontStyle: "italic" }}>{selectedLoc.keywords}</p>
+            <p
+              style={{
+                fontSize: "0.72rem",
+                color: "rgba(255,255,255,0.3)",
+                lineHeight: 1.5,
+                margin: "0 0 20px",
+                fontStyle: "italic",
+              }}
+            >
+              {selectedLoc.keywords}
+            </p>
           )}
 
           {locEvents.length > 0 && (
             <>
-              <div style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", marginBottom: "10px" }}>
+              <div
+                style={{
+                  fontSize: "0.62rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "rgba(255,255,255,0.3)",
+                  marginBottom: "10px",
+                }}
+              >
                 {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {locEvents.map((ev, i) => {
-                  const et = EVENT_TYPES[ev.type] ?? { label: ev.type, symbol: "·", color: "rgba(255,255,255,0.4)" };
+                  const et = EVENT_TYPES[ev.type] ?? {
+                    label: ev.type,
+                    symbol: "·",
+                    color: "rgba(255,255,255,0.4)",
+                  };
                   const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
                   return (
-                    <div key={i} style={{ borderRadius: "4px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", padding: "10px 12px" }}>
-                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "4px" }}>
-                        <span style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}>{et.symbol} {et.label}</span>
-                        <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>{ev.date}</span>
+                    <div
+                      key={i}
+                      style={{
+                        borderRadius: "4px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          justifyContent: "space-between",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <span
+                          style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}
+                        >
+                          {et.symbol} {et.label}
+                        </span>
+                        <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>
+                          {ev.date}
+                        </span>
                       </div>
-                      <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>{charName}</div>
-                      {ev.special && <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "4px", fontStyle: "italic" }}>{ev.special}</div>}
+                      <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>
+                        {charName}
+                      </div>
+                      {ev.special && (
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "rgba(255,255,255,0.4)",
+                            marginTop: "4px",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {ev.special}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -817,76 +1219,212 @@ export default function ChroniclePage() {
             </>
           )}
           {locEvents.length === 0 && !eventsLoading && (
-            <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>No recorded events at this location.</p>
+            <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>
+              No recorded events at this location.
+            </p>
           )}
         </div>
       )}
 
       {/* Mobile bottom sheet */}
       {isMobile && (
-        <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0,
-          height: "50vh",
-          background: "rgba(6,8,10,0.96)",
-          backdropFilter: "blur(16px)",
-          borderRadius: "16px 16px 0 0",
-          zIndex: 20,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          transform: !selectedLoc ? "translateY(100%)" : sheetExpanded ? "translateY(0)" : "translateY(calc(100% - 120px))",
-          transition: "transform 0.3s ease",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "50vh",
+            background: "rgba(6,8,10,0.96)",
+            backdropFilter: "blur(16px)",
+            borderRadius: "16px 16px 0 0",
+            zIndex: 20,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            transform: !selectedLoc
+              ? "translateY(100%)"
+              : sheetExpanded
+                ? "translateY(0)"
+                : "translateY(calc(100% - 120px))",
+            transition: "transform 0.3s ease",
+          }}
+        >
           {/* Drag handle — tap to expand */}
           <div
-            style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", cursor: "pointer", flexShrink: 0 }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "12px 0 8px",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
             onClick={() => selectedLoc && setSheetExpanded(true)}
           >
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.25)" }} />
+            <div
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                background: "rgba(255,255,255,0.25)",
+              }}
+            />
           </div>
 
           {selectedLoc && (
             <>
               {/* Peek header: location name + close — always visible in peek */}
               <div
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 20px 12px", flexShrink: 0, cursor: sheetExpanded ? "default" : "pointer" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "4px 20px 12px",
+                  flexShrink: 0,
+                  cursor: sheetExpanded ? "default" : "pointer",
+                }}
                 onClick={() => !sheetExpanded && setSheetExpanded(true)}
               >
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.15em", color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)", textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none", lineHeight: 1.3 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "1rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.15em",
+                    color: eventLocNames.has(selectedLoc.name)
+                      ? "var(--gold)"
+                      : "rgba(255,255,255,0.85)",
+                    textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
+                    lineHeight: 1.3,
+                  }}
+                >
                   {selectedLoc.name}
                 </div>
                 <button
-                  onClick={(ev) => { ev.stopPropagation(); setSelectedIdx(null); }}
-                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", cursor: "pointer", lineHeight: 1, padding: "4px 4px 4px 16px", flexShrink: 0 }}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    setSelectedIdx(null);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.35)",
+                    fontSize: "1.2rem",
+                    cursor: "pointer",
+                    lineHeight: 1,
+                    padding: "4px 4px 4px 16px",
+                    flexShrink: 0,
+                  }}
                   aria-label="Close"
-                >×</button>
+                >
+                  ×
+                </button>
               </div>
 
               {/* Expanded content — scrollable */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 24px", opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}>
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: "0 20px 24px",
+                  opacity: sheetExpanded ? 1 : 0,
+                  transition: "opacity 0.15s ease",
+                }}
+              >
                 {selectedLoc.description && (
-                  <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.6, margin: "0 0 12px" }}>{selectedLoc.description}</p>
+                  <p
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "rgba(255,255,255,0.6)",
+                      lineHeight: 1.6,
+                      margin: "0 0 12px",
+                    }}
+                  >
+                    {selectedLoc.description}
+                  </p>
                 )}
                 {selectedLoc.keywords && (
-                  <p style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.3)", lineHeight: 1.5, margin: "0 0 20px", fontStyle: "italic" }}>{selectedLoc.keywords}</p>
+                  <p
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "rgba(255,255,255,0.3)",
+                      lineHeight: 1.5,
+                      margin: "0 0 20px",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {selectedLoc.keywords}
+                  </p>
                 )}
                 {locEvents.length > 0 && (
                   <>
-                    <div style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", marginBottom: "10px" }}>
+                    <div
+                      style={{
+                        fontSize: "0.62rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.12em",
+                        color: "rgba(255,255,255,0.3)",
+                        marginBottom: "10px",
+                      }}
+                    >
                       {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       {locEvents.map((ev, i) => {
-                        const et = EVENT_TYPES[ev.type] ?? { label: ev.type, symbol: "·", color: "rgba(255,255,255,0.4)" };
+                        const et = EVENT_TYPES[ev.type] ?? {
+                          label: ev.type,
+                          symbol: "·",
+                          color: "rgba(255,255,255,0.4)",
+                        };
                         const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
                         return (
-                          <div key={i} style={{ borderRadius: "4px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", padding: "10px 12px" }}>
-                            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "4px" }}>
-                              <span style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}>{et.symbol} {et.label}</span>
-                              <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>{ev.date}</span>
+                          <div
+                            key={i}
+                            style={{
+                              borderRadius: "4px",
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              padding: "10px 12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "baseline",
+                                justifyContent: "space-between",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: et.color,
+                                  fontSize: "0.78rem",
+                                  letterSpacing: "0.06em",
+                                }}
+                              >
+                                {et.symbol} {et.label}
+                              </span>
+                              <span
+                                style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}
+                              >
+                                {ev.date}
+                              </span>
                             </div>
-                            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>{charName}</div>
-                            {ev.special && <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "4px", fontStyle: "italic" }}>{ev.special}</div>}
+                            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>
+                              {charName}
+                            </div>
+                            {ev.special && (
+                              <div
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "rgba(255,255,255,0.4)",
+                                  marginTop: "4px",
+                                  fontStyle: "italic",
+                                }}
+                              >
+                                {ev.special}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -894,7 +1432,15 @@ export default function ChroniclePage() {
                   </>
                 )}
                 {locEvents.length === 0 && !eventsLoading && (
-                  <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>No recorded events at this location.</p>
+                  <p
+                    style={{
+                      fontSize: "0.78rem",
+                      color: "rgba(255,255,255,0.2)",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No recorded events at this location.
+                  </p>
                 )}
               </div>
             </>
