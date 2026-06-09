@@ -7,7 +7,6 @@ import { StoryEvent } from "@/components/story-events/use-story-events";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { SSAOPass } from "three/examples/jsm/postprocessing/SSAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 interface Location {
@@ -58,10 +57,10 @@ export default function ChroniclePage() {
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
   const seaMatRef = useRef<THREE.MeshPhongMaterial | null>(null);
   const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
-  const ssaoPassRef = useRef<SSAOPass | null>(null);
   const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const heightFogDensityRef = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
   const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
+  const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
   const spriteHeightsRef = useRef<number[]>([]);
 
@@ -85,17 +84,15 @@ export default function ChroniclePage() {
     dirLight: true,
     fillLight: true,
     leftLight: true,
-    ssao: true,
     heightFog: true,
   });
   const [dirLightY, setDirLightY] = useState(45);
   const [dirLightZ, setDirLightZ] = useState(-25);
-  const [seaSpec, setSeaSpec] = useState(0.005);
+  const [seaSpec, setSeaSpec] = useState(0.01);
   const [terrainNormal, setTerrainNormal] = useState(0.6);
   const [heightScale, setHeightScale] = useState(1);
-  const [contrast, setContrast] = useState(1.8);
+  const [contrast, setContrast] = useState(1.5);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
-  const ssaoOverrideRef = useRef<boolean | null>(null); // null = auto zoom-based; true/false = user override
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) =>
@@ -150,6 +147,7 @@ export default function ChroniclePage() {
 
   useEffect(() => {
     if (seaMatRef.current) seaMatRef.current.specular.setRGB(seaSpec, seaSpec, seaSpec);
+    terrainSeaSpecUniformRef.current.value = seaSpec;
   }, [seaSpec]);
 
   useEffect(() => {
@@ -199,16 +197,10 @@ export default function ChroniclePage() {
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
     cameraRef.current = camera;
 
-    // Post-processing: SSAO for terrain crevice shading
+    // Post-processing: render + output
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const ssaoPass = new SSAOPass(scene, camera, W, H);
-    ssaoPass.kernelRadius = 16;
-    ssaoPass.minDistance = 0.001;
-    ssaoPass.maxDistance = 0.25;
-    composer.addPass(ssaoPass);
     composer.addPass(new OutputPass());
-    ssaoPassRef.current = ssaoPass;
 
     // Lighting
     const ambient = new THREE.AmbientLight(0xffffff, 0.13);
@@ -248,6 +240,12 @@ export default function ChroniclePage() {
     colorTexture.offset.set(mapOffset, mapOffset);
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
+    const specTexture = new THREE.TextureLoader().load("/specmap.png");
+    specTexture.wrapS = specTexture.wrapT = THREE.ClampToEdgeWrapping;
+    specTexture.repeat.set(mapScale, mapScale);
+    specTexture.offset.set(mapOffset, mapOffset);
+
+    const seaNormalTexture = buildSeaNormalMap();
 
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
@@ -264,20 +262,50 @@ export default function ChroniclePage() {
       shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
       shader.uniforms.uHeightFogDensity = heightFogDensityRef.current;
       shader.uniforms.uContrast = contrastUniformRef.current;
+      shader.uniforms.uSpecMask = { value: specTexture };
+      shader.uniforms.uSeaNormalMap = { value: seaNormalTexture };
+      shader.uniforms.uSeaNormalScale = { value: new THREE.Vector2(0.8, 0.8) };
+      shader.uniforms.uSeaNormalTiling = { value: new THREE.Vector2(32, 32) };
+      shader.uniforms.uSeaSpec = terrainSeaSpecUniformRef.current;
       shader.vertexShader = shader.vertexShader
-        .replace("#include <fog_pars_vertex>", "#include <fog_pars_vertex>\nvarying float vWorldY;")
+        .replace(
+          "#include <fog_pars_vertex>",
+          "#include <fog_pars_vertex>\nvarying float vWorldY;\nvarying vec2 vWorldXZ;",
+        )
         .replace(
           "#include <displacementmap_vertex>",
-          "#include <displacementmap_vertex>\nvWorldY = (modelMatrix * vec4(transformed, 1.0)).y;",
+          "#include <displacementmap_vertex>\nvec4 worldPos = modelMatrix * vec4(transformed, 1.0);\nvWorldY = worldPos.y;\nvWorldXZ = worldPos.xz;",
         );
       shader.fragmentShader = shader.fragmentShader
         .replace(
           "#include <fog_pars_fragment>",
-          "#include <fog_pars_fragment>\nvarying float vWorldY;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;",
+          "#include <fog_pars_fragment>\nvarying float vWorldY;\nvarying vec2 vWorldXZ;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;\nuniform sampler2D uSpecMask;\nuniform sampler2D uSeaNormalMap;\nuniform vec2 uSeaNormalScale;\nuniform vec2 uSeaNormalTiling;\nuniform float uSeaSpec;",
         )
         .replace(
           "#include <map_fragment>",
           "#include <map_fragment>\ndiffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;",
+        )
+        .replace(
+          "#include <normal_fragment_maps>",
+          `#include <normal_fragment_maps>
+          float specMask = texture2D(uSpecMask, vMapUv).r;
+          if (specMask > 0.0) {
+            vec2 seaUv = (vWorldXZ / 50.0 + 0.5) * uSeaNormalTiling;
+            vec3 seaNormalTexel = texture2D(uSeaNormalMap, seaUv).xyz * 2.0 - 1.0;
+            seaNormalTexel.xy *= uSeaNormalScale;
+            vec3 seaNormal = normalize(tbn * seaNormalTexel);
+            float specStrength = clamp(uSeaSpec / 0.005, 0.0, 1.0);
+            float normalBlend = specMask * 0.9 * specStrength;
+            normal = normalize(mix(normal, seaNormal, normalBlend));
+          }`,
+        )
+        .replace(
+          "#include <roughnessmap_fragment>",
+          `#include <roughnessmap_fragment>
+          float specMaskRoughness = texture2D(uSpecMask, vMapUv).r;
+          float specStrengthRoughness = clamp(uSeaSpec / 0.005, 0.0, 1.0);
+          float wetRoughness = mix(roughnessFactor, 0.25, specStrengthRoughness);
+          roughnessFactor = mix(roughnessFactor, wetRoughness, specMaskRoughness);`,
         )
         .replace(
           "#include <fog_fragment>",
@@ -373,26 +401,30 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.CircleGeometry(25, 128);
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x3c4d52,
-      specular: new THREE.Color(0.005, 0.005, 0.005),
+      specular: new THREE.Color(0.01, 0.01, 0.01),
       shininess: 750,
-      normalMap: buildSeaNormalMap(),
+      normalMap: seaNormalTexture,
       normalScale: new THREE.Vector2(0.8, 0.8),
       transparent: true,
       depthWrite: false,
     });
     seaMat.onBeforeCompile = (shader) => {
-      shader.vertexShader = `varying float vDiscDist;\n` + shader.vertexShader.replace(
-        "#include <begin_vertex>",
-        `#include <begin_vertex>
+      shader.vertexShader =
+        `varying float vDiscDist;\n` +
+        shader.vertexShader.replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
         vDiscDist = length(position.xy) / 25.0;`,
-      );
-      shader.fragmentShader = `varying float vDiscDist;\n` + shader.fragmentShader.replace(
-        "#include <dithering_fragment>",
-        `#include <dithering_fragment>
+        );
+      shader.fragmentShader =
+        `varying float vDiscDist;\n` +
+        shader.fragmentShader.replace(
+          "#include <dithering_fragment>",
+          `#include <dithering_fragment>
         float fade = smoothstep(0.7, 1.0, vDiscDist);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), fade);
         gl_FragColor.a *= 1.0 - smoothstep(0.96, 1.0, vDiscDist);`,
-      );
+        );
     };
     seaMatRef.current = seaMat;
     const sea = new THREE.Mesh(seaGeo, seaMat);
@@ -501,11 +533,6 @@ export default function ChroniclePage() {
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
-      const zoomT = Math.max(0, Math.min(1, (radiusRef.current - R_MIN) / (R_MAX - R_MIN)));
-      ssaoPass.enabled =
-        ssaoOverrideRef.current !== null ? ssaoOverrideRef.current : radiusRef.current <= 20;
-      ssaoPass.kernelRadius = THREE.MathUtils.lerp(16, 2, zoomT);
-      ssaoPass.minDistance = THREE.MathUtils.lerp(0.001, 0.0001, zoomT);
       composer.render();
     }
     animate();
@@ -517,7 +544,6 @@ export default function ChroniclePage() {
         h = mount.clientHeight;
       renderer.setSize(w, h);
       composer.setSize(w, h);
-      ssaoPass.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
@@ -587,8 +613,14 @@ export default function ChroniclePage() {
     const mount = mountRef.current;
     if (!mount) return;
     const scale = (radiusRef.current / mount.clientHeight) * 1.6;
-    targetRef.current.x = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, targetRef.current.x - dx * scale));
-    targetRef.current.z = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, targetRef.current.z - dy * scale));
+    targetRef.current.x = Math.max(
+      -PAN_LIMIT,
+      Math.min(PAN_LIMIT, targetRef.current.x - dx * scale),
+    );
+    targetRef.current.z = Math.max(
+      -PAN_LIMIT,
+      Math.min(PAN_LIMIT, targetRef.current.z - dy * scale),
+    );
   }
 
   // Zoom: change orbit radius, keeping target fixed
@@ -943,9 +975,6 @@ export default function ChroniclePage() {
                 >
                   Effects
                 </div>
-                {row("ssao", "SSAO", (v) => {
-                  ssaoOverrideRef.current = v;
-                })}
                 {row("heightFog", "Height fog")}
               </div>
             );
