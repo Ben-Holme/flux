@@ -970,26 +970,56 @@ export default function ChroniclePage() {
                   { left: -60, top: -42 }, // rank 2: 32px, left flank
                   { left:  28, top: -42 }, // rank 3: 32px, right flank
                 ][rank];
+                const initial =
+                  (players[c.charId]?.name ?? "?").split("#")[0]?.[0]?.toUpperCase() ?? "?";
                 return (
-                  <img
+                  <div
                     key={String(c.charId)}
-                    src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
-                    width={size}
-                    height={size}
                     style={{
                       position: "absolute",
                       left: offsets.left,
                       top: offsets.top,
                       width: size,
                       height: size,
-                      borderRadius: "50%",
-                      border: "2px solid rgba(0,0,0,0.75)",
-                      objectFit: "cover",
                     }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
+                  >
+                    <img
+                      src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        border: "2px solid rgba(0,0,0,0.75)",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const fallback = img.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        borderRadius: "50%",
+                        border: "2px solid rgba(0,0,0,0.75)",
+                        background: "#2a3d3e",
+                        display: "none",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "rgba(255,255,255,0.85)",
+                        fontSize: rank === 0 ? 18 : 13,
+                        fontWeight: 600,
+                        userSelect: "none",
+                      }}
+                    >
+                      {initial}
+                    </div>
+                  </div>
                 );
               })}
             </div>
