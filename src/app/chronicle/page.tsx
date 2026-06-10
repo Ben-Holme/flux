@@ -26,7 +26,7 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 // Orbit constants
 const R_MIN = 4,
   R_MAX = 35;
-const ELEV_NEAR = Math.PI * (10 / 180); // camera elevation when close (10° from horizontal)
+const ELEV_NEAR = Math.PI * (30 / 180); // camera elevation when close (30° from horizontal)
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
