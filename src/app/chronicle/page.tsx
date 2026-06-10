@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import LOCATIONS from "@/data/locations.json";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
@@ -77,6 +77,7 @@ export default function ChroniclePage() {
   const sheetExpandedRef = useRef(false);
   const selectedIdxRef = useRef<number | null>(null);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
+  const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -180,6 +181,27 @@ export default function ChroniclePage() {
   useEffect(() => { selectedIdxRef.current = selectedIdx; }, [selectedIdx]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
+
+  // Per-location top-3 characters by fame (fame is at index 4 of the packed name string)
+  const locPortraits = useMemo<Record<number, Array<{ charId: string | number; fame: number }>>>(() => {
+    const data: Record<number, Array<{ charId: string | number; fame: number }>> = {};
+    events.forEach((ev) => {
+      if (!ev.location || ev.primary_char == null) return;
+      const locIdx = locations.findIndex((l) => l.name === ev.location);
+      if (locIdx === -1) return;
+      const cid = ev.primary_char;
+      if (!data[locIdx]) data[locIdx] = [];
+      if (data[locIdx].some((c) => c.charId === cid)) return;
+      const parts = (players[cid]?.name ?? "").split("#");
+      const fame = parseInt(parts[4] ?? "0") || 0;
+      data[locIdx].push({ charId: cid, fame });
+    });
+    Object.values(data).forEach((arr) => {
+      arr.sort((a, b) => b.fame - a.fame);
+      arr.splice(3);
+    });
+    return data;
+  }, [events, players]);
 
   // Build Three.js scene
   useEffect(() => {
@@ -542,6 +564,22 @@ export default function ChroniclePage() {
       }
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
+
+      // Portrait overlays: project world positions to screen coords
+      if (portraitGroupRefs.current.size > 0 && mount) {
+        const portraitOpacity = Math.max(0, Math.min(1, (15 - radiusRef.current) / 3));
+        const W = mount.clientWidth;
+        const H = mount.clientHeight;
+        portraitGroupRefs.current.forEach((el, locIdx) => {
+          const sprite = spritesRef.current[locIdx];
+          if (!sprite) return;
+          const pos = sprite.position.clone().project(camera);
+          const sx = ((pos.x + 1) / 2) * W;
+          const sy = ((-pos.y + 1) / 2) * H;
+          el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+          el.style.opacity = portraitOpacity.toFixed(3);
+        });
+      }
 
       // Fog only ramps in the closest 10% of the zoom range
       const FOG_THRESHOLD = R_MIN + 0.3 * (R_MAX - R_MIN); // 13.3
@@ -907,6 +945,54 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Portrait overlays — positions updated each frame via portraitGroupRefs */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 7, pointerEvents: "none", overflow: "hidden" }}>
+        {Object.entries(locPortraits).map(([idxStr, chars]) => {
+          const locIdx = parseInt(idxStr);
+          return (
+            <div
+              key={locIdx}
+              ref={(el) => {
+                if (el) portraitGroupRefs.current.set(locIdx, el);
+                else portraitGroupRefs.current.delete(locIdx);
+              }}
+              style={{ position: "absolute", top: 0, left: 0, opacity: 0 }}
+            >
+              {chars.map((c, rank) => {
+                const size = rank === 0 ? 48 : 32;
+                // Offsets: all three bottom edges aligned 10px above the pin
+                const offsets = [
+                  { left: -24, top: -58 }, // rank 1: 48px centered
+                  { left: -60, top: -42 }, // rank 2: 32px, left flank
+                  { left:  28, top: -42 }, // rank 3: 32px, right flank
+                ][rank];
+                return (
+                  <img
+                    key={String(c.charId)}
+                    src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
+                    width={size}
+                    height={size}
+                    style={{
+                      position: "absolute",
+                      left: offsets.left,
+                      top: offsets.top,
+                      width: size,
+                      height: size,
+                      borderRadius: "50%",
+                      border: "2px solid rgba(0,0,0,0.75)",
+                      objectFit: "cover",
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Debug overlay */}
       <div
