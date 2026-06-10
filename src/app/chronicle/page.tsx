@@ -71,6 +71,11 @@ export default function ChroniclePage() {
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDistRef = useRef<number | null>(null);
   const pinchMidRef = useRef<{ x: number; y: number } | null>(null);
+  const sheetDragActiveRef = useRef(false);
+  const sheetDragStartYRef = useRef(0);
+  const sheetDraggedRef = useRef(false);
+  const sheetExpandedRef = useRef(false);
+  const selectedIdxRef = useRef<number | null>(null);
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -78,6 +83,8 @@ export default function ChroniclePage() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [sheetDragOffset, setSheetDragOffset] = useState(0);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
   const [dbgOpen, setDbgOpen] = useState(false);
   const [dbg, setDbg] = useState({
     ambient: true,
@@ -169,6 +176,9 @@ export default function ChroniclePage() {
       sprite.position.setY(h * heightScale + 0.08);
     });
   }, [heightScale]);
+
+  useEffect(() => { sheetExpandedRef.current = sheetExpanded; }, [sheetExpanded]);
+  useEffect(() => { selectedIdxRef.current = selectedIdx; }, [selectedIdx]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -660,7 +670,7 @@ export default function ChroniclePage() {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const dir = e.deltaY < 0 ? 0.92 : 1.08;
-      for (let i = 0; i < 10; i++) zoomCamera(dir);
+      zoomCamera(dir);
     };
     mount.addEventListener("wheel", onWheel, { passive: false });
     return () => mount.removeEventListener("wheel", onWheel);
@@ -773,6 +783,47 @@ export default function ChroniclePage() {
       pinchMidRef.current = null;
     }
     draggingRef.current = false;
+  }, []);
+
+  const onSheetHandlePointerDown = useCallback((e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    sheetDragActiveRef.current = true;
+    sheetDraggedRef.current = false;
+    sheetDragStartYRef.current = e.clientY;
+    setIsDraggingSheet(true);
+  }, []);
+
+  const onSheetHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!sheetDragActiveRef.current) return;
+    const raw = e.clientY - sheetDragStartYRef.current;
+    if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+    const minDelta = hasLoc && !isExpanded ? -150 : 0;
+    setSheetDragOffset(Math.max(minDelta, Math.min(200, raw)));
+  }, []);
+
+  const onSheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!sheetDragActiveRef.current) return;
+    sheetDragActiveRef.current = false;
+    setIsDraggingSheet(false);
+    const delta = e.clientY - sheetDragStartYRef.current;
+    setSheetDragOffset(0);
+    if (!sheetDraggedRef.current) return;
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+    if (hasLoc && !isExpanded && delta < -30) {
+      setSheetExpanded(true);
+    } else if (hasLoc && isExpanded && delta > 30) {
+      setSheetExpanded(false);
+    }
+  }, []);
+
+  const onSheetHandlePointerCancel = useCallback(() => {
+    sheetDragActiveRef.current = false;
+    sheetDraggedRef.current = false;
+    setIsDraggingSheet(false);
+    setSheetDragOffset(0);
   }, []);
 
   const selectedLoc = selectedIdx !== null ? locations[selectedIdx] : null;
@@ -1272,14 +1323,14 @@ export default function ChroniclePage() {
             flexDirection: "column",
             overflow: "hidden",
             transform: !selectedLoc
-              ? "translateY(100%)"
+              ? `translateY(calc(100% - 44px + ${sheetDragOffset}px))`
               : sheetExpanded
-                ? "translateY(0)"
-                : "translateY(calc(100% - 120px))",
-            transition: "transform 0.3s ease",
+                ? `translateY(${sheetDragOffset}px)`
+                : `translateY(calc(100% - 120px + ${sheetDragOffset}px))`,
+            transition: isDraggingSheet ? "none" : "transform 0.3s ease",
           }}
         >
-          {/* Drag handle — tap to expand */}
+          {/* Drag handle — tap or drag up to expand */}
           <div
             style={{
               display: "flex",
@@ -1287,8 +1338,13 @@ export default function ChroniclePage() {
               padding: "12px 0 8px",
               cursor: "pointer",
               flexShrink: 0,
+              touchAction: "none",
             }}
-            onClick={() => selectedLoc && setSheetExpanded(true)}
+            onPointerDown={onSheetHandlePointerDown}
+            onPointerMove={onSheetHandlePointerMove}
+            onPointerUp={onSheetHandlePointerUp}
+            onPointerCancel={onSheetHandlePointerCancel}
+            onClick={() => !sheetDraggedRef.current && selectedLoc && setSheetExpanded(true)}
           >
             <div
               style={{
@@ -1312,7 +1368,7 @@ export default function ChroniclePage() {
                   flexShrink: 0,
                   cursor: sheetExpanded ? "default" : "pointer",
                 }}
-                onClick={() => !sheetExpanded && setSheetExpanded(true)}
+                onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
               >
                 <div
                   style={{
