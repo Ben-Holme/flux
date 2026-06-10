@@ -27,7 +27,7 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 const R_MIN = 4,
   R_MAX = 35;
 const ELEV_NEAR = Math.PI * (50 / 180); // camera elevation when close (50° from horizontal)
-const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
+const ELEV_FAR = Math.PI * (80 / 180); // camera elevation when far (80° — slight horizon tilt)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
 
@@ -200,7 +200,8 @@ export default function ChroniclePage() {
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    // No distance fog — height-based fog is injected via onBeforeCompile below
+    // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
+    scene.fog = new THREE.FogExp2(0x2a3d3e, 0);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
@@ -541,6 +542,10 @@ export default function ChroniclePage() {
       }
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
+
+      // Scale fog density with zoom: full fog at R_MIN, zero at R_MAX
+      const fogT = Math.max(0, Math.min(1, (R_MAX - radiusRef.current) / (R_MAX - R_MIN)));
+      (scene.fog as THREE.FogExp2).density = fogT * 0.05;
 
       composer.render();
     }
