@@ -76,6 +76,7 @@ export default function ChroniclePage() {
   const sheetDraggedRef = useRef(false);
   const sheetExpandedRef = useRef(false);
   const selectedIdxRef = useRef<number | null>(null);
+  const sheetElRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -83,8 +84,6 @@ export default function ChroniclePage() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
-  const [sheetDragOffset, setSheetDragOffset] = useState(0);
-  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
   const [dbgOpen, setDbgOpen] = useState(false);
   const [dbg, setDbg] = useState({
     ambient: true,
@@ -677,6 +676,30 @@ export default function ChroniclePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Safety net: catches pointer releases missed by onPointerUp/Cancel (system interrupts, etc.)
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    const onLostCapture = (e: PointerEvent) => {
+      if (!activePointersRef.current.has(e.pointerId)) return; // already handled
+      activePointersRef.current.delete(e.pointerId);
+      if (activePointersRef.current.size < 2) {
+        lastPinchDistRef.current = null;
+        pinchMidRef.current = null;
+      }
+      if (activePointersRef.current.size === 0) {
+        draggingRef.current = false;
+        pointerStartRef.current = null;
+      } else if (activePointersRef.current.size === 1) {
+        const [rem] = Array.from(activePointersRef.current.values());
+        lastPosRef.current = rem;
+        draggingRef.current = true;
+      }
+    };
+    mount.addEventListener("lostpointercapture", onLostCapture);
+    return () => mount.removeEventListener("lostpointercapture", onLostCapture);
+  }, []);
+
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -685,7 +708,16 @@ export default function ChroniclePage() {
     const cssY = e.clientY - mount.getBoundingClientRect().top;
     activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
 
-    if (activePointersRef.current.size === 2) {
+    if (activePointersRef.current.size > 2) {
+      // spurious 3rd+ pointer (stale entries from missed releases) — clear and restart single-touch
+      activePointersRef.current.clear();
+      activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
+      lastPinchDistRef.current = null;
+      pinchMidRef.current = null;
+      lastPosRef.current = { x: cssX, y: cssY };
+      pointerStartRef.current = { x: cssX, y: cssY };
+      draggingRef.current = false;
+    } else if (activePointersRef.current.size === 2) {
       const pts = Array.from(activePointersRef.current.values());
       lastPinchDistRef.current = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       pinchMidRef.current = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
@@ -790,7 +822,7 @@ export default function ChroniclePage() {
     sheetDragActiveRef.current = true;
     sheetDraggedRef.current = false;
     sheetDragStartYRef.current = e.clientY;
-    setIsDraggingSheet(true);
+    if (sheetElRef.current) sheetElRef.current.style.transition = "none";
   }, []);
 
   const onSheetHandlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -799,31 +831,52 @@ export default function ChroniclePage() {
     if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
     const isExpanded = sheetExpandedRef.current;
     const hasLoc = selectedIdxRef.current !== null;
-    const minDelta = hasLoc && !isExpanded ? -150 : 0;
-    setSheetDragOffset(Math.max(minDelta, Math.min(200, raw)));
+    const delta = Math.max(hasLoc && !isExpanded ? -150 : 0, Math.min(200, raw));
+    const el = sheetElRef.current;
+    if (!el) return;
+    if (!hasLoc) el.style.transform = `translateY(calc(100% - 44px + ${delta}px))`;
+    else if (isExpanded) el.style.transform = `translateY(${delta}px)`;
+    else el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
   }, []);
 
   const onSheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!sheetDragActiveRef.current) return;
     sheetDragActiveRef.current = false;
-    setIsDraggingSheet(false);
     const delta = e.clientY - sheetDragStartYRef.current;
-    setSheetDragOffset(0);
-    if (!sheetDraggedRef.current) return;
+    const didDrag = sheetDraggedRef.current;
     const isExpanded = sheetExpandedRef.current;
     const hasLoc = selectedIdxRef.current !== null;
-    if (hasLoc && !isExpanded && delta < -30) {
-      setSheetExpanded(true);
-    } else if (hasLoc && isExpanded && delta > 30) {
-      setSheetExpanded(false);
+
+    let newExpanded = isExpanded;
+    if (didDrag && hasLoc) {
+      if (!isExpanded && delta < -30) newExpanded = true;
+      else if (isExpanded && delta > 30) newExpanded = false;
     }
+
+    const el = sheetElRef.current;
+    if (el) {
+      el.style.transition = "transform 0.3s ease";
+      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
+      else if (newExpanded) el.style.transform = "translateY(0px)";
+      else el.style.transform = "translateY(calc(100% - 120px))";
+    }
+
+    if (newExpanded !== isExpanded) setSheetExpanded(newExpanded);
   }, []);
 
   const onSheetHandlePointerCancel = useCallback(() => {
+    if (!sheetDragActiveRef.current) return;
     sheetDragActiveRef.current = false;
     sheetDraggedRef.current = false;
-    setIsDraggingSheet(false);
-    setSheetDragOffset(0);
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+    const el = sheetElRef.current;
+    if (el) {
+      el.style.transition = "transform 0.3s ease";
+      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
+      else if (isExpanded) el.style.transform = "translateY(0px)";
+      else el.style.transform = "translateY(calc(100% - 120px))";
+    }
   }, []);
 
   const selectedLoc = selectedIdx !== null ? locations[selectedIdx] : null;
@@ -1309,6 +1362,7 @@ export default function ChroniclePage() {
       {/* Mobile bottom sheet */}
       {isMobile && (
         <div
+          ref={sheetElRef}
           style={{
             position: "fixed",
             bottom: 0,
@@ -1323,11 +1377,11 @@ export default function ChroniclePage() {
             flexDirection: "column",
             overflow: "hidden",
             transform: !selectedLoc
-              ? `translateY(calc(100% - 44px + ${sheetDragOffset}px))`
+              ? "translateY(calc(100% - 44px))"
               : sheetExpanded
-                ? `translateY(${sheetDragOffset}px)`
-                : `translateY(calc(100% - 120px + ${sheetDragOffset}px))`,
-            transition: isDraggingSheet ? "none" : "transform 0.3s ease",
+                ? "translateY(0px)"
+                : "translateY(calc(100% - 120px))",
+            transition: "transform 0.3s ease",
           }}
         >
           {/* Drag handle — tap or drag up to expand */}
