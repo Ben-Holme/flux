@@ -182,20 +182,23 @@ export default function ChroniclePage() {
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
-  // Per-location top-3 characters by fame (fame is at index 4 of the packed name string)
-  const locPortraits = useMemo<Record<number, Array<{ charId: string | number; fame: number }>>>(() => {
-    const data: Record<number, Array<{ charId: string | number; fame: number }>> = {};
-    events.forEach((ev) => {
-      if (!ev.location || ev.primary_char == null) return;
+  // Per-location top-3 characters by fame (fame is at index 4 of the packed name string).
+  // events are newest-first; we assign each char to their most recent event location only.
+  const locPortraits = useMemo(() => {
+    const charToLocIdx = new Map<number, number>();
+    for (const ev of events) {
+      if (!ev.location || ev.primary_char == null) continue;
+      if (charToLocIdx.has(ev.primary_char)) continue;
       const locIdx = locations.findIndex((l) => l.name === ev.location);
-      if (locIdx === -1) return;
-      const cid = ev.primary_char;
-      if (!data[locIdx]) data[locIdx] = [];
-      if (data[locIdx].some((c) => c.charId === cid)) return;
+      if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
+    }
+    const data: Record<number, Array<{ charId: number; fame: number }>> = {};
+    for (const [cid, locIdx] of charToLocIdx) {
       const parts = (players[cid]?.name ?? "").split("#");
       const fame = parseInt(parts[4] ?? "0") || 0;
+      if (!data[locIdx]) data[locIdx] = [];
       data[locIdx].push({ charId: cid, fame });
-    });
+    }
     Object.values(data).forEach((arr) => {
       arr.sort((a, b) => b.fame - a.fame);
       arr.splice(3);
