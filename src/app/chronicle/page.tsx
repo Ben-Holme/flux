@@ -199,7 +199,7 @@ export default function ChroniclePage() {
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = new THREE.Color(0x2a3d3e);
     // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
     scene.fog = new THREE.FogExp2(0x2a3d3e, 0);
     sceneRef.current = scene;
@@ -546,7 +546,7 @@ export default function ChroniclePage() {
       // Fog only ramps in the closest 10% of the zoom range
       const FOG_THRESHOLD = R_MIN + 0.1 * (R_MAX - R_MIN); // 7.1
       const fogT = Math.max(0, Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)));
-      (scene.fog as THREE.FogExp2).density = fogT * 0.1;
+      (scene.fog as THREE.FogExp2).density = fogT * 0.2;
 
       composer.render();
     }
