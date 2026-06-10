@@ -26,7 +26,7 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 // Orbit constants
 const R_MIN = 4,
   R_MAX = 35;
-const ELEV_NEAR = Math.PI * (60 / 180); // camera elevation when close (60° from horizontal)
+const ELEV_NEAR = Math.PI * (40 / 180); // camera elevation when close (40° from horizontal)
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
@@ -545,7 +545,7 @@ export default function ChroniclePage() {
 
       // Scale fog density with zoom: full fog at R_MIN, zero at R_MAX
       const fogT = Math.max(0, Math.min(1, (R_MAX - radiusRef.current) / (R_MAX - R_MIN)));
-      (scene.fog as THREE.FogExp2).density = fogT * 0.05;
+      (scene.fog as THREE.FogExp2).density = fogT * 0.1;
 
       composer.render();
     }
