@@ -199,9 +199,9 @@ export default function ChroniclePage() {
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x2a3d3e);
+    scene.background = new THREE.Color(0x000000);
     // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
-    scene.fog = new THREE.FogExp2(0x2a3d3e, 0);
+    scene.fog = new THREE.FogExp2(0x000000, 0);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
