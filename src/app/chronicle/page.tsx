@@ -544,7 +544,7 @@ export default function ChroniclePage() {
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       // Fog only ramps in the closest 10% of the zoom range
-      const FOG_THRESHOLD = R_MIN + 0.1 * (R_MAX - R_MIN); // 7.1
+      const FOG_THRESHOLD = R_MIN + 0.3 * (R_MAX - R_MIN); // 13.3
       const fogT = Math.max(0, Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)));
       (scene.fog as THREE.FogExp2).density = fogT * 0.2;
 
