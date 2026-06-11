@@ -659,8 +659,11 @@ export default function ChroniclePage() {
     if (!mount) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      // deltaMode !== 0 (line/page) or large pixel delta → physical scroll wheel
+      const isWheel = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
       const dir = e.deltaY < 0 ? 0.92 : 1.08;
-      for (let i = 0; i < 10; i++) zoomCamera(dir);
+      const steps = isWheel ? 10 : 3;
+      for (let i = 0; i < steps; i++) zoomCamera(dir);
     };
     mount.addEventListener("wheel", onWheel, { passive: false });
     return () => mount.removeEventListener("wheel", onWheel);
