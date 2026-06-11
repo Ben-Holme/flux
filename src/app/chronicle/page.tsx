@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import LOCATIONS from "@/data/locations.json";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
@@ -26,7 +26,7 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 // Orbit constants
 const R_MIN = 4,
   R_MAX = 35;
-const ELEV_NEAR = Math.PI * (50 / 180); // camera elevation when close (50° from horizontal)
+const ELEV_NEAR = Math.PI * (30 / 180); // camera elevation when close (30° from horizontal)
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
@@ -47,6 +47,7 @@ export default function ChroniclePage() {
   const rafRef = useRef<number | null>(null);
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
+  const targetRadiusRef = useRef(15); // smooth zoom destination
   const debugRef = useRef<HTMLDivElement | null>(null);
   const focusTargetRef = useRef<THREE.Vector3 | null>(null); // destination for smooth pan
 
@@ -71,6 +72,13 @@ export default function ChroniclePage() {
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDistRef = useRef<number | null>(null);
   const pinchMidRef = useRef<{ x: number; y: number } | null>(null);
+  const sheetDragActiveRef = useRef(false);
+  const sheetDragStartYRef = useRef(0);
+  const sheetDraggedRef = useRef(false);
+  const sheetExpandedRef = useRef(false);
+  const selectedIdxRef = useRef<number | null>(null);
+  const sheetElRef = useRef<HTMLDivElement | null>(null);
+  const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -170,7 +178,38 @@ export default function ChroniclePage() {
     });
   }, [heightScale]);
 
+  useEffect(() => {
+    sheetExpandedRef.current = sheetExpanded;
+  }, [sheetExpanded]);
+  useEffect(() => {
+    selectedIdxRef.current = selectedIdx;
+  }, [selectedIdx]);
+
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
+
+  // Per-location top-3 characters by fame (fame is at index 4 of the packed name string).
+  // events are newest-first; we assign each char to their most recent event location only.
+  const locPortraits = useMemo(() => {
+    const charToLocIdx = new Map<number, number>();
+    for (const ev of events) {
+      if (!ev.location || ev.primary_char == null) continue;
+      if (charToLocIdx.has(ev.primary_char)) continue;
+      const locIdx = locations.findIndex((l) => l.name === ev.location);
+      if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
+    }
+    const data: Record<number, Array<{ charId: number; fame: number }>> = {};
+    for (const [cid, locIdx] of charToLocIdx) {
+      const parts = (players[cid]?.name ?? "").split("#");
+      const fame = parseInt(parts[4] ?? "0") || 0;
+      if (!data[locIdx]) data[locIdx] = [];
+      data[locIdx].push({ charId: cid, fame });
+    }
+    Object.values(data).forEach((arr) => {
+      arr.sort((a, b) => b.fame - a.fame);
+      arr.splice(3);
+    });
+    return data;
+  }, [events, players]);
 
   // Build Three.js scene
   useEffect(() => {
@@ -191,7 +230,8 @@ export default function ChroniclePage() {
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    // No distance fog — height-based fog is injected via onBeforeCompile below
+    // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
+    scene.fog = new THREE.FogExp2(0x000000, 0);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
@@ -409,6 +449,8 @@ export default function ChroniclePage() {
       depthWrite: false,
     });
     seaMat.onBeforeCompile = (shader) => {
+      shader.uniforms.uHeightFogEnabled = heightFogUniformRef.current;
+      shader.uniforms.uHeightFogDensity = heightFogDensityRef.current;
       shader.vertexShader =
         `varying float vDiscDist;\n` +
         shader.vertexShader.replace(
@@ -417,13 +459,17 @@ export default function ChroniclePage() {
         vDiscDist = length(position.xy) / 25.0;`,
         );
       shader.fragmentShader =
-        `varying float vDiscDist;\n` +
+        `varying float vDiscDist;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\n` +
         shader.fragmentShader.replace(
           "#include <dithering_fragment>",
           `#include <dithering_fragment>
         float fade = smoothstep(0.7, 1.0, vDiscDist);
         gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), fade);
-        gl_FragColor.a *= 1.0 - smoothstep(0.96, 1.0, vDiscDist);`,
+        gl_FragColor.a *= 1.0 - smoothstep(0.96, 1.0, vDiscDist);
+        float seaFog = exp(-0.005 * uHeightFogDensity) * uHeightFogEnabled;
+        seaFog = clamp(seaFog, 0.0, 0.8);
+        vec3 heightFogColor = vec3(0.04, 0.05, 0.06);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, seaFog);`,
         );
     };
     seaMatRef.current = seaMat;
@@ -530,8 +576,34 @@ export default function ChroniclePage() {
           focusTargetRef.current = null;
         }
       }
+      // Smooth zoom
+      radiusRef.current += (targetRadiusRef.current - radiusRef.current) * 0.12;
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
+
+      // Portrait overlays: project world positions to screen coords
+      if (portraitGroupRefs.current.size > 0 && mount) {
+        const portraitOpacity = Math.max(0, Math.min(1, (15 - radiusRef.current) / 3));
+        const W = mount.clientWidth;
+        const H = mount.clientHeight;
+        portraitGroupRefs.current.forEach((el, locIdx) => {
+          const sprite = spritesRef.current[locIdx];
+          if (!sprite) return;
+          const pos = sprite.position.clone().project(camera);
+          const sx = ((pos.x + 1) / 2) * W;
+          const sy = ((-pos.y + 1) / 2) * H;
+          el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+          el.style.opacity = portraitOpacity.toFixed(3);
+        });
+      }
+
+      // Fog only ramps in the closest 10% of the zoom range
+      const FOG_THRESHOLD = R_MIN + 0.3 * (R_MAX - R_MIN); // 13.3
+      const fogT = Math.max(
+        0,
+        Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)),
+      );
+      (scene.fog as THREE.FogExp2).density = fogT * 0.2;
 
       composer.render();
     }
@@ -625,10 +697,10 @@ export default function ChroniclePage() {
 
   // Zoom: change orbit radius, keeping target fixed
   function zoomCamera(factor: number) {
-    const step = Math.max(0.5, radiusRef.current) * 0.01334;
-    radiusRef.current = Math.min(
+    const step = Math.max(0.5, targetRadiusRef.current) * 0.1334;
+    targetRadiusRef.current = Math.min(
       R_MAX,
-      Math.max(R_MIN, radiusRef.current + (factor < 1 ? -step : step)),
+      Math.max(R_MIN, targetRadiusRef.current + (factor < 1 ? -step : step)),
     );
   }
 
@@ -659,15 +731,41 @@ export default function ChroniclePage() {
     if (!mount) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // deltaMode !== 0 (line/page) or large pixel delta → physical scroll wheel
       const isWheel = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
-      const dir = e.deltaY < 0 ? 0.92 : 1.08;
-      const steps = isWheel ? 10 : 3;
-      for (let i = 0; i < steps; i++) zoomCamera(dir);
+      const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
+      const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
+      targetRadiusRef.current = Math.min(
+        R_MAX,
+        Math.max(R_MIN, targetRadiusRef.current + normalized * step),
+      );
     };
     mount.addEventListener("wheel", onWheel, { passive: false });
     return () => mount.removeEventListener("wheel", onWheel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Safety net: catches pointer releases missed by onPointerUp/Cancel (system interrupts, etc.)
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    const onLostCapture = (e: PointerEvent) => {
+      if (!activePointersRef.current.has(e.pointerId)) return; // already handled
+      activePointersRef.current.delete(e.pointerId);
+      if (activePointersRef.current.size < 2) {
+        lastPinchDistRef.current = null;
+        pinchMidRef.current = null;
+      }
+      if (activePointersRef.current.size === 0) {
+        draggingRef.current = false;
+        pointerStartRef.current = null;
+      } else if (activePointersRef.current.size === 1) {
+        const [rem] = Array.from(activePointersRef.current.values());
+        lastPosRef.current = rem;
+        draggingRef.current = true;
+      }
+    };
+    mount.addEventListener("lostpointercapture", onLostCapture);
+    return () => mount.removeEventListener("lostpointercapture", onLostCapture);
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -678,7 +776,16 @@ export default function ChroniclePage() {
     const cssY = e.clientY - mount.getBoundingClientRect().top;
     activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
 
-    if (activePointersRef.current.size === 2) {
+    if (activePointersRef.current.size > 2) {
+      // spurious 3rd+ pointer (stale entries from missed releases) — clear and restart single-touch
+      activePointersRef.current.clear();
+      activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
+      lastPinchDistRef.current = null;
+      pinchMidRef.current = null;
+      lastPosRef.current = { x: cssX, y: cssY };
+      pointerStartRef.current = { x: cssX, y: cssY };
+      draggingRef.current = false;
+    } else if (activePointersRef.current.size === 2) {
       const pts = Array.from(activePointersRef.current.values());
       lastPinchDistRef.current = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
       pinchMidRef.current = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
@@ -778,6 +885,68 @@ export default function ChroniclePage() {
     draggingRef.current = false;
   }, []);
 
+  const onSheetHandlePointerDown = useCallback((e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    sheetDragActiveRef.current = true;
+    sheetDraggedRef.current = false;
+    sheetDragStartYRef.current = e.clientY;
+    if (sheetElRef.current) sheetElRef.current.style.transition = "none";
+  }, []);
+
+  const onSheetHandlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!sheetDragActiveRef.current) return;
+    const raw = e.clientY - sheetDragStartYRef.current;
+    if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+    const delta = Math.max(hasLoc && !isExpanded ? -150 : 0, Math.min(200, raw));
+    const el = sheetElRef.current;
+    if (!el) return;
+    if (!hasLoc) el.style.transform = `translateY(calc(100% - 44px + ${delta}px))`;
+    else if (isExpanded) el.style.transform = `translateY(${delta}px)`;
+    else el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
+  }, []);
+
+  const onSheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!sheetDragActiveRef.current) return;
+    sheetDragActiveRef.current = false;
+    const delta = e.clientY - sheetDragStartYRef.current;
+    const didDrag = sheetDraggedRef.current;
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+
+    let newExpanded = isExpanded;
+    if (didDrag && hasLoc) {
+      if (!isExpanded && delta < -30) newExpanded = true;
+      else if (isExpanded && delta > 30) newExpanded = false;
+    }
+
+    const el = sheetElRef.current;
+    if (el) {
+      el.style.transition = "transform 0.3s ease";
+      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
+      else if (newExpanded) el.style.transform = "translateY(0px)";
+      else el.style.transform = "translateY(calc(100% - 120px))";
+    }
+
+    if (newExpanded !== isExpanded) setSheetExpanded(newExpanded);
+  }, []);
+
+  const onSheetHandlePointerCancel = useCallback(() => {
+    if (!sheetDragActiveRef.current) return;
+    sheetDragActiveRef.current = false;
+    sheetDraggedRef.current = false;
+    const isExpanded = sheetExpandedRef.current;
+    const hasLoc = selectedIdxRef.current !== null;
+    const el = sheetElRef.current;
+    if (el) {
+      el.style.transition = "transform 0.3s ease";
+      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
+      else if (isExpanded) el.style.transform = "translateY(0px)";
+      else el.style.transform = "translateY(calc(100% - 120px))";
+    }
+  }, []);
+
   const selectedLoc = selectedIdx !== null ? locations[selectedIdx] : null;
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
@@ -800,6 +969,92 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Portrait overlays — positions updated each frame via portraitGroupRefs */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 7,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        {Object.entries(locPortraits).map(([idxStr, chars]) => {
+          const locIdx = parseInt(idxStr);
+          return (
+            <div
+              key={locIdx}
+              ref={(el) => {
+                if (el) portraitGroupRefs.current.set(locIdx, el);
+                else portraitGroupRefs.current.delete(locIdx);
+              }}
+              style={{ position: "absolute", top: 0, left: 0, opacity: 0 }}
+            >
+              {chars.map((c, rank) => {
+                const size = rank === 0 ? 48 : 32;
+                // Offsets: all three bottom edges aligned 10px above the pin
+                const offsets = [
+                  { left: -24, top: -58 }, // rank 1: 48px centered
+                  { left: -60, top: -42 }, // rank 2: 32px, left flank
+                  { left: 28, top: -42 }, // rank 3: 32px, right flank
+                ][rank];
+                const initial =
+                  (players[c.charId]?.name ?? "?").split("#")[0]?.[0]?.toUpperCase() ?? "?";
+                return (
+                  <div
+                    key={String(c.charId)}
+                    style={{
+                      position: "absolute",
+                      left: offsets.left,
+                      top: offsets.top,
+                      width: size,
+                      height: size,
+                    }}
+                  >
+                    <img
+                      src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        border: "2px solid rgba(0,0,0,0.75)",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const fallback = img.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        borderRadius: "50%",
+                        border: "2px solid rgba(0,0,0,0.75)",
+                        background: "#2a3d3e",
+                        display: "none",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "rgba(255,255,255,0.85)",
+                        fontSize: rank === 0 ? 18 : 13,
+                        fontWeight: 600,
+                        userSelect: "none",
+                      }}
+                    >
+                      {initial}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Debug overlay */}
       <div
@@ -985,7 +1240,7 @@ export default function ChroniclePage() {
       </div>
 
       {/* Vignette */}
-      <div
+      {/* <div
         style={{
           position: "absolute",
           inset: 0,
@@ -993,7 +1248,7 @@ export default function ChroniclePage() {
           pointerEvents: "none",
           background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)",
         }}
-      />
+      /> */}
 
       {/* Header overlay */}
       <div
@@ -1261,6 +1516,7 @@ export default function ChroniclePage() {
       {/* Mobile bottom sheet */}
       {isMobile && (
         <div
+          ref={sheetElRef}
           style={{
             position: "fixed",
             bottom: 0,
@@ -1275,14 +1531,14 @@ export default function ChroniclePage() {
             flexDirection: "column",
             overflow: "hidden",
             transform: !selectedLoc
-              ? "translateY(100%)"
+              ? "translateY(calc(100% - 44px))"
               : sheetExpanded
-                ? "translateY(0)"
+                ? "translateY(0px)"
                 : "translateY(calc(100% - 120px))",
             transition: "transform 0.3s ease",
           }}
         >
-          {/* Drag handle — tap to expand */}
+          {/* Drag handle — tap or drag up to expand */}
           <div
             style={{
               display: "flex",
@@ -1290,8 +1546,13 @@ export default function ChroniclePage() {
               padding: "12px 0 8px",
               cursor: "pointer",
               flexShrink: 0,
+              touchAction: "none",
             }}
-            onClick={() => selectedLoc && setSheetExpanded(true)}
+            onPointerDown={onSheetHandlePointerDown}
+            onPointerMove={onSheetHandlePointerMove}
+            onPointerUp={onSheetHandlePointerUp}
+            onPointerCancel={onSheetHandlePointerCancel}
+            onClick={() => !sheetDraggedRef.current && selectedLoc && setSheetExpanded(true)}
           >
             <div
               style={{
@@ -1315,7 +1576,7 @@ export default function ChroniclePage() {
                   flexShrink: 0,
                   cursor: sheetExpanded ? "default" : "pointer",
                 }}
-                onClick={() => !sheetExpanded && setSheetExpanded(true)}
+                onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
               >
                 <div
                   style={{
