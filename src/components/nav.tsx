@@ -109,8 +109,7 @@ export default function Nav() {
 
       {/* Nav bar */}
       <div
-        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4 transition-opacity duration-500"
-        style={{ opacity: isFirst && !active ? 0 : 1, pointerEvents: isFirst && !active ? "none" : undefined }}
+        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4"
       >
         {/* Background ball — desktop hidden, mobile shown */}
         <div
