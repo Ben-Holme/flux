@@ -168,7 +168,8 @@ export default function Nav() {
 
         {/* Hamburger / cross button */}
         <div
-          className="relative z-[1] flex h-12 w-12 cursor-pointer flex-col items-center justify-center"
+          className="relative z-[1] flex h-12 w-12 cursor-pointer flex-col items-center justify-center transition-opacity duration-500"
+          style={{ opacity: active ? 1 : 0 }}
           onClick={() => setOpen((v) => !v)}
           role="button"
           aria-label={open ? "Close menu" : "Open menu"}
