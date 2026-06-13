@@ -188,7 +188,7 @@ function Portrait({ charId, name, size }: { charId: number; name: string; size: 
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <img
-        src={`https://unyhagame.com/ueserr/chars/${charId}.png`}
+        src={`https://api.unyhagame.com/ueserv/chars/${charId}.png`}
         style={{ ...sharedStyle, width: "100%", height: "100%", objectFit: "cover" }}
         onError={(e) => {
           const img = e.target as HTMLImageElement;

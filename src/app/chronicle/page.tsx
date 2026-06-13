@@ -1013,7 +1013,7 @@ export default function ChroniclePage() {
                     }}
                   >
                     <img
-                      src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
+                      src={`https://api.unyhagame.com/ueserv/chars/${c.charId}.png`}
                       style={{
                         position: "absolute",
                         inset: 0,
