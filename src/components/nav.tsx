@@ -109,7 +109,8 @@ export default function Nav() {
 
       {/* Nav bar */}
       <div
-        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4"
+        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4 transition-opacity duration-500"
+        style={{ opacity: isFirst && !active ? 0 : 1, pointerEvents: isFirst && !active ? "none" : undefined }}
       >
         {/* Background ball — desktop hidden, mobile shown */}
         <div
@@ -168,8 +169,7 @@ export default function Nav() {
 
         {/* Hamburger / cross button */}
         <div
-          className="relative z-[1] flex h-12 w-12 cursor-pointer flex-col items-center justify-center transition-opacity duration-500"
-          style={{ opacity: active ? 1 : 0 }}
+          className="relative z-[1] flex h-12 w-12 cursor-pointer flex-col items-center justify-center"
           onClick={() => setOpen((v) => !v)}
           role="button"
           aria-label={open ? "Close menu" : "Open menu"}
