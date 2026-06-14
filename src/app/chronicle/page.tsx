@@ -18,7 +18,25 @@ interface Location {
   z: string;
 }
 
+interface LiveLoc {
+  name: string;
+  type: string;
+  threeX: number;
+  threeZ: number;
+  radiusWorld: number;
+}
+
 const locations = LOCATIONS as Location[];
+
+function locTypeIcon(type: string): string {
+  switch (type) {
+    case "city": return "🏰";
+    case "monster": return "☠️";
+    case "dungeon": return "⚔️";
+    case "mountain": return "⛰️";
+    default: return "●";
+  }
+}
 const GOLD = "#c8923a";
 const GOLD_NUM = 0xc8923a;
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
@@ -79,6 +97,11 @@ export default function ChroniclePage() {
   const selectedIdxRef = useRef<number | null>(null);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
+  const liveLocsRef = useRef<LiveLoc[]>([]);
+  const locOverlayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const locRingSvgRefs = useRef<Map<number, SVGSVGElement>>(new Map());
+  const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -103,6 +126,33 @@ export default function ChroniclePage() {
   const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+
+  useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getLocations-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status !== "OK" || !data.locs) return;
+        const parsed: LiveLoc[] = [];
+        for (const [name, loc] of Object.entries(
+          data.locs as Record<string, { underground: string; type: string; location: string; radius: string }>,
+        )) {
+          if (loc.underground === "true") continue;
+          const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
+          if (!match) continue;
+          const ueX = parseFloat(match[1]);
+          const ueY = parseFloat(match[2]);
+          parsed.push({
+            name,
+            type: loc.type,
+            threeX: (ueX / MAP_EXTENT) * 10,
+            threeZ: (ueY / MAP_EXTENT) * 10,
+            radiusWorld: (parseFloat(loc.radius) / MAP_EXTENT) * 10,
+          });
+        }
+        setLiveLocs(parsed);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) =>
@@ -190,6 +240,9 @@ export default function ChroniclePage() {
   useEffect(() => {
     selectedIdxRef.current = selectedIdx;
   }, [selectedIdx]);
+  useEffect(() => {
+    liveLocsRef.current = liveLocs;
+  }, [liveLocs]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -603,6 +656,38 @@ export default function ChroniclePage() {
         });
       }
 
+      // Location overlays: project world positions to screen coords
+      if (locOverlayRefs.current.size > 0 && mount) {
+        const locW = mount.clientWidth;
+        const locH = mount.clientHeight;
+        const locOpacity = Math.min(1, Math.max(0, (radiusRef.current - R_MIN) / 2));
+        locOverlayRefs.current.forEach((el, i) => {
+          const loc = liveLocsRef.current[i];
+          if (!loc) return;
+          const pos = new THREE.Vector3(loc.threeX, 0.1, loc.threeZ).project(camera);
+          if (pos.z > 1) { el.style.opacity = "0"; return; }
+          const sx = ((pos.x + 1) / 2) * locW;
+          const sy = ((-pos.y + 1) / 2) * locH;
+          el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+          el.style.opacity = locOpacity.toFixed(3);
+          const svg = locRingSvgRefs.current.get(i);
+          const circle = locRingCircleRefs.current.get(i);
+          if (svg && circle && loc.radiusWorld > 0) {
+            const offsetPos = new THREE.Vector3(loc.threeX + loc.radiusWorld, 0.1, loc.threeZ).project(camera);
+            const ox = ((offsetPos.x + 1) / 2) * locW;
+            const oy = ((-offsetPos.y + 1) / 2) * locH;
+            const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
+            svg.setAttribute("width", String(Math.ceil(pr * 2 + 2)));
+            svg.setAttribute("height", String(Math.ceil(pr * 2 + 2)));
+            svg.style.left = `${-(pr + 1)}px`;
+            svg.style.top = `${-(pr + 1)}px`;
+            circle.setAttribute("cx", String(pr + 1));
+            circle.setAttribute("cy", String(pr + 1));
+            circle.setAttribute("r", String(pr));
+          }
+        });
+      }
+
       // Fog ramps in as camera approaches R_MIN; threshold set by fogNearRef
       const FOG_THRESHOLD = fogNearRef.current;
       const fogT = Math.max(
@@ -975,6 +1060,81 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Location overlays — below portrait overlays */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 6,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        {liveLocs.map((loc, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              if (el) locOverlayRefs.current.set(i, el);
+              else locOverlayRefs.current.delete(i);
+            }}
+            style={{ position: "absolute", top: 0, left: 0, opacity: 0 }}
+          >
+            {/* Radius ring */}
+            <svg
+              ref={(el) => {
+                if (el) locRingSvgRefs.current.set(i, el);
+                else locRingSvgRefs.current.delete(i);
+              }}
+              style={{ position: "absolute", pointerEvents: "none" }}
+              width="0"
+              height="0"
+            >
+              <circle
+                ref={(el) => {
+                  if (el) locRingCircleRefs.current.set(i, el);
+                  else locRingCircleRefs.current.delete(i);
+                }}
+                cx="0"
+                cy="0"
+                r="0"
+                fill="none"
+                stroke="rgba(255,255,255,0.18)"
+                strokeWidth="1"
+              />
+            </svg>
+            {/* Icon — centered on world point */}
+            <span
+              style={{
+                position: "absolute",
+                transform: "translate(-50%, -50%)",
+                fontSize: loc.type === "neutral" ? "8px" : "14px",
+                lineHeight: 1,
+                color: loc.type === "neutral" ? "rgba(255,255,255,0.6)" : undefined,
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
+              }}
+            >
+              {locTypeIcon(loc.type)}
+            </span>
+            {/* Label — below icon */}
+            <span
+              style={{
+                position: "absolute",
+                transform: "translate(-50%, 0)",
+                top: "10px",
+                fontSize: "9px",
+                color: "rgba(255,255,255,0.75)",
+                textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                whiteSpace: "nowrap",
+                letterSpacing: "0.03em",
+                lineHeight: 1.2,
+              }}
+            >
+              {loc.name}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Portrait overlays — positions updated each frame via portraitGroupRefs */}
       <div
