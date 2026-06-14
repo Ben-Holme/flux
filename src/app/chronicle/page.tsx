@@ -100,6 +100,8 @@ export default function ChroniclePage() {
   const [terrainNormal, setTerrainNormal] = useState(0.6);
   const [heightScale, setHeightScale] = useState(1);
   const [contrast, setContrast] = useState(1.5);
+  const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
+  const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
 
   useEffect(() => {
@@ -165,6 +167,10 @@ export default function ChroniclePage() {
   useEffect(() => {
     contrastUniformRef.current.value = contrast;
   }, [contrast]);
+
+  useEffect(() => {
+    fogNearRef.current = fogNear;
+  }, [fogNear]);
 
   useEffect(() => {
     dispScaleRef.current = heightScale;
@@ -597,8 +603,8 @@ export default function ChroniclePage() {
         });
       }
 
-      // Fog only ramps in the closest 10% of the zoom range
-      const FOG_THRESHOLD = R_MIN + 0.3 * (R_MAX - R_MIN); // 13.3
+      // Fog ramps in as camera approaches R_MIN; threshold set by fogNearRef
+      const FOG_THRESHOLD = fogNearRef.current;
       const fogT = Math.max(
         0,
         Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)),
@@ -1234,6 +1240,7 @@ export default function ChroniclePage() {
                   Effects
                 </div>
                 {row("heightFog", "Height fog")}
+                {sliderRow("Fog near", fogNear, R_MIN, R_MAX, 0.5, setFogNear)}
               </div>
             );
           })()}
