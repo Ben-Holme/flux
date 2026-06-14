@@ -44,7 +44,7 @@ const DISCORD_SVG = (
 export default function Nav() {
   const pathname = usePathname();
   const isFirst = pathname === "/";
-  const [scrolled, setScrolled] = useState(!isFirst);
+  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
