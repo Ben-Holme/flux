@@ -129,7 +129,7 @@ export default function ChroniclePage() {
   const [dirLightZ, setDirLightZ] = useState(-25);
   const [seaSpec, setSeaSpec] = useState(0.065);
   const [terrainNormal, setTerrainNormal] = useState(0.6);
-  const [heightScale, setHeightScale] = useState(1);
+  const [heightScale, setHeightScale] = useState(1.8);
   const [contrast, setContrast] = useState(1.5);
   const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
   const fogNearRef = useRef(fogNear);
@@ -392,7 +392,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 2,
+      displacementScale: dispScaleRef.current,
       normalMap: normalTexture,
       normalScale: new THREE.Vector2(terrainNormal, terrainNormal),
       roughness: 0.85,
@@ -543,7 +543,7 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.CircleGeometry(25, 128);
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x3c4d52,
-      specular: new THREE.Color(0.01, 0.01, 0.01),
+      specular: new THREE.Color(seaSpec, seaSpec, seaSpec),
       shininess: 750,
       normalMap: seaNormalTexture,
       normalScale: new THREE.Vector2(0.8, 0.8),
