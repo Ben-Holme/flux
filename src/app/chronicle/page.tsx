@@ -1,22 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import LOCATIONS from "@/data/locations.json";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-
-interface Location {
-  name: string;
-  description: string;
-  keywords: string;
-  x: string;
-  y: string;
-  z: string;
-}
 
 interface LiveLoc {
   name: string;
@@ -25,8 +15,6 @@ interface LiveLoc {
   threeZ: number;
   radiusWorld: number;
 }
-
-const locations = LOCATIONS as Location[];
 
 function locTypeIcon(type: string): string {
   switch (type) {
@@ -47,13 +35,6 @@ const ELEV_NEAR = Math.PI * (30 / 180); // camera elevation when close (30° fro
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
-
-function normalize(l: Location) {
-  return {
-    nx: (parseFloat(l.x) / MAP_EXTENT + 1) / 2,
-    ny: (parseFloat(l.y) / MAP_EXTENT + 1) / 2,
-  };
-}
 
 function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
   const nx = threeX / 20 + 0.5;
@@ -154,6 +135,7 @@ export default function ChroniclePage() {
         for (const [name, loc] of Object.entries(
           data.locs as Record<string, { underground: string; type: string; location: string; radius: string }>,
         )) {
+          if (loc.underground === "true") continue;
           const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
           if (!match) continue;
           const ueX = parseFloat(match[1]);
@@ -295,7 +277,7 @@ export default function ChroniclePage() {
     for (const ev of events) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
-      const locIdx = locations.findIndex((l) => l.name === ev.location);
+      const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
       if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
     }
     const data: Record<number, Array<{ charId: number; fame: number }>> = {};
@@ -310,7 +292,7 @@ export default function ChroniclePage() {
       arr.splice(3);
     });
     return data;
-  }, [events, players]);
+  }, [events, players, liveLocs]);
 
   // Build Three.js scene
   useEffect(() => {
@@ -604,10 +586,10 @@ export default function ChroniclePage() {
         const W = mount.clientWidth;
         const H = mount.clientHeight;
         portraitGroupRefs.current.forEach((el, locIdx) => {
-          const loc = locations[locIdx];
-          if (!loc) return;
-          const { nx, ny } = normalize(loc);
-          const pos = new THREE.Vector3((nx - 0.5) * 20, 0.1, (ny - 0.5) * 20).project(camera);
+          const liveLoc = liveLocsRef.current[locIdx];
+          if (!liveLoc) return;
+          const h = locHeightsRef.current[locIdx] ?? 0;
+          const pos = new THREE.Vector3(liveLoc.threeX, h * dispScaleRef.current + 0.08, liveLoc.threeZ).project(camera);
           const sx = ((pos.x + 1) / 2) * W;
           const sy = ((-pos.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
@@ -940,7 +922,7 @@ export default function ChroniclePage() {
     }
   }, []);
 
-  const selectedLoc = selectedIdx !== null ? locations[selectedIdx] : null;
+  const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
@@ -989,9 +971,7 @@ export default function ChroniclePage() {
               targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current + normalized * step));
             }}
             onClick={() => {
-              const locIdx = locations.findIndex((l) => l.name === loc.name);
-              setSelectedIdx(locIdx !== -1 ? locIdx : null);
-              // Always navigate — loc.threeX/Z are in the same space as (nx-0.5)*20
+              setSelectedIdx(i);
               focusTargetRef.current = new THREE.Vector3(
                 Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
                 (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
@@ -1497,32 +1477,6 @@ export default function ChroniclePage() {
             {selectedLoc.name}
           </div>
 
-          {selectedLoc.description && (
-            <p
-              style={{
-                fontSize: "0.85rem",
-                color: "rgba(255,255,255,0.6)",
-                lineHeight: 1.6,
-                margin: "0 0 12px",
-              }}
-            >
-              {selectedLoc.description}
-            </p>
-          )}
-          {selectedLoc.keywords && (
-            <p
-              style={{
-                fontSize: "0.72rem",
-                color: "rgba(255,255,255,0.3)",
-                lineHeight: 1.5,
-                margin: "0 0 20px",
-                fontStyle: "italic",
-              }}
-            >
-              {selectedLoc.keywords}
-            </p>
-          )}
-
           {locEvents.length > 0 && (
             <>
               <div
@@ -1711,31 +1665,6 @@ export default function ChroniclePage() {
                   transition: "opacity 0.15s ease",
                 }}
               >
-                {selectedLoc.description && (
-                  <p
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "rgba(255,255,255,0.6)",
-                      lineHeight: 1.6,
-                      margin: "0 0 12px",
-                    }}
-                  >
-                    {selectedLoc.description}
-                  </p>
-                )}
-                {selectedLoc.keywords && (
-                  <p
-                    style={{
-                      fontSize: "0.72rem",
-                      color: "rgba(255,255,255,0.3)",
-                      lineHeight: 1.5,
-                      margin: "0 0 20px",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {selectedLoc.keywords}
-                  </p>
-                )}
                 {locEvents.length > 0 && (
                   <>
                     <div
