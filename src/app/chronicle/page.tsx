@@ -729,6 +729,7 @@ export default function ChroniclePage() {
     if (!mount) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      focusTargetRef.current = null;
       const isWheel = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
       const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
       const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
@@ -812,10 +813,12 @@ export default function ChroniclePage() {
         const prevMid = pinchMidRef.current;
         // Zoom
         if (lastPinchDistRef.current > 0) {
+          focusTargetRef.current = null;
           const rawFactor = lastPinchDistRef.current / newDist;
           zoomCamera(1 + (rawFactor - 1) * 0.1);
         }
         // Pan from midpoint delta
+        focusTargetRef.current = null;
         panCamera(newMid.x - prevMid.x, newMid.y - prevMid.y);
       }
       lastPinchDistRef.current = newDist;
@@ -824,6 +827,7 @@ export default function ChroniclePage() {
     }
 
     if (draggingRef.current) {
+      focusTargetRef.current = null;
       panCamera(cssX - lastPosRef.current.x, cssY - lastPosRef.current.y);
       lastPosRef.current = { x: cssX, y: cssY };
       return;
@@ -979,6 +983,7 @@ export default function ChroniclePage() {
             }}
             style={{ position: "absolute", top: 0, left: 0, opacity: 0, cursor: "pointer" }}
             onWheel={(e) => {
+              focusTargetRef.current = null;
               const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
               const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
               const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
@@ -995,7 +1000,7 @@ export default function ChroniclePage() {
                   0,
                   Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
                 );
-                targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 30));
+                targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
               }
             }}
           >
