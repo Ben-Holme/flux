@@ -38,7 +38,6 @@ function locTypeIcon(type: string): string {
   }
 }
 const GOLD = "#c8923a";
-const GOLD_NUM = 0xc8923a;
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
 
 // Orbit constants
@@ -61,7 +60,6 @@ export default function ChroniclePage() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const spritesRef = useRef<THREE.Sprite[]>([]);
   const rafRef = useRef<number | null>(null);
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
@@ -81,7 +79,6 @@ export default function ChroniclePage() {
   const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
-  const spriteHeightsRef = useRef<number[]>([]);
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -227,11 +224,6 @@ export default function ChroniclePage() {
     if (terrainMatRef.current) terrainMatRef.current.displacementScale = heightScale;
     heightFogDensityRef.current.value =
       heightScale > 0 ? HEIGHT_FOG_DENSITY / heightScale : HEIGHT_FOG_DENSITY;
-    spritesRef.current.forEach((sprite) => {
-      const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-      const h = spriteHeightsRef.current[idx] ?? 0.5;
-      sprite.position.setY(h * heightScale + 0.08);
-    });
   }, [heightScale]);
 
   useEffect(() => {
@@ -538,90 +530,6 @@ export default function ChroniclePage() {
     sea.renderOrder = 0;
     scene.add(sea);
 
-    // Sprite material for location dots
-    function makeSpriteMaterial(hasEvent: boolean, color: number) {
-      const sc = document.createElement("canvas");
-      sc.width = 64;
-      sc.height = 64;
-      const sctx = sc.getContext("2d")!;
-      sctx.clearRect(0, 0, 64, 64);
-      const r = hasEvent ? 10 : 7;
-      const hex = "#" + color.toString(16).padStart(6, "0");
-      if (hasEvent) {
-        const grd = sctx.createRadialGradient(32, 32, 0, 32, 32, 20);
-        grd.addColorStop(0, hex);
-        grd.addColorStop(0.5, hex);
-        grd.addColorStop(1, "transparent");
-        sctx.fillStyle = grd;
-        sctx.beginPath();
-        sctx.arc(32, 32, 20, 0, Math.PI * 2);
-        sctx.fill();
-      }
-      sctx.fillStyle = hex;
-      sctx.beginPath();
-      sctx.arc(32, 32, r, 0, Math.PI * 2);
-      sctx.fill();
-      return new THREE.SpriteMaterial({
-        map: new THREE.CanvasTexture(sc),
-        depthTest: false,
-        transparent: true,
-      });
-    }
-
-    // Place sprites
-    const half = terrainSize / 2;
-    const dispScale = dispScaleRef.current;
-    const sprites: THREE.Sprite[] = [];
-
-    locations.forEach((loc) => {
-      const { nx, ny } = normalize(loc);
-      const hasEvent = eventLocNames.has(loc.name);
-      const color = hasEvent ? GOLD_NUM : 0x888888;
-      const mat2 = makeSpriteMaterial(hasEvent, color);
-      const sprite = new THREE.Sprite(mat2);
-      sprite.renderOrder = 1;
-      sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
-
-      // World position on terrain — place at mid-height until PNG decodes
-      const wx = (nx - 0.5) * terrainSize;
-      const wz = (ny - 0.5) * terrainSize;
-      sprite.position.set(wx, dispScale * 0.5 + 0.08, wz);
-      (sprite as THREE.Sprite & { locIdx: number }).locIdx = locations.indexOf(loc);
-
-      scene.add(sprite);
-      sprites.push(sprite);
-    });
-    spritesRef.current = sprites;
-
-    // Async: decode heightmap PNG pixels and reposition sprites on real terrain elevation
-    const hmDecodeCanvas = document.createElement("canvas");
-    hmDecodeCanvas.width = 512;
-    hmDecodeCanvas.height = 512;
-    const hmDecodeCtx = hmDecodeCanvas.getContext("2d")!;
-    const hmDecodeImg = new Image();
-    hmDecodeImg.onload = () => {
-      hmDecodeCtx.drawImage(hmDecodeImg, 0, 0, 512, 512);
-      const px = hmDecodeCtx.getImageData(0, 0, 512, 512);
-      function heightAt(nx: number, ny: number) {
-        const ix = Math.min(511, Math.max(0, Math.round(nx * 511)));
-        const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
-        return px.data[(iy * 512 + ix) * 4] / 255;
-      }
-      const heights: number[] = new Array(locations.length).fill(0.5);
-      sprites.forEach((sprite) => {
-        const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-        const loc = locations[idx];
-        const { nx, ny } = normalize(loc);
-        const wx = (nx - 0.5) * terrainSize;
-        const wz = (ny - 0.5) * terrainSize;
-        const h = heightAt(nx, ny);
-        heights[idx] = h;
-        sprite.position.set(wx, h * dispScaleRef.current + 0.08, wz);
-      });
-      spriteHeightsRef.current = heights;
-    };
-    hmDecodeImg.src = "/heightmap.png";
-
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
@@ -646,9 +554,10 @@ export default function ChroniclePage() {
         const W = mount.clientWidth;
         const H = mount.clientHeight;
         portraitGroupRefs.current.forEach((el, locIdx) => {
-          const sprite = spritesRef.current[locIdx];
-          if (!sprite) return;
-          const pos = sprite.position.clone().project(camera);
+          const loc = locations[locIdx];
+          if (!loc) return;
+          const { nx, ny } = normalize(loc);
+          const pos = new THREE.Vector3((nx - 0.5) * 20, 0.1, (ny - 0.5) * 20).project(camera);
           const sx = ((pos.x + 1) / 2) * W;
           const sy = ((-pos.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
@@ -660,7 +569,7 @@ export default function ChroniclePage() {
       if (locOverlayRefs.current.size > 0 && mount) {
         const locW = mount.clientWidth;
         const locH = mount.clientHeight;
-        const locOpacity = Math.min(1, Math.max(0, (radiusRef.current - R_MIN) / 2));
+        const locOpacity = 1;
         locOverlayRefs.current.forEach((el, i) => {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
@@ -721,40 +630,6 @@ export default function ChroniclePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
 
-  // Update sprite appearances when eventLocNames changes (after events load)
-  useEffect(() => {
-    spritesRef.current.forEach((sprite) => {
-      const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-      const loc = locations[idx];
-      const hasEvent = eventLocNames.has(loc.name);
-      const mat = sprite.material as THREE.SpriteMaterial;
-      const sc = document.createElement("canvas");
-      sc.width = 64;
-      sc.height = 64;
-      const sctx = sc.getContext("2d")!;
-      sctx.clearRect(0, 0, 64, 64);
-      const color = hasEvent ? GOLD : "rgba(136,136,136,1)";
-      const r = hasEvent ? 10 : 7;
-      if (hasEvent) {
-        const grd = sctx.createRadialGradient(32, 32, 0, 32, 32, 20);
-        grd.addColorStop(0, color);
-        grd.addColorStop(0.5, color);
-        grd.addColorStop(1, "transparent");
-        sctx.fillStyle = grd;
-        sctx.beginPath();
-        sctx.arc(32, 32, 20, 0, Math.PI * 2);
-        sctx.fill();
-      }
-      sctx.fillStyle = color;
-      sctx.beginPath();
-      sctx.arc(32, 32, r, 0, Math.PI * 2);
-      sctx.fill();
-      mat.map?.dispose();
-      mat.map = new THREE.CanvasTexture(sc);
-      mat.needsUpdate = true;
-      sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
-    });
-  }, [eventLocNames]);
 
   // Orbit helper: position camera and lookAt from target + radius
   function updateCameraFromOrbit() {
@@ -792,27 +667,6 @@ export default function ChroniclePage() {
       R_MAX,
       Math.max(R_MIN, targetRadiusRef.current + (factor < 1 ? -step : step)),
     );
-  }
-
-  // Raycasting for location selection
-  function pickLocation(clientX: number, clientY: number): number | null {
-    const mount = mountRef.current;
-    const camera = cameraRef.current;
-    const scene = sceneRef.current;
-    if (!mount || !camera || !scene) return null;
-    const rect = mount.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-      ((clientX - rect.left) / rect.width) * 2 - 1,
-      -((clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(ndc, camera);
-    // Test against sprites with a wider threshold
-    raycaster.params.Points = { threshold: 0.3 };
-    const hits = raycaster.intersectObjects(spritesRef.current);
-    if (hits.length === 0) return null;
-    const sprite = hits[0].object as THREE.Sprite & { locIdx: number };
-    return sprite.locIdx ?? null;
   }
 
   // Wheel zoom
@@ -926,9 +780,7 @@ export default function ChroniclePage() {
       lastPosRef.current = { x: cssX, y: cssY };
     }
 
-    // Cursor: pointer when hovering a sprite
-    const hit = pickLocation(e.clientX, e.clientY);
-    mount.style.cursor = hit !== null ? "pointer" : "grab";
+    mount.style.cursor = draggingRef.current ? "grabbing" : "grab";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -949,19 +801,8 @@ export default function ChroniclePage() {
     }
 
     if (!draggingRef.current) {
-      const idx = pickLocation(e.clientX, e.clientY);
-      setSelectedIdx(idx);
-      if (idx !== null) {
-        const loc = locations[idx];
-        const { nx, ny } = normalize(loc);
-        focusTargetRef.current = new THREE.Vector3(
-          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
-          0,
-          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
-        );
-        // Zoom in when selecting from far out, don't zoom out if already close
-        targetRadiusRef.current = Math.min(targetRadiusRef.current, 10);
-      }
+      // Tapping empty canvas deselects; location selection is handled by overlay onClick
+      setSelectedIdx(null);
     }
     draggingRef.current = false;
     pointerStartRef.current = null;
@@ -1079,7 +920,21 @@ export default function ChroniclePage() {
               if (el) locOverlayRefs.current.set(i, el);
               else locOverlayRefs.current.delete(i);
             }}
-            style={{ position: "absolute", top: 0, left: 0, opacity: 0 }}
+            style={{ position: "absolute", top: 0, left: 0, opacity: 0, pointerEvents: "auto", cursor: "pointer" }}
+            onClick={() => {
+              const locIdx = locations.findIndex((l) => l.name === loc.name);
+              setSelectedIdx(locIdx !== -1 ? locIdx : null);
+              if (locIdx !== -1) {
+                const l = locations[locIdx];
+                const { nx, ny } = normalize(l);
+                focusTargetRef.current = new THREE.Vector3(
+                  Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
+                  0,
+                  Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
+                );
+                targetRadiusRef.current = Math.min(targetRadiusRef.current, 10);
+              }
+            }}
           >
             {/* Radius ring */}
             <svg
