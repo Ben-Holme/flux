@@ -78,7 +78,7 @@ export default function PlayTestPage() {
             {types.map((type) => (
               <FilterChip
                 key={type}
-                label={`${EVENT_TYPES[type].symbol} ${EVENT_TYPES[type].label}`}
+                label={EVENT_TYPES[type].label}
                 color={EVENT_TYPES[type].color}
                 active={activeFilter === type}
                 onClick={() => setActiveFilter(activeFilter === type ? null : type)}
