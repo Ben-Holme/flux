@@ -18,11 +18,16 @@ interface LiveLoc {
 
 function locTypeIcon(type: string): string {
   switch (type) {
-    case "city": return "🏰";
-    case "monster": return "☠️";
-    case "dungeon": return "⚔️";
-    case "mountain": return "⛰️";
-    default: return "●";
+    case "city":
+      return "/unyha-icons/Town.svg";
+    case "monster":
+      return "/unyha-icons/orc.svg";
+    case "dungeon":
+      return "/unyha-icons/dungeon.svg";
+    case "mountain":
+      return "/unyha-icons/Mountain.svg";
+    default:
+      return "/unyha-icons/Nav.svg";
   }
 }
 const GOLD = "#c8923a";
@@ -133,7 +138,10 @@ export default function ChroniclePage() {
         if (data.status !== "OK" || !data.locs) return;
         const parsed: LiveLoc[] = [];
         for (const [name, loc] of Object.entries(
-          data.locs as Record<string, { underground: string; type: string; location: string; radius: string }>,
+          data.locs as Record<
+            string,
+            { underground: string; type: string; location: string; radius: string }
+          >,
         )) {
           if (loc.underground === "true") continue;
           const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
@@ -247,7 +255,9 @@ export default function ChroniclePage() {
     });
     revealAtRef.current = out;
     if (hmDataRef.current)
-      locHeightsRef.current = liveLocs.map((l) => sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ));
+      locHeightsRef.current = liveLocs.map((l) =>
+        sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ),
+      );
   }, [liveLocs]);
 
   // Decode heightmap once; re-sample loc heights if liveLocs already loaded
@@ -263,7 +273,9 @@ export default function ChroniclePage() {
       const data = ctx.getImageData(0, 0, 512, 512).data;
       hmDataRef.current = data;
       if (liveLocsRef.current.length > 0)
-        locHeightsRef.current = liveLocsRef.current.map((l) => sampleHmHeight(data, l.threeX, l.threeZ));
+        locHeightsRef.current = liveLocsRef.current.map((l) =>
+          sampleHmHeight(data, l.threeX, l.threeZ),
+        );
     };
     img.src = "/heightmap.png";
   }, []);
@@ -589,7 +601,11 @@ export default function ChroniclePage() {
           const liveLoc = liveLocsRef.current[locIdx];
           if (!liveLoc) return;
           const h = locHeightsRef.current[locIdx] ?? 0;
-          const pos = new THREE.Vector3(liveLoc.threeX, h * dispScaleRef.current + 0.08, liveLoc.threeZ).project(camera);
+          const pos = new THREE.Vector3(
+            liveLoc.threeX,
+            h * dispScaleRef.current + 0.08,
+            liveLoc.threeZ,
+          ).project(camera);
           const sx = ((pos.x + 1) / 2) * W;
           const sy = ((-pos.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
@@ -609,7 +625,10 @@ export default function ChroniclePage() {
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
           const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
-          if (pos.z > 1) { el.style.opacity = "0"; return; }
+          if (pos.z > 1) {
+            el.style.opacity = "0";
+            return;
+          }
           const sx = ((pos.x + 1) / 2) * locW;
           const sy = ((-pos.y + 1) / 2) * locH;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
@@ -617,7 +636,11 @@ export default function ChroniclePage() {
           const svg = locRingSvgRefs.current.get(i);
           const circle = locRingCircleRefs.current.get(i);
           if (svg && circle && loc.radiusWorld > 0) {
-            const offsetPos = new THREE.Vector3(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
+            const offsetPos = new THREE.Vector3(
+              loc.threeX + loc.radiusWorld,
+              worldY,
+              loc.threeZ,
+            ).project(camera);
             const ox = ((offsetPos.x + 1) / 2) * locW;
             const oy = ((-offsetPos.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
@@ -664,7 +687,6 @@ export default function ChroniclePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
-
 
   // Orbit helper: position camera and lookAt from target + radius
   function updateCameraFromOrbit() {
@@ -962,13 +984,23 @@ export default function ChroniclePage() {
               if (el) locOverlayRefs.current.set(i, el);
               else locOverlayRefs.current.delete(i);
             }}
-            style={{ position: "absolute", top: 0, left: 0, opacity: 0, cursor: "pointer" }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              opacity: 0,
+              cursor: "pointer",
+              filter: "drop-shadow(0 0 4px rgba(0, 0, 0, 1))",
+            }}
             onWheel={(e) => {
               focusTargetRef.current = null;
               const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
               const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
               const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
-              targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current + normalized * step));
+              targetRadiusRef.current = Math.min(
+                R_MAX,
+                Math.max(R_MIN, targetRadiusRef.current + normalized * step),
+              );
             }}
             onClick={() => {
               setSelectedIdx(i);
@@ -1008,28 +1040,13 @@ export default function ChroniclePage() {
               style={{
                 position: "absolute",
                 transform: "translate(-50%, -50%)",
-                fontSize: loc.type === "neutral" ? "8px" : "14px",
                 lineHeight: 1,
-                color: loc.type === "neutral" ? "rgba(255,255,255,0.6)" : undefined,
-                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
               }}
             >
-              {locTypeIcon(loc.type)}
+              <img src={locTypeIcon(loc.type)} alt="" className="h-6 w-6 max-w-none" />
             </span>
             {/* Label — below icon */}
-            <span
-              style={{
-                position: "absolute",
-                transform: "translate(-50%, 0)",
-                top: "10px",
-                fontSize: "9px",
-                color: "rgba(255,255,255,0.75)",
-                textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                whiteSpace: "nowrap",
-                letterSpacing: "0.03em",
-                lineHeight: 1.2,
-              }}
-            >
+            <span className="absolute translate-x-[-50%] pt-4 text-[9px] tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
               {loc.name}
             </span>
           </div>
@@ -1519,7 +1536,19 @@ export default function ChroniclePage() {
                         <span
                           style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}
                         >
-                          <img src={et.icon} alt="" style={{ width: "0.9em", height: "0.9em", opacity: 0.9, filter: `brightness(0) saturate(100%) invert(1)`, verticalAlign: "middle", marginRight: "4px" }} />{et.label}
+                          <img
+                            src={et.icon}
+                            alt=""
+                            style={{
+                              width: "0.9em",
+                              height: "0.9em",
+                              opacity: 0.9,
+                              filter: `brightness(0) saturate(100%) invert(1)`,
+                              verticalAlign: "middle",
+                              marginRight: "4px",
+                            }}
+                          />
+                          {et.label}
                         </span>
                         <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>
                           {ev.date}
@@ -1711,7 +1740,19 @@ export default function ChroniclePage() {
                                   letterSpacing: "0.06em",
                                 }}
                               >
-                                <img src={et.icon} alt="" style={{ width: "0.9em", height: "0.9em", opacity: 0.9, filter: `brightness(0) saturate(100%) invert(1)`, verticalAlign: "middle", marginRight: "4px" }} />{et.label}
+                                <img
+                                  src={et.icon}
+                                  alt=""
+                                  style={{
+                                    width: "0.9em",
+                                    height: "0.9em",
+                                    opacity: 0.9,
+                                    filter: `brightness(0) saturate(100%) invert(1)`,
+                                    verticalAlign: "middle",
+                                    marginRight: "4px",
+                                  }}
+                                />
+                                {et.label}
                               </span>
                               <span
                                 style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}
