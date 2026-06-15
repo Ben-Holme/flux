@@ -79,6 +79,7 @@ export default function ChroniclePage() {
   const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
+  const maxRadiusRef = useRef(0); // max radiusWorld across all liveLocs — for reveal scaling
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -234,6 +235,7 @@ export default function ChroniclePage() {
   }, [selectedIdx]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
+    maxRadiusRef.current = liveLocs.reduce((m, l) => Math.max(m, l.radiusWorld), 0);
   }, [liveLocs]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
@@ -569,10 +571,14 @@ export default function ChroniclePage() {
       if (locOverlayRefs.current.size > 0 && mount) {
         const locW = mount.clientWidth;
         const locH = mount.clientHeight;
-        const locOpacity = 1;
+        const maxR = maxRadiusRef.current;
         locOverlayRefs.current.forEach((el, i) => {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
+          // Reveal based on radiusWorld: largest locations visible from far out, smaller ones only when close
+          const t = maxR > 0 ? loc.radiusWorld / maxR : 1;
+          const revealAt = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+          const locOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
           const pos = new THREE.Vector3(loc.threeX, 0.1, loc.threeZ).project(camera);
           if (pos.z > 1) { el.style.opacity = "0"; return; }
           const sx = ((pos.x + 1) / 2) * locW;
