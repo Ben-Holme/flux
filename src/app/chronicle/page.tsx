@@ -15,6 +15,7 @@ interface LiveLoc {
   threeX: number;
   threeZ: number;
   radiusWorld: number;
+  description?: string;
 }
 
 function hostilityColor(h: number): string {
@@ -160,6 +161,7 @@ export default function ChroniclePage() {
               location: string;
               radius: string;
               hostility?: string;
+              description?: string;
             }
           >,
         )) {
@@ -175,6 +177,7 @@ export default function ChroniclePage() {
             threeX: (ueX / MAP_EXTENT) * 10,
             threeZ: (ueY / MAP_EXTENT) * 10,
             radiusWorld: (parseFloat(loc.radius) / MAP_EXTENT) * 10,
+            description: loc.description,
           });
         }
         setLiveLocs(parsed);
@@ -969,19 +972,11 @@ export default function ChroniclePage() {
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        background: "#0a0c0e",
-      }}
-    >
+    <div className="relative h-screen w-screen overflow-hidden bg-[#0a0c0e]">
       {/* Three.js mount */}
       <div
         ref={mountRef}
-        style={{ position: "absolute", inset: 0, cursor: "grab", touchAction: "none" }}
+        className="absolute inset-0 cursor-grab touch-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -989,15 +984,7 @@ export default function ChroniclePage() {
       />
 
       {/* Location overlays — below portrait overlays */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 6,
-          pointerEvents: "none",
-          overflow: "hidden",
-        }}
-      >
+      <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
         {liveLocs.map((loc, i) => (
           <div
             key={i}
@@ -1010,7 +997,7 @@ export default function ChroniclePage() {
               opacity: 0,
               zIndex: selectedIdx === i ? 999 : parseInt(loc.threeZ.toFixed(0)), // ensure selected location is always on top
             }}
-            className="absolute top-0 left-0 cursor-pointer"
+            className="absolute top-0 left-0 cursor-pointer hover:z-[999]! hover:opacity-100!"
             onWheel={(e) => {
               focusTargetRef.current = null;
               const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
@@ -1056,51 +1043,48 @@ export default function ChroniclePage() {
                 />
               </svg>
             )}
-            {/* Icon — centered on world point */}
             <div
-              style={{
-                position: "absolute",
-                transform: "translate(-50%, -50%)",
-                width: 32,
-                height: 32,
-                WebkitMaskImage: `url(${locTypeIcon(loc.type)})`,
-                maskImage: `url(${locTypeIcon(loc.type)})`,
-                WebkitMaskSize: "contain",
-                maskSize: "contain",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                maskPosition: "center",
-                backgroundColor: hostilityColor(loc.hostility),
-                filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
-              }}
-            />
-            {/* Label — below icon */}
-            <span
-              style={{
-                fontSize:
-                  loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
-                textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
-                letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
-              }}
-              className="absolute translate-x-[-50%] pt-4 tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+              className="transition-transform hover:scale-120"
+              style={{ transform: selectedIdx === i ? "scale(1.2)" : undefined }}
             >
-              {loc.name}
-            </span>
+              {/* Icon — centered on world point */}
+              <div
+                style={{
+                  position: "absolute",
+                  transform: "translate(-50%, -50%)",
+                  width: 32,
+                  height: 32,
+                  WebkitMaskImage: `url(${locTypeIcon(loc.type)})`,
+                  maskImage: `url(${locTypeIcon(loc.type)})`,
+                  WebkitMaskSize: "contain",
+                  maskSize: "contain",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskPosition: "center",
+                  maskPosition: "center",
+                  backgroundColor: hostilityColor(loc.hostility),
+                  filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
+                }}
+              />
+              {/* Label — below icon */}
+              <span
+                style={{
+                  fontSize:
+                    loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
+                  textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
+                  letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
+                }}
+                className="absolute translate-x-[-50%] pt-4 tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+              >
+                {loc.name}
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
       {/* Portrait overlays — positions updated each frame via portraitGroupRefs */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 7,
-          pointerEvents: "none",
-          overflow: "hidden",
-        }}
-      >
+      <div className="pointer-events-none absolute inset-0 z-[7] overflow-hidden">
         {Object.entries(locPortraits).map(([idxStr, chars]) => {
           const locIdx = parseInt(idxStr);
           return (
@@ -1110,40 +1094,27 @@ export default function ChroniclePage() {
                 if (el) portraitGroupRefs.current.set(locIdx, el);
                 else portraitGroupRefs.current.delete(locIdx);
               }}
-              style={{ position: "absolute", top: 0, left: 0, opacity: 0 }}
+              className="absolute top-0 left-0"
+              style={{ opacity: 0 }}
             >
               {chars.map((c, rank) => {
                 const size = rank === 0 ? 48 : 32;
-                // Offsets: all three bottom edges aligned 10px above the pin
                 const offsets = [
-                  { left: -24, top: -58 }, // rank 1: 48px centered
-                  { left: -60, top: -42 }, // rank 2: 32px, left flank
-                  { left: 28, top: -42 }, // rank 3: 32px, right flank
+                  { left: -24, top: -58 },
+                  { left: -60, top: -42 },
+                  { left: 28, top: -42 },
                 ][rank];
                 const initial =
                   (players[c.charId]?.name ?? "?").split("#")[0]?.[0]?.toUpperCase() ?? "?";
                 return (
                   <div
                     key={String(c.charId)}
-                    style={{
-                      position: "absolute",
-                      left: offsets.left,
-                      top: offsets.top,
-                      width: size,
-                      height: size,
-                    }}
+                    className="absolute"
+                    style={{ left: offsets.left, top: offsets.top, width: size, height: size }}
                   >
                     <img
                       src={`https://api.unyhagame.com/ueserv/chars/${c.charId}.png`}
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: "50%",
-                        border: "2px solid rgba(0,0,0,0.75)",
-                        objectFit: "cover",
-                      }}
+                      className="absolute inset-0 h-full w-full rounded-full border-2 border-black/75 object-cover"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
                         img.style.display = "none";
@@ -1152,20 +1123,8 @@ export default function ChroniclePage() {
                       }}
                     />
                     <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        borderRadius: "50%",
-                        border: "2px solid rgba(0,0,0,0.75)",
-                        background: "#2a3d3e",
-                        display: "none",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "rgba(255,255,255,0.85)",
-                        fontSize: rank === 0 ? 18 : 13,
-                        fontWeight: 600,
-                        userSelect: "none",
-                      }}
+                      className="absolute inset-0 hidden items-center justify-center rounded-full border-2 border-black/75 bg-[#2a3d3e] font-semibold text-white/85 select-none"
+                      style={{ fontSize: rank === 0 ? 18 : 13 }}
                     >
                       {initial}
                     </div>
@@ -1180,50 +1139,21 @@ export default function ChroniclePage() {
       {/* Debug overlay */}
       <div
         ref={debugRef}
-        style={{
-          position: "absolute",
-          bottom: 8,
-          left: 8,
-          zIndex: 30,
-          fontFamily: "monospace",
-          fontSize: "11px",
-          color: "rgba(255,255,255,0.5)",
-          pointerEvents: "none",
-        }}
+        className="pointer-events-none absolute bottom-2 left-2 z-30 font-mono text-[11px] text-white/50"
       />
 
       {/* Debug panel */}
-      <div style={{ position: "absolute", top: 8, right: 8, zIndex: 30, userSelect: "none" }}>
+      <div className="absolute top-2 right-2 z-30 select-none">
         <button
           onClick={() => setDbgOpen((o) => !o)}
-          style={{
-            display: "block",
-            marginLeft: "auto",
-            background: "rgba(0,0,0,0.55)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.45)",
-            fontSize: "0.75rem",
-            cursor: "pointer",
-            borderRadius: "4px",
-            padding: "3px 8px",
-            fontFamily: "monospace",
-          }}
+          className="ml-auto block cursor-pointer rounded border border-white/10 bg-black/55 px-2 py-0.5 font-mono text-[0.75rem] text-white/45"
         >
           ⚙
         </button>
         {dbgOpen &&
           (() => {
             const row = (key: keyof typeof dbg, label: string, extra?: (v: boolean) => void) => (
-              <label
-                key={key}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 3,
-                  cursor: "pointer",
-                }}
-              >
+              <label key={key} className="mb-0.5 flex cursor-pointer items-center gap-1.5">
                 <input
                   type="checkbox"
                   checked={dbg[key]}
@@ -1234,15 +1164,7 @@ export default function ChroniclePage() {
                   }}
                   style={{ cursor: "pointer", accentColor: GOLD }}
                 />
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "rgba(255,255,255,0.5)",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {label}
-                </span>
+                <span className="font-mono text-[0.7rem] text-white/50">{label}</span>
               </label>
             );
             const sliderRow = (
@@ -1253,16 +1175,8 @@ export default function ChroniclePage() {
               step: number,
               onChange: (v: number) => void,
             ) => (
-              <label style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 5 }}>
-                <span
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.7rem",
-                    color: "rgba(255,255,255,0.5)",
-                    fontFamily: "monospace",
-                  }}
-                >
+              <label className="mb-[5px] flex flex-col gap-0.5">
+                <span className="flex justify-between font-mono text-[0.7rem] text-white/50">
                   <span>{label}</span>
                   <span>{value}</span>
                 </span>
@@ -1273,87 +1187,35 @@ export default function ChroniclePage() {
                   step={step}
                   value={value}
                   onChange={(e) => onChange(parseFloat(e.target.value))}
-                  style={{ width: "100%", accentColor: GOLD, cursor: "pointer" }}
+                  className="w-full cursor-pointer"
+                  style={{ accentColor: GOLD }}
                 />
               </label>
             );
-            return (
+            const sec = (text: string, first?: boolean) => (
               <div
-                style={{
-                  marginTop: 4,
-                  background: "rgba(6,8,10,0.93)",
-                  backdropFilter: "blur(8px)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "6px",
-                  padding: "10px 12px",
-                  minWidth: 180,
-                }}
+                className={`text-[0.58rem] tracking-[0.1em] text-white/25 uppercase ${first ? "mb-1.5" : "mt-2 mb-1.5"}`}
               >
-                <div
-                  style={{
-                    fontSize: "0.58rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "rgba(255,255,255,0.25)",
-                    marginBottom: 6,
-                  }}
-                >
-                  Lights
-                </div>
+                {text}
+              </div>
+            );
+            return (
+              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[rgba(6,8,10,0.93)] px-3 py-2.5 backdrop-blur">
+                {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
                 {row("fillLight", "Fill light")}
                 {row("leftLight", "Left light")}
-                <div
-                  style={{
-                    fontSize: "0.58rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "rgba(255,255,255,0.25)",
-                    margin: "8px 0 6px",
-                  }}
-                >
-                  Dir light pos
-                </div>
+                {sec("Dir light pos")}
                 {sliderRow("Y", dirLightY, 0, 50, 1, setDirLightY)}
                 {sliderRow("Z", dirLightZ, -50, 50, 1, setDirLightZ)}
-                <div
-                  style={{
-                    fontSize: "0.58rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "rgba(255,255,255,0.25)",
-                    margin: "8px 0 6px",
-                  }}
-                >
-                  Terrain
-                </div>
+                {sec("Terrain")}
                 {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
                 {sliderRow("Height scale", heightScale, 0, 5, 0.1, setHeightScale)}
                 {sliderRow("Contrast", contrast, 0.5, 4, 0.05, setContrast)}
-                <div
-                  style={{
-                    fontSize: "0.58rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "rgba(255,255,255,0.25)",
-                    margin: "8px 0 6px",
-                  }}
-                >
-                  Sea
-                </div>
+                {sec("Sea")}
                 {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
-                <div
-                  style={{
-                    fontSize: "0.58rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: "rgba(255,255,255,0.25)",
-                    margin: "8px 0 6px",
-                  }}
-                >
-                  Effects
-                </div>
+                {sec("Effects")}
                 {row("heightFog", "Height fog")}
                 {sliderRow("Fog near", fogNear, R_MIN, R_MAX, 0.5, setFogNear)}
               </div>
@@ -1362,26 +1224,8 @@ export default function ChroniclePage() {
       </div>
 
       {/* Header overlay */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-          padding: "20px 24px 16px",
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)",
-          pointerEvents: "none",
-        }}
-      >
-        <div
-          style={{
-            marginTop: "8px",
-            fontSize: "0.72rem",
-            color: "rgba(255,255,255,0.3)",
-            letterSpacing: "0.05em",
-          }}
-        >
+      <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent px-6 pt-5 pb-4">
+        <div className="mt-2 text-[0.72rem] tracking-[0.05em] text-white/30">
           {eventsLoading
             ? "Loading events…"
             : `${events.length} events · ${eventLocNames.size} locations visited`}
@@ -1389,128 +1233,55 @@ export default function ChroniclePage() {
       </div>
 
       {/* Legend */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 24,
-          left: 24,
-          zIndex: 10,
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div className="pointer-events-none absolute bottom-6 left-6 z-10 flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
           <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "var(--gold)",
-              display: "inline-block",
-              boxShadow: `0 0 6px ${GOLD}`,
-            }}
+            className="bg-gold inline-block h-2 w-2 rounded-full"
+            style={{ boxShadow: `0 0 6px ${GOLD}` }}
           />
-          <span
-            style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
-          >
-            Has events
-          </span>
+          <span className="text-[0.68rem] tracking-[0.06em] text-white/40">Has events</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "rgba(136,136,136,0.8)",
-              display: "inline-block",
-            }}
-          />
-          <span
-            style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
-          >
-            Location
-          </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[rgba(136,136,136,0.8)]" />
+          <span className="text-[0.68rem] tracking-[0.06em] text-white/40">Location</span>
         </div>
-        <div
-          style={{
-            marginTop: "4px",
-            fontSize: "0.62rem",
-            color: "rgba(255,255,255,0.25)",
-            letterSpacing: "0.04em",
-          }}
-        >
+        <div className="mt-1 text-[0.62rem] tracking-[0.04em] text-white/25">
           Scroll / pinch to zoom · drag to pan
         </div>
       </div>
 
       {/* Desktop side panel */}
       {!isMobile && selectedLoc && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: "min(340px, 90vw)",
-            background: "rgba(6,8,10,0.92)",
-            backdropFilter: "blur(16px)",
-            borderLeft: "1px solid rgba(255,255,255,0.07)",
-            zIndex: 20,
-            overflowY: "auto",
-            padding: "80px 24px 32px",
-          }}
-        >
+        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[rgba(6,8,10,0.92)] px-6 pt-20 pb-8 backdrop-blur-lg">
           <button
             onClick={() => setSelectedIdx(null)}
-            style={{
-              position: "absolute",
-              top: 20,
-              right: 20,
-              background: "none",
-              border: "none",
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "1.2rem",
-              cursor: "pointer",
-              lineHeight: 1,
-              padding: "4px 8px",
-            }}
+            className="absolute top-5 right-5 cursor-pointer border-none bg-transparent px-2 py-1 text-[1.2rem] leading-none text-white/35"
             aria-label="Close"
           >
             ×
           </button>
 
           <div
+            className="font-heading mb-2.5 text-[1.1rem] leading-[1.3] tracking-[0.15em] uppercase"
             style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "1.1rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.15em",
               color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
               textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-              lineHeight: 1.3,
-              marginBottom: "10px",
             }}
           >
             {selectedLoc.name}
+            {selectedLoc.description && (
+              <span className="font-body mt-1 block text-[0.78rem] leading-snug tracking-normal text-white/55 normal-case">
+                {selectedLoc.description}
+              </span>
+            )}
           </div>
 
           {locEvents.length > 0 && (
             <>
-              <div
-                style={{
-                  fontSize: "0.62rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  color: "rgba(255,255,255,0.3)",
-                  marginBottom: "10px",
-                }}
-              >
+              <div className="mb-2.5 text-[0.62rem] tracking-[0.12em] text-white/30 uppercase">
                 {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div className="flex flex-col gap-2">
                 {locEvents.map((ev, i) => {
                   const et = EVENT_TYPES[ev.type] ?? {
                     label: ev.type,
@@ -1519,25 +1290,11 @@ export default function ChroniclePage() {
                   };
                   const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
                   return (
-                    <div
-                      key={i}
-                      style={{
-                        borderRadius: "4px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        padding: "10px 12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "baseline",
-                          justifyContent: "space-between",
-                          marginBottom: "4px",
-                        }}
-                      >
+                    <div key={i} className="rounded border border-white/6 bg-white/4 px-3 py-2.5">
+                      <div className="mb-1 flex items-baseline justify-between">
                         <span
-                          style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}
+                          className="text-[0.78rem] tracking-[0.06em]"
+                          style={{ color: et.color }}
                         >
                           <img
                             src={et.icon}
@@ -1546,31 +1303,18 @@ export default function ChroniclePage() {
                               width: "0.9em",
                               height: "0.9em",
                               opacity: 0.9,
-                              filter: `brightness(0) saturate(100%) invert(1)`,
+                              filter: "brightness(0) saturate(100%) invert(1)",
                               verticalAlign: "middle",
                               marginRight: "4px",
                             }}
                           />
                           {et.label}
                         </span>
-                        <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>
-                          {ev.date}
-                        </span>
+                        <span className="text-[0.68rem] text-white/25">{ev.date}</span>
                       </div>
-                      <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>
-                        {charName}
-                      </div>
+                      <div className="text-[0.78rem] text-white/55">{charName}</div>
                       {ev.special && (
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "rgba(255,255,255,0.4)",
-                            marginTop: "4px",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          {ev.special}
-                        </div>
+                        <div className="mt-1 text-[0.75rem] text-white/40 italic">{ev.special}</div>
                       )}
                     </div>
                   );
@@ -1579,7 +1323,7 @@ export default function ChroniclePage() {
             </>
           )}
           {locEvents.length === 0 && !eventsLoading && (
-            <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>
+            <p className="text-[0.78rem] text-white/20 italic">
               No recorded events at this location.
             </p>
           )}
@@ -1590,19 +1334,8 @@ export default function ChroniclePage() {
       {isMobile && (
         <div
           ref={sheetElRef}
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[50vh] flex-col overflow-hidden rounded-t-2xl bg-[rgba(6,8,10,0.96)] backdrop-blur-lg"
           style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "50vh",
-            background: "rgba(6,8,10,0.96)",
-            backdropFilter: "blur(16px)",
-            borderRadius: "16px 16px 0 0",
-            zIndex: 20,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
             transform: !selectedLoc
               ? "translateY(calc(100% - 44px))"
               : sheetExpanded
@@ -1611,57 +1344,33 @@ export default function ChroniclePage() {
             transition: "transform 0.3s ease",
           }}
         >
-          {/* Drag handle — tap or drag up to expand */}
+          {/* Drag handle */}
           <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "12px 0 8px",
-              cursor: "pointer",
-              flexShrink: 0,
-              touchAction: "none",
-            }}
+            className="flex shrink-0 cursor-pointer touch-none justify-center pt-3 pb-2"
             onPointerDown={onSheetHandlePointerDown}
             onPointerMove={onSheetHandlePointerMove}
             onPointerUp={onSheetHandlePointerUp}
             onPointerCancel={onSheetHandlePointerCancel}
             onClick={() => !sheetDraggedRef.current && selectedLoc && setSheetExpanded(true)}
           >
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                background: "rgba(255,255,255,0.25)",
-              }}
-            />
+            <div className="h-1 w-9 rounded-sm bg-white/25" />
           </div>
 
           {selectedLoc && (
             <>
-              {/* Peek header: location name + close — always visible in peek */}
+              {/* Peek header */}
               <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "4px 20px 12px",
-                  flexShrink: 0,
-                  cursor: sheetExpanded ? "default" : "pointer",
-                }}
+                className="flex shrink-0 items-center justify-between px-5 pt-1 pb-3"
+                style={{ cursor: sheetExpanded ? "default" : "pointer" }}
                 onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
               >
                 <div
+                  className="font-heading text-[1rem] leading-[1.3] tracking-[0.15em] uppercase"
                   style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "1rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.15em",
                     color: eventLocNames.has(selectedLoc.name)
                       ? "var(--gold)"
                       : "rgba(255,255,255,0.85)",
                     textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-                    lineHeight: 1.3,
                   }}
                 >
                   {selectedLoc.name}
@@ -1671,46 +1380,27 @@ export default function ChroniclePage() {
                     ev.stopPropagation();
                     setSelectedIdx(null);
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "rgba(255,255,255,0.35)",
-                    fontSize: "1.2rem",
-                    cursor: "pointer",
-                    lineHeight: 1,
-                    padding: "4px 4px 4px 16px",
-                    flexShrink: 0,
-                  }}
+                  className="shrink-0 cursor-pointer border-none bg-transparent py-1 pr-1 pl-4 text-[1.2rem] leading-none text-white/35"
                   aria-label="Close"
                 >
                   ×
                 </button>
               </div>
 
-              {/* Expanded content — scrollable */}
+              {/* Expanded content */}
               <div
-                style={{
-                  flex: 1,
-                  overflowY: "auto",
-                  padding: "0 20px 24px",
-                  opacity: sheetExpanded ? 1 : 0,
-                  transition: "opacity 0.15s ease",
-                }}
+                className="flex-1 overflow-y-auto px-5 pb-6"
+                style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
               >
+                {selectedLoc.description && (
+                  <p className="mb-3 text-[0.78rem] text-white/55">{selectedLoc.description}</p>
+                )}
                 {locEvents.length > 0 && (
                   <>
-                    <div
-                      style={{
-                        fontSize: "0.62rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.12em",
-                        color: "rgba(255,255,255,0.3)",
-                        marginBottom: "10px",
-                      }}
-                    >
+                    <div className="mb-2.5 text-[0.62rem] tracking-[0.12em] text-white/30 uppercase">
                       {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div className="flex flex-col gap-2">
                       {locEvents.map((ev, i) => {
                         const et = EVENT_TYPES[ev.type] ?? {
                           label: ev.type,
@@ -1721,27 +1411,12 @@ export default function ChroniclePage() {
                         return (
                           <div
                             key={i}
-                            style={{
-                              borderRadius: "4px",
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid rgba(255,255,255,0.06)",
-                              padding: "10px 12px",
-                            }}
+                            className="rounded border border-white/6 bg-white/4 px-3 py-2.5"
                           >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "baseline",
-                                justifyContent: "space-between",
-                                marginBottom: "4px",
-                              }}
-                            >
+                            <div className="mb-1 flex items-baseline justify-between">
                               <span
-                                style={{
-                                  color: et.color,
-                                  fontSize: "0.78rem",
-                                  letterSpacing: "0.06em",
-                                }}
+                                className="text-[0.78rem] tracking-[0.06em]"
+                                style={{ color: et.color }}
                               >
                                 <img
                                   src={et.icon}
@@ -1750,31 +1425,18 @@ export default function ChroniclePage() {
                                     width: "0.9em",
                                     height: "0.9em",
                                     opacity: 0.9,
-                                    filter: `brightness(0) saturate(100%) invert(1)`,
+                                    filter: "brightness(0) saturate(100%) invert(1)",
                                     verticalAlign: "middle",
                                     marginRight: "4px",
                                   }}
                                 />
                                 {et.label}
                               </span>
-                              <span
-                                style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}
-                              >
-                                {ev.date}
-                              </span>
+                              <span className="text-[0.68rem] text-white/25">{ev.date}</span>
                             </div>
-                            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.55)" }}>
-                              {charName}
-                            </div>
+                            <div className="text-[0.78rem] text-white/55">{charName}</div>
                             {ev.special && (
-                              <div
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "rgba(255,255,255,0.4)",
-                                  marginTop: "4px",
-                                  fontStyle: "italic",
-                                }}
-                              >
+                              <div className="mt-1 text-[0.75rem] text-white/40 italic">
                                 {ev.special}
                               </div>
                             )}
@@ -1785,13 +1447,7 @@ export default function ChroniclePage() {
                   </>
                 )}
                 {locEvents.length === 0 && !eventsLoading && (
-                  <p
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "rgba(255,255,255,0.2)",
-                      fontStyle: "italic",
-                    }}
-                  >
+                  <p className="text-[0.78rem] text-white/20 italic">
                     No recorded events at this location.
                   </p>
                 )}
