@@ -86,7 +86,7 @@ export default function EventCard({ event, players, items }: Props) {
         borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
         <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.68rem", letterSpacing: ".18em", textTransform: "uppercase", color: cfg.color }}>
-          {cfg.symbol} {event.type}
+          {event.type}
         </span>
         <span style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem", marginLeft: "auto" }}>{event.location}</span>
         <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.72rem" }}>·</span>
