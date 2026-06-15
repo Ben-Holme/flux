@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import LOCATIONS from "@/data/locations.json";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import * as THREE from "three";
@@ -9,18 +8,24 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
-interface Location {
+interface LiveLoc {
   name: string;
-  description: string;
-  keywords: string;
-  x: string;
-  y: string;
-  z: string;
+  type: string;
+  threeX: number;
+  threeZ: number;
+  radiusWorld: number;
 }
 
-const locations = LOCATIONS as Location[];
+function locTypeIcon(type: string): string {
+  switch (type) {
+    case "city": return "🏰";
+    case "monster": return "☠️";
+    case "dungeon": return "⚔️";
+    case "mountain": return "⛰️";
+    default: return "●";
+  }
+}
 const GOLD = "#c8923a";
-const GOLD_NUM = 0xc8923a;
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
 
 // Orbit constants
@@ -31,11 +36,12 @@ const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
 
-function normalize(l: Location) {
-  return {
-    nx: (parseFloat(l.x) / MAP_EXTENT + 1) / 2,
-    ny: (parseFloat(l.y) / MAP_EXTENT + 1) / 2,
-  };
+function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
+  const nx = threeX / 20 + 0.5;
+  const ny = threeZ / 20 + 0.5;
+  const ix = Math.min(511, Math.max(0, Math.round(nx * 511)));
+  const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
+  return data[(iy * 512 + ix) * 4] / 255;
 }
 
 export default function ChroniclePage() {
@@ -43,7 +49,6 @@ export default function ChroniclePage() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const spritesRef = useRef<THREE.Sprite[]>([]);
   const rafRef = useRef<number | null>(null);
   const targetRef = useRef(new THREE.Vector3(0, 0, 0)); // orbit pivot on terrain
   const radiusRef = useRef(15); // orbit radius (camera → target distance)
@@ -63,7 +68,9 @@ export default function ChroniclePage() {
   const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
-  const spriteHeightsRef = useRef<number[]>([]);
+  const revealAtRef = useRef<number[]>([]); // per-liveLocsRef index reveal threshold
+  const hmDataRef = useRef<Uint8ClampedArray | null>(null); // decoded heightmap pixel data
+  const locHeightsRef = useRef<number[]>([]); // terrain Y (0-1) per liveLoc index
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -79,6 +86,11 @@ export default function ChroniclePage() {
   const selectedIdxRef = useRef<number | null>(null);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
+  const liveLocsRef = useRef<LiveLoc[]>([]);
+  const locOverlayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const locRingSvgRefs = useRef<Map<number, SVGSVGElement>>(new Map());
+  const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
@@ -96,11 +108,50 @@ export default function ChroniclePage() {
   });
   const [dirLightY, setDirLightY] = useState(45);
   const [dirLightZ, setDirLightZ] = useState(-25);
-  const [seaSpec, setSeaSpec] = useState(0.01);
+  const [seaSpec, setSeaSpec] = useState(0.065);
   const [terrainNormal, setTerrainNormal] = useState(0.6);
-  const [heightScale, setHeightScale] = useState(1);
+  const [heightScale, setHeightScale] = useState(1.8);
   const [contrast, setContrast] = useState(1.5);
+  const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
+  const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+
+  // Lock body scroll and hide footer while this page is mounted
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    document.body.classList.add("chronicle-page");
+    return () => {
+      document.body.style.overflow = "";
+      document.body.classList.remove("chronicle-page");
+    };
+  }, []);
+
+  useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getLocations-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status !== "OK" || !data.locs) return;
+        const parsed: LiveLoc[] = [];
+        for (const [name, loc] of Object.entries(
+          data.locs as Record<string, { underground: string; type: string; location: string; radius: string }>,
+        )) {
+          if (loc.underground === "true") continue;
+          const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
+          if (!match) continue;
+          const ueX = parseFloat(match[1]);
+          const ueY = parseFloat(match[2]);
+          parsed.push({
+            name,
+            type: loc.type,
+            threeX: (ueX / MAP_EXTENT) * 10,
+            threeZ: (ueY / MAP_EXTENT) * 10,
+            radiusWorld: (parseFloat(loc.radius) / MAP_EXTENT) * 10,
+          });
+        }
+        setLiveLocs(parsed);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php").then((r) =>
@@ -167,15 +218,14 @@ export default function ChroniclePage() {
   }, [contrast]);
 
   useEffect(() => {
+    fogNearRef.current = fogNear;
+  }, [fogNear]);
+
+  useEffect(() => {
     dispScaleRef.current = heightScale;
     if (terrainMatRef.current) terrainMatRef.current.displacementScale = heightScale;
     heightFogDensityRef.current.value =
       heightScale > 0 ? HEIGHT_FOG_DENSITY / heightScale : HEIGHT_FOG_DENSITY;
-    spritesRef.current.forEach((sprite) => {
-      const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-      const h = spriteHeightsRef.current[idx] ?? 0.5;
-      sprite.position.setY(h * heightScale + 0.08);
-    });
   }, [heightScale]);
 
   useEffect(() => {
@@ -184,6 +234,39 @@ export default function ChroniclePage() {
   useEffect(() => {
     selectedIdxRef.current = selectedIdx;
   }, [selectedIdx]);
+  useEffect(() => {
+    liveLocsRef.current = liveLocs;
+    // Rank by radiusWorld: top 4 locations always visible at R_MAX; rest spread down to R_MIN+2
+    const K = 4;
+    const sorted = liveLocs.map((l, i) => ({ i, r: l.radiusWorld })).sort((a, b) => a.r - b.r);
+    const N = sorted.length;
+    const out = new Array(N).fill(R_MIN + 2);
+    sorted.forEach(({ i }, rank) => {
+      const t = N > K ? Math.min(1, rank / (N - K)) : 1;
+      out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+    });
+    revealAtRef.current = out;
+    if (hmDataRef.current)
+      locHeightsRef.current = liveLocs.map((l) => sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ));
+  }, [liveLocs]);
+
+  // Decode heightmap once; re-sample loc heights if liveLocs already loaded
+  useEffect(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 512, 512);
+      const data = ctx.getImageData(0, 0, 512, 512).data;
+      hmDataRef.current = data;
+      if (liveLocsRef.current.length > 0)
+        locHeightsRef.current = liveLocsRef.current.map((l) => sampleHmHeight(data, l.threeX, l.threeZ));
+    };
+    img.src = "/heightmap.png";
+  }, []);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -194,7 +277,7 @@ export default function ChroniclePage() {
     for (const ev of events) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
-      const locIdx = locations.findIndex((l) => l.name === ev.location);
+      const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
       if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
     }
     const data: Record<number, Array<{ charId: number; fame: number }>> = {};
@@ -209,7 +292,7 @@ export default function ChroniclePage() {
       arr.splice(3);
     });
     return data;
-  }, [events, players]);
+  }, [events, players, liveLocs]);
 
   // Build Three.js scene
   useEffect(() => {
@@ -231,7 +314,7 @@ export default function ChroniclePage() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
-    scene.fog = new THREE.FogExp2(0x000000, 0);
+    scene.fog = new THREE.FogExp2(0x0a0d0f, 0); // matches heightFogColor vec3(0.04,0.05,0.06)
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
@@ -290,7 +373,7 @@ export default function ChroniclePage() {
     const mat = new THREE.MeshStandardMaterial({
       map: colorTexture,
       displacementMap: dispTexture,
-      displacementScale: 2,
+      displacementScale: dispScaleRef.current,
       normalMap: normalTexture,
       normalScale: new THREE.Vector2(terrainNormal, terrainNormal),
       roughness: 0.85,
@@ -441,7 +524,7 @@ export default function ChroniclePage() {
     const seaGeo = new THREE.CircleGeometry(25, 128);
     const seaMat = new THREE.MeshPhongMaterial({
       color: 0x3c4d52,
-      specular: new THREE.Color(0.01, 0.01, 0.01),
+      specular: new THREE.Color(seaSpec, seaSpec, seaSpec),
       shininess: 750,
       normalMap: seaNormalTexture,
       normalScale: new THREE.Vector2(0.8, 0.8),
@@ -479,90 +562,6 @@ export default function ChroniclePage() {
     sea.renderOrder = 0;
     scene.add(sea);
 
-    // Sprite material for location dots
-    function makeSpriteMaterial(hasEvent: boolean, color: number) {
-      const sc = document.createElement("canvas");
-      sc.width = 64;
-      sc.height = 64;
-      const sctx = sc.getContext("2d")!;
-      sctx.clearRect(0, 0, 64, 64);
-      const r = hasEvent ? 10 : 7;
-      const hex = "#" + color.toString(16).padStart(6, "0");
-      if (hasEvent) {
-        const grd = sctx.createRadialGradient(32, 32, 0, 32, 32, 20);
-        grd.addColorStop(0, hex);
-        grd.addColorStop(0.5, hex);
-        grd.addColorStop(1, "transparent");
-        sctx.fillStyle = grd;
-        sctx.beginPath();
-        sctx.arc(32, 32, 20, 0, Math.PI * 2);
-        sctx.fill();
-      }
-      sctx.fillStyle = hex;
-      sctx.beginPath();
-      sctx.arc(32, 32, r, 0, Math.PI * 2);
-      sctx.fill();
-      return new THREE.SpriteMaterial({
-        map: new THREE.CanvasTexture(sc),
-        depthTest: false,
-        transparent: true,
-      });
-    }
-
-    // Place sprites
-    const half = terrainSize / 2;
-    const dispScale = dispScaleRef.current;
-    const sprites: THREE.Sprite[] = [];
-
-    locations.forEach((loc) => {
-      const { nx, ny } = normalize(loc);
-      const hasEvent = eventLocNames.has(loc.name);
-      const color = hasEvent ? GOLD_NUM : 0x888888;
-      const mat2 = makeSpriteMaterial(hasEvent, color);
-      const sprite = new THREE.Sprite(mat2);
-      sprite.renderOrder = 1;
-      sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
-
-      // World position on terrain — place at mid-height until PNG decodes
-      const wx = (nx - 0.5) * terrainSize;
-      const wz = (ny - 0.5) * terrainSize;
-      sprite.position.set(wx, dispScale * 0.5 + 0.08, wz);
-      (sprite as THREE.Sprite & { locIdx: number }).locIdx = locations.indexOf(loc);
-
-      scene.add(sprite);
-      sprites.push(sprite);
-    });
-    spritesRef.current = sprites;
-
-    // Async: decode heightmap PNG pixels and reposition sprites on real terrain elevation
-    const hmDecodeCanvas = document.createElement("canvas");
-    hmDecodeCanvas.width = 512;
-    hmDecodeCanvas.height = 512;
-    const hmDecodeCtx = hmDecodeCanvas.getContext("2d")!;
-    const hmDecodeImg = new Image();
-    hmDecodeImg.onload = () => {
-      hmDecodeCtx.drawImage(hmDecodeImg, 0, 0, 512, 512);
-      const px = hmDecodeCtx.getImageData(0, 0, 512, 512);
-      function heightAt(nx: number, ny: number) {
-        const ix = Math.min(511, Math.max(0, Math.round(nx * 511)));
-        const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
-        return px.data[(iy * 512 + ix) * 4] / 255;
-      }
-      const heights: number[] = new Array(locations.length).fill(0.5);
-      sprites.forEach((sprite) => {
-        const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-        const loc = locations[idx];
-        const { nx, ny } = normalize(loc);
-        const wx = (nx - 0.5) * terrainSize;
-        const wz = (ny - 0.5) * terrainSize;
-        const h = heightAt(nx, ny);
-        heights[idx] = h;
-        sprite.position.set(wx, h * dispScaleRef.current + 0.08, wz);
-      });
-      spriteHeightsRef.current = heights;
-    };
-    hmDecodeImg.src = "/heightmap.png";
-
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
@@ -587,9 +586,10 @@ export default function ChroniclePage() {
         const W = mount.clientWidth;
         const H = mount.clientHeight;
         portraitGroupRefs.current.forEach((el, locIdx) => {
-          const sprite = spritesRef.current[locIdx];
-          if (!sprite) return;
-          const pos = sprite.position.clone().project(camera);
+          const liveLoc = liveLocsRef.current[locIdx];
+          if (!liveLoc) return;
+          const h = locHeightsRef.current[locIdx] ?? 0;
+          const pos = new THREE.Vector3(liveLoc.threeX, h * dispScaleRef.current + 0.08, liveLoc.threeZ).project(camera);
           const sx = ((pos.x + 1) / 2) * W;
           const sy = ((-pos.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
@@ -597,12 +597,46 @@ export default function ChroniclePage() {
         });
       }
 
-      // Fog only ramps in the closest 10% of the zoom range
-      const FOG_THRESHOLD = R_MIN + 0.3 * (R_MAX - R_MIN); // 13.3
-      const fogT = Math.max(
-        0,
-        Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)),
-      );
+      // Location overlays: project world positions to screen coords
+      if (locOverlayRefs.current.size > 0 && mount) {
+        const locW = mount.clientWidth;
+        const locH = mount.clientHeight;
+        locOverlayRefs.current.forEach((el, i) => {
+          const loc = liveLocsRef.current[i];
+          if (!loc) return;
+          const revealAt = revealAtRef.current[i] ?? R_MAX;
+          const locOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
+          el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
+          const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
+          const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
+          if (pos.z > 1) { el.style.opacity = "0"; return; }
+          const sx = ((pos.x + 1) / 2) * locW;
+          const sy = ((-pos.y + 1) / 2) * locH;
+          el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+          el.style.opacity = locOpacity.toFixed(3);
+          const svg = locRingSvgRefs.current.get(i);
+          const circle = locRingCircleRefs.current.get(i);
+          if (svg && circle && loc.radiusWorld > 0) {
+            const offsetPos = new THREE.Vector3(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
+            const ox = ((offsetPos.x + 1) / 2) * locW;
+            const oy = ((-offsetPos.y + 1) / 2) * locH;
+            const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
+            svg.setAttribute("width", String(Math.ceil(pr * 2 + 2)));
+            svg.setAttribute("height", String(Math.ceil(pr * 2 + 2)));
+            svg.style.left = `${-(pr + 1)}px`;
+            svg.style.top = `${-(pr + 1)}px`;
+            circle.setAttribute("cx", String(pr + 1));
+            circle.setAttribute("cy", String(pr + 1));
+            circle.setAttribute("r", String(pr));
+          }
+        });
+      }
+
+      // Fog ramps in over the last 15% of [R_MIN, FOG_THRESHOLD]; threshold set by fogNearRef
+      const FOG_THRESHOLD = fogNearRef.current;
+      const fogBand = 0.15 * (FOG_THRESHOLD - R_MIN);
+      const fogStart = R_MIN + fogBand;
+      const fogT = Math.max(0, Math.min(1, (fogStart - radiusRef.current) / fogBand));
       (scene.fog as THREE.FogExp2).density = fogT * 0.2;
 
       composer.render();
@@ -631,40 +665,6 @@ export default function ChroniclePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
 
-  // Update sprite appearances when eventLocNames changes (after events load)
-  useEffect(() => {
-    spritesRef.current.forEach((sprite) => {
-      const idx = (sprite as THREE.Sprite & { locIdx: number }).locIdx;
-      const loc = locations[idx];
-      const hasEvent = eventLocNames.has(loc.name);
-      const mat = sprite.material as THREE.SpriteMaterial;
-      const sc = document.createElement("canvas");
-      sc.width = 64;
-      sc.height = 64;
-      const sctx = sc.getContext("2d")!;
-      sctx.clearRect(0, 0, 64, 64);
-      const color = hasEvent ? GOLD : "rgba(136,136,136,1)";
-      const r = hasEvent ? 10 : 7;
-      if (hasEvent) {
-        const grd = sctx.createRadialGradient(32, 32, 0, 32, 32, 20);
-        grd.addColorStop(0, color);
-        grd.addColorStop(0.5, color);
-        grd.addColorStop(1, "transparent");
-        sctx.fillStyle = grd;
-        sctx.beginPath();
-        sctx.arc(32, 32, 20, 0, Math.PI * 2);
-        sctx.fill();
-      }
-      sctx.fillStyle = color;
-      sctx.beginPath();
-      sctx.arc(32, 32, r, 0, Math.PI * 2);
-      sctx.fill();
-      mat.map?.dispose();
-      mat.map = new THREE.CanvasTexture(sc);
-      mat.needsUpdate = true;
-      sprite.scale.set(hasEvent ? 0.22 : 0.16, hasEvent ? 0.22 : 0.16, 1);
-    });
-  }, [eventLocNames]);
 
   // Orbit helper: position camera and lookAt from target + radius
   function updateCameraFromOrbit() {
@@ -704,33 +704,13 @@ export default function ChroniclePage() {
     );
   }
 
-  // Raycasting for location selection
-  function pickLocation(clientX: number, clientY: number): number | null {
-    const mount = mountRef.current;
-    const camera = cameraRef.current;
-    const scene = sceneRef.current;
-    if (!mount || !camera || !scene) return null;
-    const rect = mount.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-      ((clientX - rect.left) / rect.width) * 2 - 1,
-      -((clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(ndc, camera);
-    // Test against sprites with a wider threshold
-    raycaster.params.Points = { threshold: 0.3 };
-    const hits = raycaster.intersectObjects(spritesRef.current);
-    if (hits.length === 0) return null;
-    const sprite = hits[0].object as THREE.Sprite & { locIdx: number };
-    return sprite.locIdx ?? null;
-  }
-
   // Wheel zoom
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      focusTargetRef.current = null;
       const isWheel = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
       const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
       const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
@@ -813,8 +793,13 @@ export default function ChroniclePage() {
       if (lastPinchDistRef.current !== null && pinchMidRef.current) {
         const prevMid = pinchMidRef.current;
         // Zoom
-        if (lastPinchDistRef.current > 0) zoomCamera(lastPinchDistRef.current / newDist);
+        if (lastPinchDistRef.current > 0) {
+          focusTargetRef.current = null;
+          const rawFactor = lastPinchDistRef.current / newDist;
+          zoomCamera(1 + (rawFactor - 1) * 0.1);
+        }
         // Pan from midpoint delta
+        focusTargetRef.current = null;
         panCamera(newMid.x - prevMid.x, newMid.y - prevMid.y);
       }
       lastPinchDistRef.current = newDist;
@@ -823,6 +808,7 @@ export default function ChroniclePage() {
     }
 
     if (draggingRef.current) {
+      focusTargetRef.current = null;
       panCamera(cssX - lastPosRef.current.x, cssY - lastPosRef.current.y);
       lastPosRef.current = { x: cssX, y: cssY };
       return;
@@ -836,9 +822,7 @@ export default function ChroniclePage() {
       lastPosRef.current = { x: cssX, y: cssY };
     }
 
-    // Cursor: pointer when hovering a sprite
-    const hit = pickLocation(e.clientX, e.clientY);
-    mount.style.cursor = hit !== null ? "pointer" : "grab";
+    mount.style.cursor = draggingRef.current ? "grabbing" : "grab";
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -859,17 +843,8 @@ export default function ChroniclePage() {
     }
 
     if (!draggingRef.current) {
-      const idx = pickLocation(e.clientX, e.clientY);
-      setSelectedIdx(idx);
-      if (idx !== null) {
-        const loc = locations[idx];
-        const { nx, ny } = normalize(loc);
-        focusTargetRef.current = new THREE.Vector3(
-          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
-          0,
-          Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
-        );
-      }
+      // Tapping empty canvas deselects; location selection is handled by overlay onClick
+      setSelectedIdx(null);
     }
     draggingRef.current = false;
     pointerStartRef.current = null;
@@ -947,7 +922,7 @@ export default function ChroniclePage() {
     }
   }, []);
 
-  const selectedLoc = selectedIdx !== null ? locations[selectedIdx] : null;
+  const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
   return (
@@ -969,6 +944,97 @@ export default function ChroniclePage() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
       />
+
+      {/* Location overlays — below portrait overlays */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 6,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        {liveLocs.map((loc, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              if (el) locOverlayRefs.current.set(i, el);
+              else locOverlayRefs.current.delete(i);
+            }}
+            style={{ position: "absolute", top: 0, left: 0, opacity: 0, cursor: "pointer" }}
+            onWheel={(e) => {
+              focusTargetRef.current = null;
+              const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
+              const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
+              const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
+              targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current + normalized * step));
+            }}
+            onClick={() => {
+              setSelectedIdx(i);
+              focusTargetRef.current = new THREE.Vector3(
+                Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
+                (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
+                Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeZ)),
+              );
+              targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
+            }}
+          >
+            {/* Radius ring */}
+            <svg
+              ref={(el) => {
+                if (el) locRingSvgRefs.current.set(i, el);
+                else locRingSvgRefs.current.delete(i);
+              }}
+              style={{ position: "absolute", pointerEvents: "none" }}
+              width="0"
+              height="0"
+            >
+              <circle
+                ref={(el) => {
+                  if (el) locRingCircleRefs.current.set(i, el);
+                  else locRingCircleRefs.current.delete(i);
+                }}
+                cx="0"
+                cy="0"
+                r="0"
+                fill="none"
+                stroke="rgba(255,255,255,0.18)"
+                strokeWidth="1"
+              />
+            </svg>
+            {/* Icon — centered on world point */}
+            <span
+              style={{
+                position: "absolute",
+                transform: "translate(-50%, -50%)",
+                fontSize: loc.type === "neutral" ? "8px" : "14px",
+                lineHeight: 1,
+                color: loc.type === "neutral" ? "rgba(255,255,255,0.6)" : undefined,
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
+              }}
+            >
+              {locTypeIcon(loc.type)}
+            </span>
+            {/* Label — below icon */}
+            <span
+              style={{
+                position: "absolute",
+                transform: "translate(-50%, 0)",
+                top: "10px",
+                fontSize: "9px",
+                color: "rgba(255,255,255,0.75)",
+                textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                whiteSpace: "nowrap",
+                letterSpacing: "0.03em",
+                lineHeight: 1.2,
+              }}
+            >
+              {loc.name}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Portrait overlays — positions updated each frame via portraitGroupRefs */}
       <div
@@ -1234,6 +1300,7 @@ export default function ChroniclePage() {
                   Effects
                 </div>
                 {row("heightFog", "Height fog")}
+                {sliderRow("Fog near", fogNear, R_MIN, R_MAX, 0.5, setFogNear)}
               </div>
             );
           })()}
@@ -1409,32 +1476,6 @@ export default function ChroniclePage() {
           >
             {selectedLoc.name}
           </div>
-
-          {selectedLoc.description && (
-            <p
-              style={{
-                fontSize: "0.85rem",
-                color: "rgba(255,255,255,0.6)",
-                lineHeight: 1.6,
-                margin: "0 0 12px",
-              }}
-            >
-              {selectedLoc.description}
-            </p>
-          )}
-          {selectedLoc.keywords && (
-            <p
-              style={{
-                fontSize: "0.72rem",
-                color: "rgba(255,255,255,0.3)",
-                lineHeight: 1.5,
-                margin: "0 0 20px",
-                fontStyle: "italic",
-              }}
-            >
-              {selectedLoc.keywords}
-            </p>
-          )}
 
           {locEvents.length > 0 && (
             <>
@@ -1624,31 +1665,6 @@ export default function ChroniclePage() {
                   transition: "opacity 0.15s ease",
                 }}
               >
-                {selectedLoc.description && (
-                  <p
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "rgba(255,255,255,0.6)",
-                      lineHeight: 1.6,
-                      margin: "0 0 12px",
-                    }}
-                  >
-                    {selectedLoc.description}
-                  </p>
-                )}
-                {selectedLoc.keywords && (
-                  <p
-                    style={{
-                      fontSize: "0.72rem",
-                      color: "rgba(255,255,255,0.3)",
-                      lineHeight: 1.5,
-                      margin: "0 0 20px",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {selectedLoc.keywords}
-                  </p>
-                )}
                 {locEvents.length > 0 && (
                   <>
                     <div
