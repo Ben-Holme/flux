@@ -1013,7 +1013,7 @@ export default function ChroniclePage() {
                     }}
                   >
                     <img
-                      src={`https://unyhagame.com/ueserr/chars/${c.charId}.png`}
+                      src={`https://api.unyhagame.com/ueserv/chars/${c.charId}.png`}
                       style={{
                         position: "absolute",
                         inset: 0,
@@ -1453,7 +1453,7 @@ export default function ChroniclePage() {
                 {locEvents.map((ev, i) => {
                   const et = EVENT_TYPES[ev.type] ?? {
                     label: ev.type,
-                    symbol: "·",
+                    icon: "/unyha-icons/help.svg",
                     color: "rgba(255,255,255,0.4)",
                   };
                   const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
@@ -1478,7 +1478,7 @@ export default function ChroniclePage() {
                         <span
                           style={{ color: et.color, fontSize: "0.78rem", letterSpacing: "0.06em" }}
                         >
-                          {et.symbol} {et.label}
+                          <img src={et.icon} alt="" style={{ width: "0.9em", height: "0.9em", opacity: 0.9, filter: `brightness(0) saturate(100%) invert(1)`, verticalAlign: "middle", marginRight: "4px" }} />{et.label}
                         </span>
                         <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}>
                           {ev.date}
@@ -1666,7 +1666,7 @@ export default function ChroniclePage() {
                       {locEvents.map((ev, i) => {
                         const et = EVENT_TYPES[ev.type] ?? {
                           label: ev.type,
-                          symbol: "·",
+                          icon: "/unyha-icons/help.svg",
                           color: "rgba(255,255,255,0.4)",
                         };
                         const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
@@ -1695,7 +1695,7 @@ export default function ChroniclePage() {
                                   letterSpacing: "0.06em",
                                 }}
                               >
-                                {et.symbol} {et.label}
+                                <img src={et.icon} alt="" style={{ width: "0.9em", height: "0.9em", opacity: 0.9, filter: `brightness(0) saturate(100%) invert(1)`, verticalAlign: "middle", marginRight: "4px" }} />{et.label}
                               </span>
                               <span
                                 style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.25)" }}
