@@ -997,7 +997,7 @@ export default function ChroniclePage() {
                 const { nx, ny } = normalize(l);
                 focusTargetRef.current = new THREE.Vector3(
                   Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
-                  0,
+                  (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
                   Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
                 );
                 targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
