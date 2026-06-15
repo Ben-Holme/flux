@@ -985,7 +985,7 @@ export default function ChroniclePage() {
                   0,
                   Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
                 );
-                targetRadiusRef.current = Math.max(R_MIN, (revealAtRef.current[i] ?? R_MAX) - 2);
+                targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 30));
               }
             }}
           >
