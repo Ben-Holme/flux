@@ -119,7 +119,7 @@ export default function ChroniclePage() {
   });
   const [dirLightY, setDirLightY] = useState(45);
   const [dirLightZ, setDirLightZ] = useState(-25);
-  const [seaSpec, setSeaSpec] = useState(0.01);
+  const [seaSpec, setSeaSpec] = useState(0.065);
   const [terrainNormal, setTerrainNormal] = useState(0.6);
   const [heightScale, setHeightScale] = useState(1);
   const [contrast, setContrast] = useState(1.5);
@@ -290,7 +290,7 @@ export default function ChroniclePage() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     // Atmospheric fog — density driven by zoom in animate loop; set before first render so shaders compile with USE_FOG
-    scene.fog = new THREE.FogExp2(0x000000, 0);
+    scene.fog = new THREE.FogExp2(0x0a0d0f, 0); // matches heightFogColor vec3(0.04,0.05,0.06)
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
@@ -688,12 +688,11 @@ export default function ChroniclePage() {
         });
       }
 
-      // Fog ramps in as camera approaches R_MIN; threshold set by fogNearRef
+      // Fog ramps in over the last 15% of [R_MIN, FOG_THRESHOLD]; threshold set by fogNearRef
       const FOG_THRESHOLD = fogNearRef.current;
-      const fogT = Math.max(
-        0,
-        Math.min(1, (FOG_THRESHOLD - radiusRef.current) / (FOG_THRESHOLD - R_MIN)),
-      );
+      const fogBand = 0.15 * (FOG_THRESHOLD - R_MIN);
+      const fogStart = R_MIN + fogBand;
+      const fogT = Math.max(0, Math.min(1, (fogStart - radiusRef.current) / fogBand));
       (scene.fog as THREE.FogExp2).density = fogT * 0.2;
 
       composer.render();
@@ -960,6 +959,8 @@ export default function ChroniclePage() {
           0,
           Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
         );
+        // Zoom in when selecting from far out, don't zoom out if already close
+        targetRadiusRef.current = Math.min(targetRadiusRef.current, 10);
       }
     }
     draggingRef.current = false;
