@@ -135,6 +135,16 @@ export default function ChroniclePage() {
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
 
+  // Lock body scroll and hide footer while this page is mounted
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    document.body.classList.add("chronicle-page");
+    return () => {
+      document.body.style.overflow = "";
+      document.body.classList.remove("chronicle-page");
+    };
+  }, []);
+
   useEffect(() => {
     fetch("https://api.unyhagame.com/ueserv/getLocations-w.php")
       .then((r) => r.json())

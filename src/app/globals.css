@@ -117,3 +117,8 @@ button {line-height: normal;}
   }
 }
 
+
+
+.chronicle-page footer {
+  display: none;
+}
