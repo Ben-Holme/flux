@@ -55,6 +55,14 @@ function normalize(l: Location) {
   };
 }
 
+function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
+  const nx = threeX / 20 + 0.5;
+  const ny = threeZ / 20 + 0.5;
+  const ix = Math.min(511, Math.max(0, Math.round(nx * 511)));
+  const iy = Math.min(511, Math.max(0, Math.round(ny * 511)));
+  return data[(iy * 512 + ix) * 4] / 255;
+}
+
 export default function ChroniclePage() {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -80,6 +88,8 @@ export default function ChroniclePage() {
   const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
   const revealAtRef = useRef<number[]>([]); // per-liveLocsRef index reveal threshold
+  const hmDataRef = useRef<Uint8ClampedArray | null>(null); // decoded heightmap pixel data
+  const locHeightsRef = useRef<number[]>([]); // terrain Y (0-1) per liveLoc index
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -245,7 +255,27 @@ export default function ChroniclePage() {
       out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
     });
     revealAtRef.current = out;
+    if (hmDataRef.current)
+      locHeightsRef.current = liveLocs.map((l) => sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ));
   }, [liveLocs]);
+
+  // Decode heightmap once; re-sample loc heights if liveLocs already loaded
+  useEffect(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 512, 512);
+      const data = ctx.getImageData(0, 0, 512, 512).data;
+      hmDataRef.current = data;
+      if (liveLocsRef.current.length > 0)
+        locHeightsRef.current = liveLocsRef.current.map((l) => sampleHmHeight(data, l.threeX, l.threeZ));
+    };
+    img.src = "/heightmap.png";
+  }, []);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -585,7 +615,9 @@ export default function ChroniclePage() {
           if (!loc) return;
           const revealAt = revealAtRef.current[i] ?? R_MAX;
           const locOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
-          const pos = new THREE.Vector3(loc.threeX, 0.1, loc.threeZ).project(camera);
+          el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
+          const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
+          const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
           if (pos.z > 1) { el.style.opacity = "0"; return; }
           const sx = ((pos.x + 1) / 2) * locW;
           const sy = ((-pos.y + 1) / 2) * locH;
@@ -594,7 +626,7 @@ export default function ChroniclePage() {
           const svg = locRingSvgRefs.current.get(i);
           const circle = locRingCircleRefs.current.get(i);
           if (svg && circle && loc.radiusWorld > 0) {
-            const offsetPos = new THREE.Vector3(loc.threeX + loc.radiusWorld, 0.1, loc.threeZ).project(camera);
+            const offsetPos = new THREE.Vector3(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
             const ox = ((offsetPos.x + 1) / 2) * locW;
             const oy = ((-offsetPos.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
@@ -935,7 +967,13 @@ export default function ChroniclePage() {
               if (el) locOverlayRefs.current.set(i, el);
               else locOverlayRefs.current.delete(i);
             }}
-            style={{ position: "absolute", top: 0, left: 0, opacity: 0, pointerEvents: "auto", cursor: "pointer" }}
+            style={{ position: "absolute", top: 0, left: 0, opacity: 0, cursor: "pointer" }}
+            onWheel={(e) => {
+              const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
+              const normalized = isWheel ? Math.sign(e.deltaY) * 40 : e.deltaY;
+              const step = Math.max(0.5, targetRadiusRef.current) * 0.006;
+              targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current + normalized * step));
+            }}
             onClick={() => {
               const locIdx = locations.findIndex((l) => l.name === loc.name);
               setSelectedIdx(locIdx !== -1 ? locIdx : null);
