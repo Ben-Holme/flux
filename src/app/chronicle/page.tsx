@@ -154,7 +154,6 @@ export default function ChroniclePage() {
         for (const [name, loc] of Object.entries(
           data.locs as Record<string, { underground: string; type: string; location: string; radius: string }>,
         )) {
-          if (loc.underground === "true") continue;
           const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
           if (!match) continue;
           const ueX = parseFloat(match[1]);
@@ -992,16 +991,13 @@ export default function ChroniclePage() {
             onClick={() => {
               const locIdx = locations.findIndex((l) => l.name === loc.name);
               setSelectedIdx(locIdx !== -1 ? locIdx : null);
-              if (locIdx !== -1) {
-                const l = locations[locIdx];
-                const { nx, ny } = normalize(l);
-                focusTargetRef.current = new THREE.Vector3(
-                  Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (nx - 0.5) * 20)),
-                  (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
-                  Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
-                );
-                targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
-              }
+              // Always navigate — loc.threeX/Z are in the same space as (nx-0.5)*20
+              focusTargetRef.current = new THREE.Vector3(
+                Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
+                (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
+                Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeZ)),
+              );
+              targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
             }}
           >
             {/* Radius ring */}
