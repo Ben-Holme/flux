@@ -79,7 +79,7 @@ export default function ChroniclePage() {
   const contrastUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const terrainSeaSpecUniformRef = useRef<{ value: number }>({ value: 0.005 });
   const dispScaleRef = useRef(1);
-  const maxRadiusRef = useRef(0); // max radiusWorld across all liveLocs — for reveal scaling
+  const revealAtRef = useRef<number[]>([]); // per-liveLocsRef index reveal threshold
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -235,7 +235,16 @@ export default function ChroniclePage() {
   }, [selectedIdx]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
-    maxRadiusRef.current = liveLocs.reduce((m, l) => Math.max(m, l.radiusWorld), 0);
+    // Rank by radiusWorld: top 4 locations always visible at R_MAX; rest spread down to R_MIN+2
+    const K = 4;
+    const sorted = liveLocs.map((l, i) => ({ i, r: l.radiusWorld })).sort((a, b) => a.r - b.r);
+    const N = sorted.length;
+    const out = new Array(N).fill(R_MIN + 2);
+    sorted.forEach(({ i }, rank) => {
+      const t = N > K ? Math.min(1, rank / (N - K)) : 1;
+      out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+    });
+    revealAtRef.current = out;
   }, [liveLocs]);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
@@ -571,13 +580,10 @@ export default function ChroniclePage() {
       if (locOverlayRefs.current.size > 0 && mount) {
         const locW = mount.clientWidth;
         const locH = mount.clientHeight;
-        const maxR = maxRadiusRef.current;
         locOverlayRefs.current.forEach((el, i) => {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
-          // Reveal based on radiusWorld: largest locations visible from far out, smaller ones only when close
-          const t = maxR > 0 ? loc.radiusWorld / maxR : 1;
-          const revealAt = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+          const revealAt = revealAtRef.current[i] ?? R_MAX;
           const locOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
           const pos = new THREE.Vector3(loc.threeX, 0.1, loc.threeZ).project(camera);
           if (pos.z > 1) { el.style.opacity = "0"; return; }
@@ -763,7 +769,10 @@ export default function ChroniclePage() {
       if (lastPinchDistRef.current !== null && pinchMidRef.current) {
         const prevMid = pinchMidRef.current;
         // Zoom
-        if (lastPinchDistRef.current > 0) zoomCamera(lastPinchDistRef.current / newDist);
+        if (lastPinchDistRef.current > 0) {
+          const rawFactor = lastPinchDistRef.current / newDist;
+          zoomCamera(1 + (rawFactor - 1) * 0.1);
+        }
         // Pan from midpoint delta
         panCamera(newMid.x - prevMid.x, newMid.y - prevMid.y);
       }
@@ -938,7 +947,7 @@ export default function ChroniclePage() {
                   0,
                   Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, (ny - 0.5) * 20)),
                 );
-                targetRadiusRef.current = Math.min(targetRadiusRef.current, 10);
+                targetRadiusRef.current = Math.max(R_MIN, (revealAtRef.current[i] ?? R_MAX) - 2);
               }
             }}
           >
