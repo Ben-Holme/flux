@@ -11,9 +11,23 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 interface LiveLoc {
   name: string;
   type: string;
+  hostility: number;
   threeX: number;
   threeZ: number;
   radiusWorld: number;
+}
+
+function hostilityColor(h: number): string {
+  switch (h) {
+    case 1:
+      return "#ff5555";
+    case 2:
+      return "#5588ff";
+    case 3:
+      return "#ffcc44";
+    default:
+      return "rgba(255,255,255,0.9)";
+  }
 }
 
 function locTypeIcon(type: string): string {
@@ -140,7 +154,13 @@ export default function ChroniclePage() {
         for (const [name, loc] of Object.entries(
           data.locs as Record<
             string,
-            { underground: string; type: string; location: string; radius: string }
+            {
+              underground: string;
+              type: string;
+              location: string;
+              radius: string;
+              hostility?: string;
+            }
           >,
         )) {
           if (loc.underground === "true") continue;
@@ -151,6 +171,7 @@ export default function ChroniclePage() {
           parsed.push({
             name,
             type: loc.type,
+            hostility: parseInt(loc.hostility ?? "0") || 0,
             threeX: (ueX / MAP_EXTENT) * 10,
             threeZ: (ueY / MAP_EXTENT) * 10,
             radiusWorld: (parseFloat(loc.radius) / MAP_EXTENT) * 10,
@@ -985,13 +1006,11 @@ export default function ChroniclePage() {
               else locOverlayRefs.current.delete(i);
             }}
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
+              filter: "drop-shadow(0 0 6px rgba(0, 0, 0, 1))",
               opacity: 0,
-              cursor: "pointer",
-              filter: "drop-shadow(0 0 4px rgba(0, 0, 0, 1))",
+              zIndex: selectedIdx === i ? 999 : parseInt(loc.threeZ.toFixed(0)), // ensure selected location is always on top
             }}
+            className="absolute top-0 left-0 cursor-pointer"
             onWheel={(e) => {
               focusTargetRef.current = null;
               const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
@@ -1013,40 +1032,59 @@ export default function ChroniclePage() {
             }}
           >
             {/* Radius ring */}
-            <svg
-              ref={(el) => {
-                if (el) locRingSvgRefs.current.set(i, el);
-                else locRingSvgRefs.current.delete(i);
-              }}
-              style={{ position: "absolute", pointerEvents: "none" }}
-              width="0"
-              height="0"
-            >
-              <circle
+            {selectedIdx === i && (
+              <svg
                 ref={(el) => {
-                  if (el) locRingCircleRefs.current.set(i, el);
-                  else locRingCircleRefs.current.delete(i);
+                  if (el) locRingSvgRefs.current.set(i, el);
+                  else locRingSvgRefs.current.delete(i);
                 }}
-                cx="0"
-                cy="0"
-                r="0"
-                fill="none"
-                stroke="rgba(255,255,255,0.18)"
-                strokeWidth="1"
-              />
-            </svg>
+                className="pointer-events-none absolute"
+                width="0"
+                height="0"
+              >
+                <circle
+                  ref={(el) => {
+                    if (el) locRingCircleRefs.current.set(i, el);
+                    else locRingCircleRefs.current.delete(i);
+                  }}
+                  cx="0"
+                  cy="0"
+                  r="0"
+                  fill="none"
+                  stroke="#fff3"
+                  strokeWidth="2"
+                />
+              </svg>
+            )}
             {/* Icon — centered on world point */}
-            <span
+            <div
               style={{
                 position: "absolute",
                 transform: "translate(-50%, -50%)",
-                lineHeight: 1,
+                width: 32,
+                height: 32,
+                WebkitMaskImage: `url(${locTypeIcon(loc.type)})`,
+                maskImage: `url(${locTypeIcon(loc.type)})`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                backgroundColor: hostilityColor(loc.hostility),
+                filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
               }}
-            >
-              <img src={locTypeIcon(loc.type)} alt="" className="h-6 w-6 max-w-none" />
-            </span>
+            />
             {/* Label — below icon */}
-            <span className="absolute translate-x-[-50%] pt-4 text-[9px] tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+            <span
+              style={{
+                fontSize:
+                  loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
+                textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
+                letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
+              }}
+              className="absolute translate-x-[-50%] pt-4 tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+            >
               {loc.name}
             </span>
           </div>
@@ -1323,17 +1361,6 @@ export default function ChroniclePage() {
           })()}
       </div>
 
-      {/* Vignette */}
-      {/* <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 5,
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%)",
-        }}
-      /> */}
-
       {/* Header overlay */}
       <div
         style={{
@@ -1347,30 +1374,6 @@ export default function ChroniclePage() {
           pointerEvents: "none",
         }}
       >
-        <div
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "0.85rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.2em",
-            color: "var(--gold)",
-            textShadow: `${GOLD} 0px 0px 6px, ${GOLD} 0px 0px 12px`,
-          }}
-        >
-          Unyha
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "1.5rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            color: "rgba(255,255,255,0.85)",
-            marginTop: "2px",
-          }}
-        >
-          Chronicle Map
-        </div>
         <div
           style={{
             marginTop: "8px",
