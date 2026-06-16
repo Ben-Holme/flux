@@ -841,8 +841,10 @@ export default function ChroniclePage() {
         // Zoom
         if (lastPinchDistRef.current > 0) {
           focusTargetRef.current = null;
+          // Direct proportional zoom — zoomCamera() only checks sign, so bypassing it here
           const rawFactor = lastPinchDistRef.current / newDist;
-          zoomCamera(1 + (rawFactor - 1) * (0.1 / 200));
+          const dampened = 1 + (rawFactor - 1) * 0.08;
+          targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current * dampened));
         }
         // Pan from midpoint delta
         focusTargetRef.current = null;
@@ -984,7 +986,7 @@ export default function ChroniclePage() {
       />
 
       {/* Location overlays — below portrait overlays */}
-      <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
+      <div className="pointer-events-none touch-none absolute inset-0 z-[6] overflow-hidden">
         {liveLocs.map((loc, i) => (
           <div
             key={i}
@@ -997,7 +999,7 @@ export default function ChroniclePage() {
               opacity: 0,
               zIndex: selectedIdx === i ? 999 : parseInt(loc.threeZ.toFixed(0)), // ensure selected location is always on top
             }}
-            className="absolute top-0 left-0 cursor-pointer hover:z-[999]! hover:opacity-100!"
+            className="absolute top-0 left-0 touch-none cursor-pointer hover:z-[999]! hover:opacity-100!"
             onPointerDown={onPointerDown}
             onWheel={(e) => {
               focusTargetRef.current = null;
