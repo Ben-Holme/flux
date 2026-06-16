@@ -414,6 +414,8 @@ export default function ChroniclePage() {
       normalScale: new THREE.Vector2(terrainNormal, terrainNormal),
       roughness: 0.85,
       metalness: 0.05,
+      transparent: true,
+      opacity: 1,
     });
 
     // Height-based fog: vWorldY carries the displaced world-Y per vertex
@@ -685,6 +687,7 @@ export default function ChroniclePage() {
       const fogStart = R_MIN + fogBand;
       const fogT = Math.max(0, Math.min(1, (fogStart - radiusRef.current) / fogBand));
       (scene.fog as THREE.FogExp2).density = fogT * 0.2;
+      if (terrainMatRef.current) terrainMatRef.current.opacity = 1 - fogT;
 
       composer.render();
     }
