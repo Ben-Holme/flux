@@ -986,7 +986,7 @@ export default function ChroniclePage() {
       />
 
       {/* Location overlays — below portrait overlays */}
-      <div className="pointer-events-none touch-none absolute inset-0 z-[6] overflow-hidden">
+      <div className="pointer-events-none touch-none absolute inset-0 z-[6]">
         {liveLocs.map((loc, i) => (
           <div
             key={i}
