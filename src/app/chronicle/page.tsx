@@ -842,7 +842,7 @@ export default function ChroniclePage() {
         if (lastPinchDistRef.current > 0) {
           focusTargetRef.current = null;
           const rawFactor = lastPinchDistRef.current / newDist;
-          zoomCamera(1 + (rawFactor - 1) * (0.1 / 100));
+          zoomCamera(1 + (rawFactor - 1) * (0.1 / 200));
         }
         // Pan from midpoint delta
         focusTargetRef.current = null;
@@ -998,6 +998,7 @@ export default function ChroniclePage() {
               zIndex: selectedIdx === i ? 999 : parseInt(loc.threeZ.toFixed(0)), // ensure selected location is always on top
             }}
             className="absolute top-0 left-0 cursor-pointer hover:z-[999]! hover:opacity-100!"
+            onPointerDown={onPointerDown}
             onWheel={(e) => {
               focusTargetRef.current = null;
               const isWheel = e.nativeEvent.deltaMode !== 0 || Math.abs(e.deltaY) >= 40;
