@@ -842,7 +842,7 @@ export default function ChroniclePage() {
         if (lastPinchDistRef.current > 0) {
           focusTargetRef.current = null;
           const rawFactor = lastPinchDistRef.current / newDist;
-          zoomCamera(1 + (rawFactor - 1) * (0.1 / 20));
+          zoomCamera(1 + (rawFactor - 1) * (0.1 / 100));
         }
         // Pan from midpoint delta
         focusTargetRef.current = null;
