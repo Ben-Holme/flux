@@ -843,7 +843,7 @@ export default function ChroniclePage() {
           focusTargetRef.current = null;
           // Direct proportional zoom — zoomCamera() only checks sign, so bypassing it here
           const rawFactor = lastPinchDistRef.current / newDist;
-          const dampened = 1 + (rawFactor - 1) * 0.08;
+          const dampened = 1 + (rawFactor - 1) * 0.8;
           targetRadiusRef.current = Math.min(R_MAX, Math.max(R_MIN, targetRadiusRef.current * dampened));
         }
         // Pan from midpoint delta
