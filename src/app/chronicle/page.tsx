@@ -50,6 +50,7 @@ function locTypeIcon(type: string): string {
 }
 const GOLD = "#c8923a";
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
+const PAN_LIMIT = 10;
 
 // Orbit constants
 const R_MIN = 4,
@@ -223,6 +224,34 @@ export default function ChroniclePage() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Auto-pan to the location with the most current-season events on first load
+  const autoFocusedRef = useRef(false);
+  useEffect(() => {
+    if (autoFocusedRef.current || events.length === 0 || liveLocs.length === 0) return;
+    const season = getCurrentSeason(buildSeasons(events));
+    if (!season) return;
+    const counts = new Map<string, number>();
+    for (const ev of season.days.flatMap((d) => d.events)) {
+      if (ev.location) counts.set(ev.location, (counts.get(ev.location) ?? 0) + 1);
+    }
+    let bestName: string | null = null;
+    let bestCount = 0;
+    for (const [name, count] of counts) {
+      if (count > bestCount) { bestCount = count; bestName = name; }
+    }
+    if (!bestName) return;
+    const idx = liveLocs.findIndex((l) => l.name === bestName);
+    if (idx === -1) return;
+    const loc = liveLocs[idx];
+    autoFocusedRef.current = true;
+    focusTargetRef.current = new THREE.Vector3(
+      Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
+      (locHeightsRef.current[idx] ?? 0) * dispScaleRef.current,
+      Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeZ)),
+    );
+    targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
+  }, [events, liveLocs]);
 
   useEffect(() => {
     setSheetExpanded(false);
@@ -733,7 +762,6 @@ export default function ChroniclePage() {
   }
 
   // Pan: translate target (and camera follows) horizontally
-  const PAN_LIMIT = 10;
   function panCamera(dx: number, dy: number) {
     const mount = mountRef.current;
     if (!mount) return;
