@@ -973,7 +973,9 @@ export default function ChroniclePage() {
   }, []);
 
   const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
-  const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
+  const locEvents = selectedLoc && currentSeason
+    ? currentSeason.days.flatMap((d) => d.events).filter((e) => e.location === selectedLoc.name)
+    : [];
 
   // When a location is selected, filter the season's day events to that location only
   const displaySeason = useMemo(() => {
