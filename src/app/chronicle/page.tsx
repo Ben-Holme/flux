@@ -117,6 +117,7 @@ export default function ChroniclePage() {
   const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -338,7 +339,9 @@ export default function ChroniclePage() {
     img.src = "/heightmap.png";
   }, []);
 
-  const currentSeason = getCurrentSeason(buildSeasons(events));
+  const seasons = useMemo(() => buildSeasons(events), [events]);
+  const currentSeason = seasons[seasons.length - 1] ?? null; // latest season — used for map effects
+  const viewingSeason = viewingSeasonIdx !== null ? (seasons[viewingSeasonIdx] ?? currentSeason) : currentSeason;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -1001,23 +1004,23 @@ export default function ChroniclePage() {
   }, []);
 
   const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
-  const locEvents = selectedLoc && currentSeason
-    ? currentSeason.days.flatMap((d) => d.events).filter((e) => e.location === selectedLoc.name)
+  const locEvents = selectedLoc && viewingSeason
+    ? viewingSeason.days.flatMap((d) => d.events).filter((e) => e.location === selectedLoc.name)
     : [];
 
   // When a location is selected, filter the season's day events to that location only
   const displaySeason = useMemo(() => {
-    if (!currentSeason || !selectedLoc) return currentSeason;
+    if (!viewingSeason || !selectedLoc) return viewingSeason;
     return {
-      ...currentSeason,
+      ...viewingSeason,
       contextEvent: undefined,
       summaryEvent: undefined,
-      days: currentSeason.days.map((day) => ({
+      days: viewingSeason.days.map((day) => ({
         ...day,
         events: day.events.filter((e) => e.location === selectedLoc.name),
       })),
     };
-  }, [currentSeason, selectedLoc]);
+  }, [viewingSeason, selectedLoc]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0a0c0e]">
@@ -1301,6 +1304,23 @@ export default function ChroniclePage() {
       {/* Desktop side panel — always visible, shows season timeline */}
       {!isMobile && (
         <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[rgba(6,8,10,0.92)] px-4 pt-20 pb-8 backdrop-blur-lg">
+          {/* Season selector */}
+          {seasons.length > 1 && (
+            <div className="mb-4 flex gap-1.5 flex-wrap">
+              {seasons.map((s, i) => (
+                <button
+                  key={s.number}
+                  onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
+                  className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
+                  style={viewingSeason?.number === s.number
+                    ? { background: "rgba(200,146,58,0.12)", borderColor: "rgba(200,146,58,0.5)", color: GOLD }
+                    : { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
+                >
+                  S{s.number}
+                </button>
+              ))}
+            </div>
+          )}
           {selectedLoc && (
             <>
               <button
@@ -1378,9 +1398,9 @@ export default function ChroniclePage() {
               >
                 {selectedLoc.name}
               </div>
-            ) : currentSeason ? (
+            ) : viewingSeason ? (
               <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                Season {currentSeason.number}
+                Season {viewingSeason.number}
               </div>
             ) : (
               <div className="text-[0.8rem] text-white/30">Story Events</div>
@@ -1401,6 +1421,23 @@ export default function ChroniclePage() {
             className="flex-1 overflow-y-auto px-4 pb-8"
             style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
           >
+            {/* Season selector */}
+            {seasons.length > 1 && (
+              <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
+                {seasons.map((s, i) => (
+                  <button
+                    key={s.number}
+                    onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
+                    className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
+                    style={viewingSeason?.number === s.number
+                      ? { background: "rgba(200,146,58,0.12)", borderColor: "rgba(200,146,58,0.5)", color: GOLD }
+                      : { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
+                  >
+                    S{s.number}
+                  </button>
+                ))}
+              </div>
+            )}
             {selectedLoc && (
               <>
                 {selectedLoc.description && (
