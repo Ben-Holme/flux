@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
+import SeasonTimeline from "@/components/story-events/season-timeline";
+import { buildSeasons, getCurrentSeason } from "@/components/story-events/season-utils";
+import { buildLookup } from "@/components/story-events/utils";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -115,6 +118,7 @@ export default function ChroniclePage() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
+  const [items, setItems] = useState<Record<string | number, string>>({});
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
@@ -206,6 +210,7 @@ export default function ChroniclePage() {
             });
             setPlayers(map);
           }
+          setItems(buildLookup(namesData.items ?? {}));
         }
       })
       .catch(() => {})
@@ -305,6 +310,7 @@ export default function ChroniclePage() {
   }, []);
 
   const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
+  const currentSeason = getCurrentSeason(buildSeasons(events));
 
   // Per-location top-3 characters by fame (fame is at index 4 of the packed name string).
   // events are newest-first; we assign each char to their most recent event location only.
@@ -922,12 +928,10 @@ export default function ChroniclePage() {
     const raw = e.clientY - sheetDragStartYRef.current;
     if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
     const isExpanded = sheetExpandedRef.current;
-    const hasLoc = selectedIdxRef.current !== null;
-    const delta = Math.max(hasLoc && !isExpanded ? -150 : 0, Math.min(200, raw));
+    const delta = Math.max(!isExpanded ? -150 : 0, Math.min(200, raw));
     const el = sheetElRef.current;
     if (!el) return;
-    if (!hasLoc) el.style.transform = `translateY(calc(100% - 44px + ${delta}px))`;
-    else if (isExpanded) el.style.transform = `translateY(${delta}px)`;
+    if (isExpanded) el.style.transform = `translateY(${delta}px)`;
     else el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
   }, []);
 
@@ -940,7 +944,7 @@ export default function ChroniclePage() {
     const hasLoc = selectedIdxRef.current !== null;
 
     let newExpanded = isExpanded;
-    if (didDrag && hasLoc) {
+    if (didDrag) {
       if (!isExpanded && delta < -30) newExpanded = true;
       else if (isExpanded && delta > 30) newExpanded = false;
     }
@@ -948,8 +952,7 @@ export default function ChroniclePage() {
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
-      else if (newExpanded) el.style.transform = "translateY(0px)";
+      if (newExpanded) el.style.transform = "translateY(0px)";
       else el.style.transform = "translateY(calc(100% - 120px))";
     }
 
@@ -961,12 +964,10 @@ export default function ChroniclePage() {
     sheetDragActiveRef.current = false;
     sheetDraggedRef.current = false;
     const isExpanded = sheetExpandedRef.current;
-    const hasLoc = selectedIdxRef.current !== null;
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (!hasLoc) el.style.transform = "translateY(calc(100% - 44px))";
-      else if (isExpanded) el.style.transform = "translateY(0px)";
+      if (isExpanded) el.style.transform = "translateY(0px)";
       else el.style.transform = "translateY(calc(100% - 120px))";
     }
   }, []);
@@ -1254,97 +1255,55 @@ export default function ChroniclePage() {
         </div>
       </div>
 
-      {/* Desktop side panel */}
-      {!isMobile && selectedLoc && (
-        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[rgba(6,8,10,0.92)] px-6 pt-20 pb-8 backdrop-blur-lg">
-          <button
-            onClick={() => setSelectedIdx(null)}
-            className="absolute top-5 right-5 cursor-pointer border-none bg-transparent px-2 py-1 text-[1.2rem] leading-none text-white/35"
-            aria-label="Close"
-          >
-            ×
-          </button>
-
-          <div
-            className="font-heading mb-2.5 text-[1.1rem] leading-[1.3] tracking-[0.15em] uppercase"
-            style={{
-              color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
-              textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-            }}
-          >
-            {selectedLoc.name}
-            {selectedLoc.description && (
-              <span className="font-body mt-1 block text-[0.78rem] leading-snug tracking-normal text-white/55 normal-case">
-                {selectedLoc.description}
-              </span>
-            )}
-          </div>
-
-          {locEvents.length > 0 && (
+      {/* Desktop side panel — always visible, shows season timeline */}
+      {!isMobile && (
+        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[rgba(6,8,10,0.92)] px-4 pt-20 pb-8 backdrop-blur-lg">
+          {selectedLoc && (
             <>
-              <div className="mb-2.5 text-[0.62rem] tracking-[0.12em] text-white/30 uppercase">
-                {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
+              <button
+                onClick={() => setSelectedIdx(null)}
+                className="absolute top-5 right-5 cursor-pointer border-none bg-transparent px-2 py-1 text-[1.2rem] leading-none text-white/35"
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div
+                className="font-heading mb-1 text-[1.1rem] leading-[1.3] tracking-[0.15em] uppercase"
+                style={{
+                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
+                  textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
+                }}
+              >
+                {selectedLoc.name}
               </div>
-              <div className="flex flex-col gap-2">
-                {locEvents.map((ev, i) => {
-                  const et = EVENT_TYPES[ev.type] ?? {
-                    label: ev.type,
-                    icon: "/unyha-icons/help.svg",
-                    color: "rgba(255,255,255,0.4)",
-                  };
-                  const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
-                  return (
-                    <div key={i} className="rounded border border-white/6 bg-white/4 px-3 py-2.5">
-                      <div className="mb-1 flex items-baseline justify-between">
-                        <span
-                          className="text-[0.78rem] tracking-[0.06em]"
-                          style={{ color: et.color }}
-                        >
-                          <img
-                            src={et.icon}
-                            alt=""
-                            style={{
-                              width: "0.9em",
-                              height: "0.9em",
-                              opacity: 0.9,
-                              filter: "brightness(0) saturate(100%) invert(1)",
-                              verticalAlign: "middle",
-                              marginRight: "4px",
-                            }}
-                          />
-                          {et.label}
-                        </span>
-                        <span className="text-[0.68rem] text-white/25">{ev.date}</span>
-                      </div>
-                      <div className="text-[0.78rem] text-white/55">{charName}</div>
-                      {ev.special && (
-                        <div className="mt-1 text-[0.75rem] text-white/40 italic">{ev.special}</div>
-                      )}
-                    </div>
-                  );
-                })}
+              {selectedLoc.description && (
+                <p className="mb-3 text-[0.78rem] leading-snug text-white/45">
+                  {selectedLoc.description}
+                </p>
+              )}
+              <div className="mb-4 text-[0.62rem] tracking-[0.1em] text-white/25 uppercase">
+                {locEvents.length} event{locEvents.length !== 1 ? "s" : ""} at this location
               </div>
+              <div className="mb-2 h-px bg-white/6" />
             </>
           )}
-          {locEvents.length === 0 && !eventsLoading && (
-            <p className="text-[0.78rem] text-white/20 italic">
-              No recorded events at this location.
-            </p>
+          {currentSeason ? (
+            <SeasonTimeline season={currentSeason} players={players} items={items} />
+          ) : eventsLoading ? (
+            <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+          ) : (
+            <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
           )}
         </div>
       )}
 
-      {/* Mobile bottom sheet */}
+      {/* Mobile bottom sheet — season timeline, always draggable */}
       {isMobile && (
         <div
           ref={sheetElRef}
-          className="fixed right-0 bottom-0 left-0 z-20 flex h-[50vh] flex-col overflow-hidden rounded-t-2xl bg-[rgba(6,8,10,0.96)] backdrop-blur-lg"
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[rgba(6,8,10,0.96)] backdrop-blur-lg"
           style={{
-            transform: !selectedLoc
-              ? "translateY(calc(100% - 44px))"
-              : sheetExpanded
-                ? "translateY(0px)"
-                : "translateY(calc(100% - 120px))",
+            transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
             transition: "transform 0.3s ease",
           }}
         >
@@ -1355,109 +1314,69 @@ export default function ChroniclePage() {
             onPointerMove={onSheetHandlePointerMove}
             onPointerUp={onSheetHandlePointerUp}
             onPointerCancel={onSheetHandlePointerCancel}
-            onClick={() => !sheetDraggedRef.current && selectedLoc && setSheetExpanded(true)}
+            onClick={() => !sheetDraggedRef.current && setSheetExpanded((v) => !v)}
           >
             <div className="h-1 w-9 rounded-sm bg-white/25" />
           </div>
 
-          {selectedLoc && (
-            <>
-              {/* Peek header */}
+          {/* Peek header */}
+          <div
+            className="flex shrink-0 items-center justify-between px-5 pt-1 pb-3"
+            style={{ cursor: sheetExpanded ? "default" : "pointer" }}
+            onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
+          >
+            {selectedLoc ? (
               <div
-                className="flex shrink-0 items-center justify-between px-5 pt-1 pb-3"
-                style={{ cursor: sheetExpanded ? "default" : "pointer" }}
-                onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
+                className="font-heading text-[1rem] leading-[1.3] tracking-[0.15em] uppercase"
+                style={{
+                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
+                  textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
+                }}
               >
-                <div
-                  className="font-heading text-[1rem] leading-[1.3] tracking-[0.15em] uppercase"
-                  style={{
-                    color: eventLocNames.has(selectedLoc.name)
-                      ? "var(--gold)"
-                      : "rgba(255,255,255,0.85)",
-                    textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-                  }}
-                >
-                  {selectedLoc.name}
-                </div>
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    setSelectedIdx(null);
-                  }}
-                  className="shrink-0 cursor-pointer border-none bg-transparent py-1 pr-1 pl-4 text-[1.2rem] leading-none text-white/35"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
+                {selectedLoc.name}
               </div>
+            ) : currentSeason ? (
+              <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
+                Season {currentSeason.number}
+              </div>
+            ) : (
+              <div className="text-[0.8rem] text-white/30">Story Events</div>
+            )}
+            {selectedLoc && (
+              <button
+                onClick={(ev) => { ev.stopPropagation(); setSelectedIdx(null); }}
+                className="shrink-0 cursor-pointer border-none bg-transparent py-1 pr-1 pl-4 text-[1.2rem] leading-none text-white/35"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            )}
+          </div>
 
-              {/* Expanded content */}
-              <div
-                className="flex-1 overflow-y-auto px-5 pb-6"
-                style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
-              >
+          {/* Expanded content */}
+          <div
+            className="flex-1 overflow-y-auto px-4 pb-8"
+            style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
+          >
+            {selectedLoc && (
+              <>
                 {selectedLoc.description && (
-                  <p className="mb-3 text-[0.78rem] text-white/55">{selectedLoc.description}</p>
+                  <p className="mb-2 text-[0.78rem] text-white/45">{selectedLoc.description}</p>
                 )}
-                {locEvents.length > 0 && (
-                  <>
-                    <div className="mb-2.5 text-[0.62rem] tracking-[0.12em] text-white/30 uppercase">
-                      {locEvents.length} event{locEvents.length !== 1 ? "s" : ""}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {locEvents.map((ev, i) => {
-                        const et = EVENT_TYPES[ev.type] ?? {
-                          label: ev.type,
-                          icon: "/unyha-icons/help.svg",
-                          color: "rgba(255,255,255,0.4)",
-                        };
-                        const charName = players[ev.primary_char]?.name ?? `#${ev.primary_char}`;
-                        return (
-                          <div
-                            key={i}
-                            className="rounded border border-white/6 bg-white/4 px-3 py-2.5"
-                          >
-                            <div className="mb-1 flex items-baseline justify-between">
-                              <span
-                                className="text-[0.78rem] tracking-[0.06em]"
-                                style={{ color: et.color }}
-                              >
-                                <img
-                                  src={et.icon}
-                                  alt=""
-                                  style={{
-                                    width: "0.9em",
-                                    height: "0.9em",
-                                    opacity: 0.9,
-                                    filter: "brightness(0) saturate(100%) invert(1)",
-                                    verticalAlign: "middle",
-                                    marginRight: "4px",
-                                  }}
-                                />
-                                {et.label}
-                              </span>
-                              <span className="text-[0.68rem] text-white/25">{ev.date}</span>
-                            </div>
-                            <div className="text-[0.78rem] text-white/55">{charName}</div>
-                            {ev.special && (
-                              <div className="mt-1 text-[0.75rem] text-white/40 italic">
-                                {ev.special}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-                {locEvents.length === 0 && !eventsLoading && (
-                  <p className="text-[0.78rem] text-white/20 italic">
-                    No recorded events at this location.
-                  </p>
-                )}
-              </div>
-            </>
-          )}
+                <div className="mb-4 text-[0.62rem] tracking-[0.1em] text-white/25 uppercase">
+                  {locEvents.length} event{locEvents.length !== 1 ? "s" : ""} at this location
+                </div>
+                <div className="mb-2 h-px bg-white/6" />
+              </>
+            )}
+            {currentSeason ? (
+              <SeasonTimeline season={currentSeason} players={players} items={items} />
+            ) : eventsLoading ? (
+              <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+            ) : (
+              <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+            )}
+          </div>
         </div>
       )}
     </div>
