@@ -975,6 +975,18 @@ export default function ChroniclePage() {
   const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
   const locEvents = selectedLoc ? events.filter((e) => e.location === selectedLoc.name) : [];
 
+  // When a location is selected, filter the season's day events to that location only
+  const displaySeason = useMemo(() => {
+    if (!currentSeason || !selectedLoc) return currentSeason;
+    return {
+      ...currentSeason,
+      days: currentSeason.days.map((day) => ({
+        ...day,
+        events: day.events.filter((e) => e.location === selectedLoc.name),
+      })),
+    };
+  }, [currentSeason, selectedLoc]);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0a0c0e]">
       {/* Three.js mount */}
@@ -1287,8 +1299,8 @@ export default function ChroniclePage() {
               <div className="mb-2 h-px bg-white/6" />
             </>
           )}
-          {currentSeason ? (
-            <SeasonTimeline season={currentSeason} players={players} items={items} />
+          {displaySeason ? (
+            <SeasonTimeline season={displaySeason} players={players} items={items} />
           ) : eventsLoading ? (
             <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
           ) : (
@@ -1369,8 +1381,8 @@ export default function ChroniclePage() {
                 <div className="mb-2 h-px bg-white/6" />
               </>
             )}
-            {currentSeason ? (
-              <SeasonTimeline season={currentSeason} players={players} items={items} />
+            {displaySeason ? (
+              <SeasonTimeline season={displaySeason} players={players} items={items} />
             ) : eventsLoading ? (
               <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
             ) : (
