@@ -1013,7 +1013,6 @@ export default function ChroniclePage() {
               else locOverlayRefs.current.delete(i);
             }}
             style={{
-              filter: "drop-shadow(0 0 6px rgba(0, 0, 0, 1))",
               opacity: 0,
               zIndex: selectedIdx === i ? 999 : parseInt(loc.threeZ.toFixed(0)), // ensure selected location is always on top
             }}
@@ -1084,7 +1083,7 @@ export default function ChroniclePage() {
                   WebkitMaskPosition: "center",
                   maskPosition: "center",
                   backgroundColor: hostilityColor(loc.hostility),
-                  filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
+                  filter: "drop-shadow(0 0 6px rgba(0,0,0,1)) drop-shadow(0 1px 3px rgba(0,0,0,0.9))",
                 }}
               />
               {/* Label — below icon */}
