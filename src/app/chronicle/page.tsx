@@ -980,6 +980,8 @@ export default function ChroniclePage() {
     if (!currentSeason || !selectedLoc) return currentSeason;
     return {
       ...currentSeason,
+      contextEvent: undefined,
+      summaryEvent: undefined,
       days: currentSeason.days.map((day) => ({
         ...day,
         events: day.events.filter((e) => e.location === selectedLoc.name),
