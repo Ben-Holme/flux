@@ -309,14 +309,14 @@ export default function ChroniclePage() {
     img.src = "/heightmap.png";
   }, []);
 
-  const eventLocNames = new Set(events.map((e) => e.location).filter(Boolean) as string[]);
   const currentSeason = getCurrentSeason(buildSeasons(events));
+  const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
+  const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
 
-  // Per-location top-3 characters by fame (fame is at index 4 of the packed name string).
-  // events are newest-first; we assign each char to their most recent event location only.
+  // Per-location top-3 characters by fame within the current season only.
   const locPortraits = useMemo(() => {
     const charToLocIdx = new Map<number, number>();
-    for (const ev of events) {
+    for (const ev of seasonEvents) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
       const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
@@ -334,7 +334,7 @@ export default function ChroniclePage() {
       arr.splice(3);
     });
     return data;
-  }, [events, players, liveLocs]);
+  }, [seasonEvents, players, liveLocs]);
 
   // Build Three.js scene
   useEffect(() => {
@@ -1249,7 +1249,7 @@ export default function ChroniclePage() {
         <div className="mt-2 text-[0.72rem] tracking-[0.05em] text-white/30">
           {eventsLoading
             ? "Loading events…"
-            : `${events.length} events · ${eventLocNames.size} locations visited`}
+            : `${seasonEvents.length} events · ${eventLocNames.size} locations visited`}
         </div>
       </div>
 
