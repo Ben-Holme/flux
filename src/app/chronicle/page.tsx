@@ -367,7 +367,7 @@ export default function ChroniclePage() {
 
   const seasons = useMemo(() => buildSeasons(events), [events]);
   const currentSeason = seasons[seasons.length - 1] ?? null; // latest season — used for map effects
-  const viewingSeason = viewingSeasonIdx !== null ? (seasons[viewingSeasonIdx] ?? currentSeason) : currentSeason;
+  const viewingSeason = viewingSeasonIdx !== null ? (seasons.find((s) => s.number === viewingSeasonIdx) ?? currentSeason) : currentSeason;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
 
@@ -1350,19 +1350,19 @@ export default function ChroniclePage() {
       {!isMobile && (
         <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[var(--panel-bg)] px-4 pt-20 pb-8 backdrop-blur-lg">
           {/* Season selector */}
-          {seasons.length > 0 && (
+          {apiSeasons.length > 0 && (
             <div className="mb-4">
               <select
-                value={viewingSeasonIdx ?? seasons.length - 1}
+                value={viewingSeasonIdx ?? apiSeasons.length}
                 onChange={(e) => {
-                  const i = Number(e.target.value);
-                  setViewingSeasonIdx(i === seasons.length - 1 ? null : i);
+                  const num = Number(e.target.value);
+                  setViewingSeasonIdx(num === apiSeasons.length ? null : num);
                 }}
                 className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
               >
-                {seasons.map((s, i) => (
-                  <option key={s.number} value={i}>
-                    {getSeasonLabel(s.number)}{i === seasons.length - 1 ? " — Current" : ""}
+                {apiSeasons.map((_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
                   </option>
                 ))}
               </select>
@@ -1469,19 +1469,19 @@ export default function ChroniclePage() {
             style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
           >
             {/* Season selector */}
-            {seasons.length > 0 && (
+            {apiSeasons.length > 0 && (
               <div className="mb-3">
                 <select
-                  value={viewingSeasonIdx ?? seasons.length - 1}
+                  value={viewingSeasonIdx ?? apiSeasons.length}
                   onChange={(e) => {
-                    const i = Number(e.target.value);
-                    setViewingSeasonIdx(i === seasons.length - 1 ? null : i);
+                    const num = Number(e.target.value);
+                    setViewingSeasonIdx(num === apiSeasons.length ? null : num);
                   }}
                   className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
                 >
-                  {seasons.map((s, i) => (
-                    <option key={s.number} value={i}>
-                      {getSeasonLabel(s.number)}{i === seasons.length - 1 ? " — Current" : ""}
+                  {apiSeasons.map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
                     </option>
                   ))}
                 </select>
