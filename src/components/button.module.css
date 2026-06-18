@@ -4,7 +4,7 @@
   content: "";
   border: 0;
   background-image:
-    radial-gradient(rgba(200, 146, 58, 1) 0%, rgba(200, 146, 58, 0) 69%),
+    radial-gradient(rgba(101, 202, 225, 1) 0%, rgba(101, 202, 225, 0) 69%),
     radial-gradient(rgba(255, 122, 0, 0.7) 0%, rgba(255, 122, 0, 0) 69%);
   background-repeat: no-repeat;
   background-size: 150% 200%, 90% 110%;
@@ -21,7 +21,7 @@
   content: "";
   background-color: #111;
   background-image:
-    radial-gradient(rgba(200, 146, 58, 0.1) 0%, rgba(200, 146, 58, 0) 69%),
+    radial-gradient(rgba(101, 202, 225, 0.1) 0%, rgba(101, 202, 225, 0) 69%),
     radial-gradient(rgba(255, 122, 0, 0.05) 0%, rgba(255, 122, 0, 0) 69%);
   background-repeat: no-repeat;
   background-size: 150% 200%, 90% 110%;
