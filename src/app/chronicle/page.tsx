@@ -865,7 +865,12 @@ export default function ChroniclePage() {
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const mount = mountRef.current;
     if (!mount) return;
-    mount.setPointerCapture(e.pointerId);
+    // Only capture on the 3D canvas, not on UI overlays. Without this guard,
+    // setPointerCapture redirects pointerup to the mount, which prevents the
+    // click event from reaching the overlay's onClick handler.
+    if (e.currentTarget === mount) {
+      mount.setPointerCapture(e.pointerId);
+    }
     const cssX = e.clientX - mount.getBoundingClientRect().left;
     const cssY = e.clientY - mount.getBoundingClientRect().top;
     activePointersRef.current.set(e.pointerId, { x: cssX, y: cssY });
