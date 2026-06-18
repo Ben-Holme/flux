@@ -39,10 +39,6 @@ const H_YELLOW = "#ffcc44";
 const GOLD_BG     = "rgba(200,146,58,0.12)";
 const GOLD_BORDER = "rgba(200,146,58,0.5)";
 
-// Season button style presets
-const SEASON_BTN_ACTIVE   = { background: GOLD_BG, borderColor: GOLD_BORDER, color: GOLD };
-const SEASON_BTN_INACTIVE = { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" };
-
 // Location name foreground (non-highlighted)
 const LOC_NAME_FG = "rgba(255,255,255,0.85)";
 
@@ -627,7 +623,7 @@ export default function ChroniclePage() {
     // Sea disc — specular dark water with subtle noise normals, edge fade to black
     const seaGeo = new THREE.CircleGeometry(25, 128);
     const seaMat = new THREE.MeshPhongMaterial({
-      color: 0x3c4d52,
+      color: 0x42555a,
       specular: new THREE.Color(seaSpec, seaSpec, seaSpec),
       shininess: 750,
       normalMap: seaNormalTexture,
@@ -1354,20 +1350,22 @@ export default function ChroniclePage() {
       {!isMobile && (
         <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[var(--panel-bg)] px-4 pt-20 pb-8 backdrop-blur-lg">
           {/* Season selector */}
-          {seasons.length > 1 && (
-            <div className="mb-4 flex gap-1.5 flex-wrap">
-              {seasons.map((s, i) => (
-                <button
-                  key={s.number}
-                  onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
-                  className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
-                  style={viewingSeason?.number === s.number
-                    ? SEASON_BTN_ACTIVE
-                    : SEASON_BTN_INACTIVE}
-                >
-                  {getSeasonLabel(s.number)}
-                </button>
-              ))}
+          {seasons.length > 0 && (
+            <div className="mb-4">
+              <select
+                value={viewingSeasonIdx ?? seasons.length - 1}
+                onChange={(e) => {
+                  const i = Number(e.target.value);
+                  setViewingSeasonIdx(i === seasons.length - 1 ? null : i);
+                }}
+                className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
+              >
+                {seasons.map((s, i) => (
+                  <option key={s.number} value={i}>
+                    {getSeasonLabel(s.number)}{i === seasons.length - 1 ? " — Current" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
           {selectedLoc && (
@@ -1471,20 +1469,22 @@ export default function ChroniclePage() {
             style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
           >
             {/* Season selector */}
-            {seasons.length > 1 && (
-              <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
-                {seasons.map((s, i) => (
-                  <button
-                    key={s.number}
-                    onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
-                    className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
-                    style={viewingSeason?.number === s.number
-                      ? SEASON_BTN_ACTIVE
-                      : SEASON_BTN_INACTIVE}
-                  >
-                    {getSeasonLabel(s.number)}
-                  </button>
-                ))}
+            {seasons.length > 0 && (
+              <div className="mb-3">
+                <select
+                  value={viewingSeasonIdx ?? seasons.length - 1}
+                  onChange={(e) => {
+                    const i = Number(e.target.value);
+                    setViewingSeasonIdx(i === seasons.length - 1 ? null : i);
+                  }}
+                  className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
+                >
+                  {seasons.map((s, i) => (
+                    <option key={s.number} value={i}>
+                      {getSeasonLabel(s.number)}{i === seasons.length - 1 ? " — Current" : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
             {selectedLoc && (
