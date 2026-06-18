@@ -21,6 +21,12 @@ interface LiveLoc {
   description?: string;
 }
 
+interface ApiSeason {
+  name: string;
+  days: number;
+  start: string | null;
+}
+
 const GOLD = "#c8923a";
 
 // Hostility tier colors
@@ -137,6 +143,7 @@ export default function ChroniclePage() {
   const [items, setItems] = useState<Record<string | number, string>>({});
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [apiSeasons, setApiSeasons] = useState<ApiSeason[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [dbgOpen, setDbgOpen] = useState(false);
   const [dbg, setDbg] = useState({
@@ -231,6 +238,15 @@ export default function ChroniclePage() {
       })
       .catch(() => {})
       .finally(() => setEventsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getSeasons-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status === "OK" && Array.isArray(data.seasons)) setApiSeasons(data.seasons);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1017,6 +1033,15 @@ export default function ChroniclePage() {
     }
   }, []);
 
+  const getSeasonLabel = (n: number) => {
+    const api = apiSeasons[n - 1];
+    if (!api) return `S${n}`;
+    return api.name
+      .replace(/^(the\s+)?(age|era)\s+of(\s+the)?\s+/i, "")
+      .replace(/^the\s+/i, "");
+  };
+  const currentApiSeason = viewingSeason ? (apiSeasons[viewingSeason.number - 1] ?? null) : null;
+
   const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
   const locEvents = selectedLoc && viewingSeason
     ? viewingSeason.days.flatMap((d) => d.events).filter((e) => e.location === selectedLoc.name)
@@ -1290,7 +1315,12 @@ export default function ChroniclePage() {
 
       {/* Header overlay */}
       <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent px-6 pt-5 pb-4">
-        <div className="mt-2 text-[0.72rem] tracking-[0.05em] text-white/30">
+        {currentApiSeason && (
+          <div className="font-heading text-[0.8rem] tracking-[0.2em] uppercase text-white/50">
+            {currentApiSeason.name}
+          </div>
+        )}
+        <div className="mt-1 text-[0.72rem] tracking-[0.05em] text-white/30">
           {eventsLoading
             ? "Loading events…"
             : `${seasonEvents.length} events · ${eventLocNames.size} locations visited`}
@@ -1330,7 +1360,7 @@ export default function ChroniclePage() {
                     ? SEASON_BTN_ACTIVE
                     : SEASON_BTN_INACTIVE}
                 >
-                  S{s.number}
+                  {getSeasonLabel(s.number)}
                 </button>
               ))}
             </div>
@@ -1414,7 +1444,7 @@ export default function ChroniclePage() {
               </div>
             ) : viewingSeason ? (
               <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                Season {viewingSeason.number}
+                {currentApiSeason ? getSeasonLabel(viewingSeason.number) : `Season ${viewingSeason.number}`}
               </div>
             ) : (
               <div className="text-[0.8rem] text-white/30">Story Events</div>
@@ -1447,7 +1477,7 @@ export default function ChroniclePage() {
                       ? SEASON_BTN_ACTIVE
                       : SEASON_BTN_INACTIVE}
                   >
-                    S{s.number}
+                    {getSeasonLabel(s.number)}
                   </button>
                 ))}
               </div>
