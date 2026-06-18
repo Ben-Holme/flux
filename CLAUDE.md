@@ -33,29 +33,29 @@ CONTENTFUL_ACCESS_TOKEN=...   # Delivery API (read-only, public)
 
 All queries are in `src/lib/contentful.ts`. TypeScript shapes in `src/types/contentful.ts`.
 
-| Content type ID | Used for | Key fields |
-|---|---|---|
-| `blockList` | Homepage block order | `list` (refs to `title` + `section` entries) |
-| `title` | Hero parallax scenes | `scene` (1/2/3), `preHeading`, `copy` (rich text) |
-| `section` | Full-width content sections | `preHeading`, `content` (rich text), `image` |
-| `post` | Devlog / news articles | `title`, `slug`, `date`, `body`, `image`, `short`, `categry` ← note the typo, that's the real field name |
-| `page` | Wiki articles + static pages | `title`, `slug`, `pageContent` (rich text) |
-| `wikiNav` | Wiki sidebar nav order | `links` (ordered refs to `page` entries) |
+| Content type ID | Used for                     | Key fields                                                                                               |
+| --------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `blockList`     | Homepage block order         | `list` (refs to `title` + `section` entries)                                                             |
+| `title`         | Hero parallax scenes         | `scene` (1/2/3), `preHeading`, `copy` (rich text)                                                        |
+| `section`       | Full-width content sections  | `preHeading`, `content` (rich text), `image`                                                             |
+| `post`          | Devlog / news articles       | `title`, `slug`, `date`, `body`, `image`, `short`, `categry` ← note the typo, that's the real field name |
+| `page`          | Wiki articles + static pages | `title`, `slug`, `pageContent` (rich text)                                                               |
+| `wikiNav`       | Wiki sidebar nav order       | `links` (ordered refs to `page` entries)                                                                 |
 
 **Important:** `categry` (no 'o') is the actual Contentful field name — not a code bug.
 
 ## Routing
 
-| URL | File | Notes |
-|---|---|---|
-| `/` | `app/page.tsx` | Fetches blockList, renders hero scenes + sections via `home-page-client.tsx` |
-| `/devlog` | `app/devlog/page.tsx` | Lists all posts |
-| `/devlog/[slug]` | `app/devlog/[slug]/page.tsx` | Individual post |
-| `/wiki` | `app/wiki/page.tsx` | Tries Contentful page slug `"wiki"`, falls back to hardcoded welcome text |
-| `/wiki/[slug]` | `app/wiki/[slug]/page.tsx` | Individual wiki article (uses `<PlainPage>` component) |
-| `/[slug]` | `app/[slug]/page.tsx` | Catch-all for other `page` entries (privacy policy, etc.) |
-| `/screenshots` | `app/screenshots/page.tsx` | Pulls embedded assets from the `screenshots` page entry |
-| `/login` `/key` `/play-test` | `app/*/page.tsx` | Auth-gated pages using `AuthContext` |
+| URL                          | File                         | Notes                                                                        |
+| ---------------------------- | ---------------------------- | ---------------------------------------------------------------------------- |
+| `/`                          | `app/page.tsx`               | Fetches blockList, renders hero scenes + sections via `home-page-client.tsx` |
+| `/devlog`                    | `app/devlog/page.tsx`        | Lists all posts                                                              |
+| `/devlog/[slug]`             | `app/devlog/[slug]/page.tsx` | Individual post                                                              |
+| `/wiki`                      | `app/wiki/page.tsx`          | Tries Contentful page slug `"wiki"`, falls back to hardcoded welcome text    |
+| `/wiki/[slug]`               | `app/wiki/[slug]/page.tsx`   | Individual wiki article (uses `<PlainPage>` component)                       |
+| `/[slug]`                    | `app/[slug]/page.tsx`        | Catch-all for other `page` entries (privacy policy, etc.)                    |
+| `/screenshots`               | `app/screenshots/page.tsx`   | Pulls embedded assets from the `screenshots` page entry                      |
+| `/login` `/key` `/play-test` | `app/*/page.tsx`             | Auth-gated pages using `AuthContext`                                         |
 
 Wiki articles live at `/wiki/[slug]` in this port. In the original Gatsby site they were at `/{slug}` — the wiki layout (with sidebar) only wraps `/wiki/*` routes.
 
@@ -73,9 +73,26 @@ Wiki articles live at `/wiki/[slug]` in this port. In the original Gatsby site t
 
 **Styling conventions**: Prefer Tailwind utilities co-located on elements. Use CSS modules only for components that genuinely need pseudo-elements, `@keyframes`, or complex interactive states (`button`, `nav`, `hero-scene`, `lead-form`, etc.). Avoid global CSS utility classes and inline `style={}` objects — both hide styling from the callsite.
 
-**`PlainPage` component** (`src/components/plain-page.tsx`): wrapper for wiki/static content pages. Applies max-width 800px, horizontal padding, and heading size overrides via Tailwind `[&_h1]:` selectors. Accepts `as` prop (`div`/`article`/`main`) and `className` for per-page overrides (e.g. `className="pt-[120px] !pb-20"` for auth pages that need nav clearance).
+**Use the design-system components, not raw tags.** Never write raw `<h1>`–`<h6>` or `<p>` for headings/body copy — use `Heading` (with `level`) and `Text` from `src/components/ui`. They carry the canonical type styles, and `Flow` knows how to space them. Raw `<div>`/`<span>` for layout is fine; raw text/heading tags are not.
 
-**Remaining intentional inline styles**: `textShadow` on the `#ffd98f` glow label pattern (multi-comma CSS Tailwind can't express cleanly), and Framer Motion dynamic values in `hero-scene.tsx` and `nav.tsx`.
+**`Flow` component** (`src/components/ui/flow.tsx`): wraps content and applies the canonical vertical rhythm — it injects `margin-top` on each non-first child based on component type (`Heading` by `level`, `Text`, `Card`, etc.). This replaces the old `PlainPage` wrapper. Use it for page/content containers: `<Flow as="article" className="mx-auto max-w-[800px] px-6 pb-6">`. It flattens fragments so children wrapped in `<>…</>` (e.g. `RichText` output) still get spaced. Explicit `mt-*` on a child wins over the injected default (twMerge), so custom UI can opt out per element.
+
+### Conventions that LLMs keep getting wrong here — read before editing UI
+
+These are the exact mistakes that recur when an assistant "cleans up" these pages. Treat them as hard rules, not preferences.
+
+**Reference implementation: [`src/app/account/page.tsx`](src/app/account/page.tsx) follows every rule below.** When editing or building any page, match its patterns: `Flow` as the page container, `Eyebrow`/`Heading`/`Text` for all copy, `Card`/`Table`/`Badge`/`Button` instead of raw tags, pure parsing helpers hoisted to module scope (above the components), conditional `Table` rows built from a filtered tuple array, and no manual `mt-*` anywhere inside the `Flow`. If your edit diverges from how that file does something, prefer the file's way. After finishing a UI edit, diff your output against these rules and self-correct before reporting done.
+
+1. **`Flow` owns vertical spacing. Never add `mt-*` to a child inside a `Flow`.** If you find yourself writing `<div className="mt-6 ...">` inside a `Flow`, that's a smell — Flow already spaces the gap. Only add an explicit `mt-*` to deliberately _override_ Flow's default for that one element, and add a `{/* override Flow */}` comment when you do. Don't reach for `mt-*` to fix a gap; fix the component's `FLOW_SPACING` entry instead.
+2. **`Flow` only styles its _direct_ children (fragments are flattened, but nothing else is).** Don't bury a child that needs spacing inside a non-Flow wrapper. Put the `key` on the component itself (`<CharacterCard key={…} />`), not on a throwaway wrapper `<div key={…}>`. Flow spaces children by injecting `className` (via `cloneElement`) when the child forwards `className` (host tags + DS components), and by wrapping the child in a spacing `<div>` otherwise — so arbitrary local components get rhythm too, no manual wrapper needed.
+3. **Always reuse an existing component before writing a raw tag.** Check `src/components/ui/index.ts` and `src/components/button.tsx` first. No raw `<button>` (use `Button`), no raw `<h1>`–`<h6>` (use `Heading level=…`), no raw `<p>`/text `<span>` carrying copy (use `Text`, with `as="span"` for inline). Raw `<div>`/`<span>` are only for pure layout, never to hold styled text.
+4. **Use design tokens, not arbitrary values.** `text-ember`, `text-gold`, `bg-surface` — never `text-[#e16565]` or other one-off hexes that duplicate an existing token.
+5. **Don't wrap a single class or single ternary in `cn()`.** `cn()` is only for _merging_ multiple/conditional classes. `className={cn("text-right")}` and `className={cn(x ? "a" : "b")}` should just be the bare string/ternary.
+6. **Don't reintroduce removed scaffolding.** `PlainPage` is deleted — use `Flow`. If a previous edit removed a wrapper/helper, don't bring it back on the next pass.
+
+**`Eyebrow` component** (`src/components/ui/eyebrow.tsx`): the gold glowing uppercase label that sits above headings (e.g. "My Account", "Character"). Use this instead of hand-rolling the `textShadow` glow inline — it owns the `#ffd98f` glow label pattern. Accepts an optional `deco` prop to append the ornamental line SVG.
+
+**Remaining intentional inline styles**: the `textShadow` glow inside `Eyebrow` itself (multi-comma CSS Tailwind can't express cleanly), and Framer Motion dynamic values in `hero-scene.tsx` and `nav.tsx`.
 
 ## My Unyha / Play Test API
 

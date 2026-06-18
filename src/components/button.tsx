@@ -72,5 +72,3 @@ export default function Button({
     </button>
   );
 }
-
-Button.flowSpacing = "mt-6" as const;

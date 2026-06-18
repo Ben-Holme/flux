@@ -51,36 +51,6 @@ button {line-height: normal;}
     -webkit-font-smoothing: antialiased;
   }
 
-  h1,
-  h2 {
-    font-family: var(--font-heading);
-    font-size: 4.3rem;
-    line-height: 0.95;
-    letter-spacing: 0.1em;
-    font-weight: normal;
-    text-transform: uppercase;
-    color: var(--fg1);
-    margin: 0;
-    margin-top: 1.5rem;
-  }
-
-  @media screen and (max-width: 768px) {
-    h2 {
-      font-size: 2.85rem;
-    }
-  }
-
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-heading);
-    font-weight: normal;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--fg1);
-  }
-
   hr {
     border: 0;
     border-top: 2px solid rgba(255, 255, 255, 0.1);
@@ -109,7 +79,6 @@ button {line-height: normal;}
 
   p {
     margin: 0;
-    margin-top: 1em;
   }
 
   li > p {
@@ -117,7 +86,28 @@ button {line-height: normal;}
   }
 }
 
+.news-img-fx::after {
+    border: 1px solid #fff;
+    border-radius: 4px;
+    bottom: 4px;
+    content: "";
+    left: 4px;
+    opacity: .1;
+    position: absolute;
+    right: 4px;
+    top: 4px;
+}
 
+.news-img-fx img {
+  border-radius: 8px;
+}
+
+.chronicle-page {
+  --map-bg: #0a0c0e;
+  --panel-bg: rgba(6, 8, 10, 0.92);
+  --tooltip-bg: rgba(6, 8, 10, 0.93);
+  --sheet-bg: rgba(6, 8, 10, 0.96);
+}
 
 .chronicle-page footer {
   display: none;

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPage } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
+import { Flow, Heading } from "@/components/ui";
 
 async function PageContent({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -11,12 +12,10 @@ async function PageContent({ params }: { params: Promise<{ slug: string }> }) {
   if (!page) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-24">
-      <h1 className="mb-8 font-heading text-4xl text-parchment">{page.fields.title}</h1>
-      {page.fields.pageContent && (
-        <RichText document={page.fields.pageContent as Document} />
-      )}
-    </div>
+    <Flow className="mx-auto max-w-3xl px-6 py-24">
+      <Heading level="h1">{page.fields.title}</Heading>
+      {page.fields.pageContent && <RichText document={page.fields.pageContent as Document} />}
+    </Flow>
   );
 }
 
@@ -25,7 +24,7 @@ export default function SlugPage({ params }: { params: Promise<{ slug: string }>
     <Suspense
       fallback={
         <div className="mx-auto max-w-3xl px-6 py-24">
-          <div className="h-8 w-48 animate-pulse rounded bg-surface" />
+          <div className="bg-surface h-8 w-48 animate-pulse rounded" />
         </div>
       }
     >

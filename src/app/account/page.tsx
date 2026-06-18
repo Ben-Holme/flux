@@ -4,11 +4,26 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import PlainPage from "@/components/plain-page";
+import Button from "@/components/button";
+import { Portrait } from "@/components/portrait";
+import {
+  Badge,
+  Card,
+  Eyebrow,
+  Flow,
+  Heading,
+  Table,
+  TableBody,
+  TableRow,
+  Td,
+  Text,
+} from "@/components/ui";
+import { cn } from "@/lib/cn";
 
 interface Character {
   id: number;
   name: string;
+  data: string;
   tamed: number;
   privilege: number;
   fame: number;
@@ -65,6 +80,51 @@ const SKILL_LABELS: Record<string, string> = {
 
 const SKILL_KEYS = Object.keys(SKILL_LABELS) as (keyof Character)[];
 
+// Raw skill values arrive as "419.929871:0" — value before ":"; suffix ignored.
+function skillValue(raw: unknown): number {
+  return (parseFloat(String(raw)) || 0) * 0.1;
+}
+
+// The `data` field is a string of "#key:value" pairs. Values may contain ":".
+function parseData(data: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const seg of (data ?? "").split("#")) {
+    if (!seg) continue;
+    const i = seg.indexOf(":");
+    if (i === -1) out[seg] = "";
+    else out[seg.slice(0, i)] = seg.slice(i + 1);
+  }
+  return out;
+}
+
+const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+// `profile` holds bio paragraphs (split by §) then character quotes (split by @).
+function parseProfile(profile: string): { paragraphs: string[]; quotes: string[] } {
+  if (!profile) return { paragraphs: [], quotes: [] };
+  const at = profile.indexOf("@");
+  const bio = at === -1 ? profile : profile.slice(0, at);
+  const rest = at === -1 ? "" : profile.slice(at + 1);
+  return {
+    paragraphs: bio
+      .split("§")
+      .map((p) => p.trim())
+      .filter(Boolean),
+    quotes: rest
+      .split("@")
+      .map((q) => q.trim())
+      .filter(Boolean),
+  };
+}
+
+// e.g. "Brimmar@Tann@Midaen@/savedHomes" → ["Brimmar", "Tann", "Midaen"]
+function parseList(raw: string): string[] {
+  return (raw ?? "")
+    .split("@")
+    .map((s) => s.trim())
+    .filter((s) => s && !s.startsWith("/"));
+}
+
 function AccountContent() {
   const { session, logout } = useAuth();
   const router = useRouter();
@@ -96,36 +156,32 @@ function AccountContent() {
 
   if (!session) return null;
 
-  const activeChar = account && activeCharId
-    ? account.characters.find((c) => c.id === activeCharId) ?? null
-    : null;
+  const activeChar =
+    account && activeCharId
+      ? (account.characters.find((c) => c.id === activeCharId) ?? null)
+      : null;
 
   return (
-    <PlainPage className="pt-[120px] !pb-20">
+    <Flow className="mx-auto min-h-[90vh] max-w-[800px] px-6 pt-[120px] pb-20">
       {/* Header row */}
       <div className="flex items-center justify-between">
         {activeChar ? (
-          <Link href="/account" className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline">
+          <Link
+            href="/account"
+            className="text-[0.78rem] tracking-[0.08em] text-white/35 no-underline"
+          >
             ← My Account
           </Link>
         ) : (
-          <div
-            className="font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
-            style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
-          >
-            My Account
-          </div>
+          <Eyebrow>My Account</Eyebrow>
         )}
-        <button
-          onClick={logout}
-          className="cursor-pointer rounded border border-white/10 bg-transparent px-[10px] py-1 font-heading text-[0.62rem] uppercase tracking-[0.12em] text-white/35"
-        >
+        <Button onClick={logout} variant="ghost">
           Sign Out
-        </button>
+        </Button>
       </div>
 
-      {loading && <p className="mt-8">Loading…</p>}
-      {error && <p className="mt-8 text-[#e16565]">Error: {error}</p>}
+      {loading && <Text>Loading…</Text>}
+      {error && <Text className="text-[#e16565]">Error: {error}</Text>}
 
       {/* Character detail view */}
       {account && activeChar && <CharacterDetail char={activeChar} />}
@@ -133,20 +189,26 @@ function AccountContent() {
       {/* Account overview */}
       {account && !activeCharId && (
         <>
-          <h1>Account</h1>
-          <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-            <InfoRow label="Email" value={account.email} />
-            <InfoRow label="House" value={account.house || "—"} last />
-          </div>
+          <Heading level="h1">Account</Heading>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <Td variant="heading">Email</Td>
+                <Td className="text-right">{account.email}</Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">House</Td>
+                <Td className="text-right">{account.house || "—"}</Td>
+              </TableRow>
+            </TableBody>
+          </Table>
 
           {account.characters.length > 0 && (
             <>
-              <h2 className="mt-12">Characters</h2>
-              <div className="mt-4 flex flex-col gap-4">
-                {account.characters.map((char) => (
-                  <CharacterCard key={char.id} char={char} />
-                ))}
-              </div>
+              <Heading level="h2">Characters</Heading>
+              {account.characters.map((char) => (
+                <CharacterCard key={char.id} char={char} />
+              ))}
             </>
           )}
         </>
@@ -154,9 +216,9 @@ function AccountContent() {
 
       {/* charParam set but character not found */}
       {account && activeCharId && !activeChar && !loading && (
-        <p className="mt-8 text-white/35">Character not found.</p>
+        <Text className="text-white/35">Character not found.</Text>
       )}
-    </PlainPage>
+    </Flow>
   );
 }
 
@@ -168,132 +230,137 @@ export default function AccountPage() {
   );
 }
 
-function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  return (
-    <div className={`flex gap-4 py-2${last ? "" : " border-b border-white/[0.05]"}`}>
-      <span className="min-w-[72px] text-[0.78rem] tracking-[0.08em] text-white/35">{label}</span>
-      <span className="text-[0.85rem] text-white/80">{value}</span>
-    </div>
-  );
-}
-
-function Portrait({ charId, name, size }: { charId: number; name: string; size: number }) {
-  const initial = name[0]?.toUpperCase() ?? "?";
-  const sharedStyle: React.CSSProperties = {
-    position: "absolute",
-    inset: 0,
-    borderRadius: "50%",
-    border: "2px solid rgba(0,0,0,0.75)",
-  };
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <img
-        src={`https://api.unyhagame.com/ueserv/chars/${charId}.png`}
-        style={{ ...sharedStyle, width: "100%", height: "100%", objectFit: "cover" }}
-        onError={(e) => {
-          const img = e.target as HTMLImageElement;
-          img.style.display = "none";
-          const fallback = img.nextElementSibling as HTMLElement | null;
-          if (fallback) fallback.style.display = "flex";
-        }}
-      />
-      <div
-        style={{
-          ...sharedStyle,
-          background: "#2a3d3e",
-          display: "none",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "rgba(255,255,255,0.85)",
-          fontSize: Math.round(size * 0.375),
-          fontWeight: 600,
-          userSelect: "none",
-        }}
-      >
-        {initial}
-      </div>
-    </div>
-  );
-}
-
 function CharacterCard({ char }: { char: Character }) {
   const displayName = char.name.split("#")[0];
-  const skills = SKILL_KEYS.filter((k) => (char[k] as number) > 0);
+  const d = parseData(char.data);
+  const subtitle = [d.class && d.class !== "none" ? titleCase(d.class) : null, d.home]
+    .filter(Boolean)
+    .join(" · ");
+  // Notable skills only (> 10), value computed once.
+  const skills = SKILL_KEYS.map((k) => ({ k, val: skillValue(char[k]) })).filter(
+    ({ val }) => val > 10,
+  );
 
   return (
-    <div className="flex items-start gap-5 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-      <Portrait charId={char.id} name={displayName} size={64} />
-      <div className="min-w-0 flex-1">
-        <div className={`flex items-baseline justify-between${skills.length > 0 ? " mb-4" : ""}`}>
-          <Link
-            href={`/account?char=${char.id}`}
-            className="font-heading text-[1.1rem] uppercase tracking-[0.15em] text-white/90 no-underline"
-          >
-            {displayName}
-          </Link>
-          <span className="text-[0.75rem] tracking-[0.06em] text-white/35">
-            Fame {char.fame}
-          </span>
-        </div>
-        {skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {skills.map((k) => (
-              <div
-                key={k}
-                className="rounded-[3px] bg-white/[0.06] px-2 py-[3px] text-[0.72rem] tracking-[0.06em] text-white/55"
-              >
-                <span className="mr-1.5 text-white/30">{SKILL_LABELS[k as string]}</span>
-                {char[k]}
-              </div>
-            ))}
+    <Link href={`/account?char=${char.id}`}>
+      <Card className="flex items-start gap-5">
+        <Portrait charId={char.id} name={displayName} size={64} />
+        <Flow className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between">
+            <Heading level="h4" as="span">
+              {displayName}
+            </Heading>
+            <span className="text-[0.75rem] tracking-[0.06em] text-white/35">Fame {char.fame}</span>
           </div>
-        )}
-      </div>
-    </div>
+          {subtitle && <Text className="mt-0">{subtitle}</Text>}
+          {skills.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {skills.map(({ k, val }) => (
+                <Badge key={k}>
+                  <span className="pr-2">{SKILL_LABELS[k as string]}</span>
+                  {val.toFixed(1)}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </Flow>
+      </Card>
+    </Link>
   );
 }
 
 function CharacterDetail({ char }: { char: Character }) {
   const displayName = char.name.split("#")[0];
+  const d = parseData(char.data);
+  const { paragraphs, quotes } = parseProfile(d.profile);
+  const savedHomes = parseList(d.savedHomes);
+
+  const info: [string, string][] = [
+    d.class && d.class !== "none" ? ["Class", titleCase(d.class)] : null,
+    d.house ? ["House", d.house] : null,
+    d.home ? ["Home", d.home] : null,
+    d.season ? ["Season", titleCase(d.season)] : null,
+    ["Fame", String(char.fame)],
+    d.peakFame ? ["Peak Fame", d.peakFame] : null,
+    d.legacy ? ["Legacy", d.legacy] : null,
+    savedHomes.length ? ["Saved Homes", savedHomes.join(", ")] : null,
+  ].filter((row): row is [string, string] => row !== null);
 
   return (
-    <>
-      <div className="mt-6 flex items-center gap-6">
-        <Portrait charId={char.id} name={displayName} size={96} />
+    <Flow>
+      <div className="flex items-center gap-6">
+        <Portrait charId={char.id} name={displayName} size={128} />
         <div>
-          <div
-            className="font-heading text-base uppercase tracking-[0.2em] text-[#c8923a]"
-            style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
-          >
-            Character
-          </div>
-          <h1 className="mb-0">{displayName}</h1>
+          <Eyebrow>{d.class && d.class !== "none" ? titleCase(d.class) : "Character"}</Eyebrow>
+          <Heading level="h1">{displayName}</Heading>
         </div>
       </div>
 
-      <div className="mt-7 rounded-[6px] border border-white/[0.08] bg-white/[0.04] px-6 py-5">
-        <InfoRow label="Fame" value={String(char.fame)} last />
-      </div>
+      {d.titleSummary && (
+        <Text variant="muted" className="italic">
+          {d.titleSummary}
+        </Text>
+      )}
 
-      <h2 className="mt-12">Skills</h2>
-      <div className="mt-4 grid gap-0.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
-        {SKILL_KEYS.map((k) => {
-          const val = char[k] as number;
-          return (
-            <div
-              key={k}
-              className={`flex items-center justify-between rounded-[3px] px-3 py-2${val > 0 ? " bg-white/[0.04]" : ""}`}
+      <Table>
+        <TableBody>
+          {info.map(([label, value]) => (
+            <TableRow key={label}>
+              <Td variant="heading">{label}</Td>
+              <Td className="text-right">{value}</Td>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {paragraphs.length > 0 && (
+        <>
+          <Heading level="h2">Profile</Heading>
+          {paragraphs.map((p, i) => (
+            <Text key={"profile" + i}>{p}</Text>
+          ))}
+        </>
+      )}
+
+      {quotes.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {quotes.map((q, i) => (
+            <Text
+              key={"quote" + i}
+              as="p"
+              className="border-gold border-l-2 pl-4 text-white/70 italic"
             >
-              <span className={`text-[0.78rem] tracking-[0.06em]${val > 0 ? " text-white/50" : " text-white/20"}`}>
-                {SKILL_LABELS[k as string]}
-              </span>
-              <span className={`font-heading text-[0.85rem]${val > 0 ? " text-white/85" : " text-white/20"}`}>
-                {val}
-              </span>
-            </div>
-          );
-        })}
+              “{q}”
+            </Text>
+          ))}
+        </div>
+      )}
+
+      <Heading level="h2">Skills</Heading>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[
+          SKILL_KEYS.slice(0, Math.ceil(SKILL_KEYS.length / 2)),
+          SKILL_KEYS.slice(Math.ceil(SKILL_KEYS.length / 2)),
+        ].map((group, i) => (
+          <Table key={i}>
+            <TableBody>
+              {group.map((k) => {
+                const val = skillValue(char[k]);
+                return (
+                  <TableRow key={k}>
+                    <Td variant="heading" className={val === 0 ? "text-white/20" : "text-white"}>
+                      {SKILL_LABELS[k as string]}
+                    </Td>
+                    <Td className={cn("text-right", val === 0 && "text-white/20")}>
+                      {val.toFixed(1)}
+                    </Td>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        ))}
       </div>
-    </>
+    </Flow>
   );
 }

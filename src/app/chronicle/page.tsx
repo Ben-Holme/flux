@@ -21,16 +21,31 @@ interface LiveLoc {
   description?: string;
 }
 
+const GOLD = "#c8923a";
+
+// Hostility tier colors
+const H_WHITE  = "rgba(255,255,255,0.9)";
+const H_RED    = "#ff5555";
+const H_BLUE   = "#5588ff";
+const H_YELLOW = "#ffcc44";
+
+// Gold semi-transparent variants (rgb 200,146,58 = #c8923a)
+const GOLD_BG     = "rgba(200,146,58,0.12)";
+const GOLD_BORDER = "rgba(200,146,58,0.5)";
+
+// Season button style presets
+const SEASON_BTN_ACTIVE   = { background: GOLD_BG, borderColor: GOLD_BORDER, color: GOLD };
+const SEASON_BTN_INACTIVE = { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" };
+
+// Location name foreground (non-highlighted)
+const LOC_NAME_FG = "rgba(255,255,255,0.85)";
+
 function hostilityColor(h: number): string {
   switch (h) {
-    case 1:
-      return "#ff5555";
-    case 2:
-      return "#5588ff";
-    case 3:
-      return "#ffcc44";
-    default:
-      return "rgba(255,255,255,0.9)";
+    case 1: return H_RED;
+    case 2: return H_BLUE;
+    case 3: return H_YELLOW;
+    default: return H_WHITE;
   }
 }
 
@@ -48,7 +63,6 @@ function locTypeIcon(type: string): string {
       return "/unyha-icons/Nav.svg";
   }
 }
-const GOLD = "#c8923a";
 const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea level
 const PAN_LIMIT = 10;
 
@@ -1023,7 +1037,7 @@ export default function ChroniclePage() {
   }, [viewingSeason, selectedLoc]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#0a0c0e]">
+    <div className="relative h-screen w-screen overflow-hidden bg-[var(--map-bg)]">
       {/* Three.js mount */}
       <div
         ref={mountRef}
@@ -1251,7 +1265,7 @@ export default function ChroniclePage() {
               </div>
             );
             return (
-              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[rgba(6,8,10,0.93)] px-3 py-2.5 backdrop-blur">
+              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
                 {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
@@ -1303,7 +1317,7 @@ export default function ChroniclePage() {
 
       {/* Desktop side panel — always visible, shows season timeline */}
       {!isMobile && (
-        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[rgba(6,8,10,0.92)] px-4 pt-20 pb-8 backdrop-blur-lg">
+        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[var(--panel-bg)] px-4 pt-20 pb-8 backdrop-blur-lg">
           {/* Season selector */}
           {seasons.length > 1 && (
             <div className="mb-4 flex gap-1.5 flex-wrap">
@@ -1313,8 +1327,8 @@ export default function ChroniclePage() {
                   onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
                   className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
                   style={viewingSeason?.number === s.number
-                    ? { background: "rgba(200,146,58,0.12)", borderColor: "rgba(200,146,58,0.5)", color: GOLD }
-                    : { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
+                    ? SEASON_BTN_ACTIVE
+                    : SEASON_BTN_INACTIVE}
                 >
                   S{s.number}
                 </button>
@@ -1333,7 +1347,7 @@ export default function ChroniclePage() {
               <div
                 className="font-heading mb-1 text-[1.1rem] leading-[1.3] tracking-[0.15em] uppercase"
                 style={{
-                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
+                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : LOC_NAME_FG,
                   textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
                 }}
               >
@@ -1364,7 +1378,7 @@ export default function ChroniclePage() {
       {isMobile && (
         <div
           ref={sheetElRef}
-          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[rgba(6,8,10,0.96)] backdrop-blur-lg"
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
           style={{
             transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
             transition: "transform 0.3s ease",
@@ -1392,7 +1406,7 @@ export default function ChroniclePage() {
               <div
                 className="font-heading text-[1rem] leading-[1.3] tracking-[0.15em] uppercase"
                 style={{
-                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : "rgba(255,255,255,0.85)",
+                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : LOC_NAME_FG,
                   textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
                 }}
               >
@@ -1430,8 +1444,8 @@ export default function ChroniclePage() {
                     onClick={() => setViewingSeasonIdx(i === seasons.length - 1 ? null : i)}
                     className="shrink-0 cursor-pointer rounded border px-2.5 py-1 font-heading text-[0.6rem] tracking-[0.12em] uppercase"
                     style={viewingSeason?.number === s.number
-                      ? { background: "rgba(200,146,58,0.12)", borderColor: "rgba(200,146,58,0.5)", color: GOLD }
-                      : { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}
+                      ? SEASON_BTN_ACTIVE
+                      : SEASON_BTN_INACTIVE}
                   >
                     S{s.number}
                   </button>

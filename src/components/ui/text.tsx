@@ -12,17 +12,11 @@ interface TextProps {
 }
 
 const VARIANT_CLASS: Record<TextVariant, string> = {
-  default: "",
+  default: "text-white/70",
   muted: "text-white/40",
   strong: "text-white",
 };
 
 export function Text({ variant = "default", as: Tag = "p", children, className }: TextProps) {
-  return (
-    <Tag className={cn(VARIANT_CLASS[variant], className)}>
-      {children}
-    </Tag>
-  );
+  return <Tag className={cn(VARIANT_CLASS[variant], className)}>{children}</Tag>;
 }
-
-Text.flowSpacing = "mt-3" as const;

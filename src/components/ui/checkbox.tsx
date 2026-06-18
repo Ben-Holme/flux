@@ -31,4 +31,3 @@ export function Checkbox({ label, className, id, ...rest }: CheckboxProps) {
   );
 }
 
-Checkbox.flowSpacing = "mt-3" as const;

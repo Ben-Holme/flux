@@ -17,14 +17,9 @@ const VARIANT_CLASS: Record<BadgeVariant, string> = {
   error: "bg-ember/15 text-ember",
 };
 
-const BASE = "inline-flex items-center rounded-[3px] px-2 py-0.5 text-[0.72rem] font-heading uppercase tracking-[0.1em]";
+const BASE =
+  "uppercase font-400 text-[.625rem] inline-flex items-center rounded-[3px] px-2 py-0.5 tracking-[0.05em]";
 
 export function Badge({ variant = "default", children, className }: BadgeProps) {
-  return (
-    <span className={cn(BASE, VARIANT_CLASS[variant], className)}>
-      {children}
-    </span>
-  );
+  return <span className={cn(BASE, VARIANT_CLASS[variant], className)}>{children}</span>;
 }
-
-Badge.flowSpacing = "mt-2" as const;

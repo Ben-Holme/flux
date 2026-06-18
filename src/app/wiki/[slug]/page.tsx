@@ -1,16 +1,22 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getPage, getPost, getAllPages, getAllPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
+import {
+  getPage,
+  getPost,
+  getAllPages,
+  getAllPosts,
+  getAssetUrl,
+  getAssetTitle,
+} from "@/lib/contentful";
 import RichText from "@/components/rich-text";
-import PlainPage from "@/components/plain-page";
+import { Flow, Heading } from "@/components/ui";
 import type { Document } from "@contentful/rich-text-types";
 
 export async function generateStaticParams() {
   const [allPosts, pages] = await Promise.all([getAllPosts(), getAllPages()]);
   // Wiki articles are posts with "Unyha Wiki" category; page entries are a secondary fallback.
   const wikiPosts = allPosts.filter((p) => {
-    const cat = (p.fields.categry as { fields?: { name?: string } } | undefined)
-      ?.fields?.name;
+    const cat = (p.fields.categry as { fields?: { name?: string } } | undefined)?.fields?.name;
     return cat === "Unyha Wiki";
   });
   const slugs = [
@@ -35,18 +41,16 @@ export async function generateMetadata({
   return {
     title,
     description: `Unyha Wiki: ${title}`,
-    ...(heroImg ? {
-      openGraph: { images: [heroImg] },
-      twitter: { card: "summary_large_image" as const, images: [heroImg] },
-    } : {}),
+    ...(heroImg
+      ? {
+          openGraph: { images: [heroImg] },
+          twitter: { card: "summary_large_image" as const, images: [heroImg] },
+        }
+      : {}),
   };
 }
 
-export default async function WikiSlugPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function WikiSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   // Wiki articles may be stored as `post` entries with "Unyha Wiki" category
   // or as `page` entries — try both.
@@ -58,25 +62,23 @@ export default async function WikiSlugPage({
     const heroUrl = getAssetUrl(post.fields.image);
     const heroAlt = getAssetTitle(post.fields.image);
     return (
-      <PlainPage as="article">
-        <h1>{post.fields.title as string}</h1>
+      <Flow as="article" className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
+        <Heading level="h1">{post.fields.title as string}</Heading>
         {heroUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <p className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']"><img src={heroUrl} alt={heroAlt} className="max-w-full rounded" /></p>
+          <div className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']">
+            <img src={heroUrl} alt={heroAlt} className="max-w-full rounded" />
+          </div>
         )}
-        {post.fields.body && (
-          <RichText document={post.fields.body as Document} />
-        )}
-      </PlainPage>
+        {post.fields.body && <RichText document={post.fields.body as Document} />}
+      </Flow>
     );
   }
 
   return (
-    <PlainPage as="article">
-      <h1>{page!.fields.title as string}</h1>
-      {page!.fields.pageContent && (
-        <RichText document={page!.fields.pageContent as Document} />
-      )}
-    </PlainPage>
+    <Flow as="article" className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
+      <Heading level="h1">{page!.fields.title as string}</Heading>
+      {page!.fields.pageContent && <RichText document={page!.fields.pageContent as Document} />}
+    </Flow>
   );
 }

@@ -21,4 +21,3 @@ export function Radio({ label, className, id, ...rest }: RadioProps) {
   );
 }
 
-Radio.flowSpacing = "mt-3" as const;

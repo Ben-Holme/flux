@@ -12,18 +12,12 @@ interface CardProps {
 }
 
 const VARIANT_CLASS: Record<CardVariant, string> = {
-  default: "bg-surface border-border",
-  raised: "bg-surface-raised border-border",
+  default: "bg-black/20 ",
+  raised: "bg-white/5  ",
 };
 
-const BASE = "rounded-lg border p-5";
+const BASE = "rounded-lg border p-5 backdrop-blur border-white/5";
 
 export function Card({ variant = "default", as: Tag = "div", children, className }: CardProps) {
-  return (
-    <Tag className={cn(BASE, VARIANT_CLASS[variant], className)}>
-      {children}
-    </Tag>
-  );
+  return <Tag className={cn(BASE, VARIANT_CLASS[variant], className)}>{children}</Tag>;
 }
-
-Card.flowSpacing = "mt-4" as const;

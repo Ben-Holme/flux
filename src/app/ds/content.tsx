@@ -2,9 +2,26 @@
 
 import type { ReactNode } from "react";
 import {
-  User, Shield, Swords, Star, Map, Eye, Settings, Plus, X, Check,
-  ChevronRight, MoreHorizontal, Zap, Scroll, Crown, Skull, Heart,
-  Package, Flame, Wind,
+  User,
+  Shield,
+  Swords,
+  Star,
+  Map,
+  Eye,
+  Settings,
+  Plus,
+  X,
+  Check,
+  ChevronRight,
+  MoreHorizontal,
+  Zap,
+  Scroll,
+  Crown,
+  Skull,
+  Heart,
+  Package,
+  Flame,
+  Wind,
 } from "lucide-react";
 import {
   Eyebrow,
@@ -35,10 +52,10 @@ function DemoSection({ label, children }: { label: string; children: ReactNode }
   return (
     <div>
       <div className="mb-5 flex items-center gap-4">
-        <span className="whitespace-nowrap font-heading text-[0.6rem] uppercase tracking-[0.2em] text-white/20">
+        <span className="font-heading text-[0.6rem] tracking-[0.2em] whitespace-nowrap text-white/20 uppercase">
           {label}
         </span>
-        <div className="h-px flex-1 bg-border" />
+        <div className="bg-border h-px flex-1" />
       </div>
       {children}
     </div>
@@ -50,8 +67,8 @@ DemoSection.flowSpacing = "mt-12" as const;
 
 export default function DSContent() {
   return (
-    <div className="mx-auto max-w-[900px] px-6 pt-[120px] pb-24">
-      <Eyebrow>Components</Eyebrow>
+    <Flow className="mx-auto max-w-[900px] px-6 pt-[120px] pb-24">
+      <Eyebrow deco>Components</Eyebrow>
       <h1 className="mb-10">Design System</h1>
 
       <Tabs defaultValue="typography">
@@ -65,31 +82,30 @@ export default function DSContent() {
         {/* ── Typography ─────────────────────────────────── */}
         <TabsPanel value="typography">
           <Flow className="mt-10">
-
             <DemoSection label="Eyebrow">
-              <Eyebrow>Play Test — Coming Soon</Eyebrow>
+              <Eyebrow deco>Play Test — Coming Soon</Eyebrow>
             </DemoSection>
 
             <DemoSection label="Headings">
               <Flow>
-                <Heading as="h1">H1 — Elder Forest</Heading>
-                <Heading as="h2">H2 — Great Glizum Ravine</Heading>
-                <Heading as="h3">H3 — The Black Mine</Heading>
-                <Heading as="h4">H4 — Spritfolk Bloodline</Heading>
-                <Heading as="h5">H5 — Character Skills</Heading>
-                <Heading as="h6">H6 — Arms Lore</Heading>
+                <Heading level="h1">H1 — Elder Forest</Heading>
+                <Heading level="h2">H2 — Great Glizum Ravine</Heading>
+                <Heading level="h3">H3 — The Black Mine</Heading>
+                <Heading level="h4">H4 — Spritfolk Bloodline</Heading>
+                <Heading level="h5">H5 — Character Skills</Heading>
+                <Heading level="h6">H6 — Arms Lore</Heading>
               </Flow>
             </DemoSection>
 
             <DemoSection label="Text variants">
               <Flow>
                 <Text>
-                  Default — The realm of Unyha spreads across ancient lands where spritfolk
-                  and wanderers seek their fate amid ruins and ravines.
+                  Default — The realm of Unyha spreads across ancient lands where spritfolk and
+                  wanderers seek their fate amid ruins and ravines.
                 </Text>
                 <Text variant="muted">
-                  Muted — Secondary descriptions, timestamps, and supporting information
-                  sit one step back from the foreground.
+                  Muted — Secondary descriptions, timestamps, and supporting information sit one
+                  step back from the foreground.
                 </Text>
                 <Text variant="strong">
                   Strong — Highlighted content that demands attention reads at full white.
@@ -100,11 +116,11 @@ export default function DSContent() {
             <DemoSection label="Flow — vertical rhythm demo">
               <Card>
                 <Flow>
-                  <Eyebrow>Section label</Eyebrow>
-                  <Heading as="h2">Heading inside Flow</Heading>
+                  <Eyebrow deco>Section label</Eyebrow>
+                  <Heading level="h2">Heading inside Flow</Heading>
                   <Text>
-                    Body copy follows with automatic rhythm. No margin classes are written
-                    in the markup — Flow injects them based on component type.
+                    Body copy follows with automatic rhythm. No margin classes are written in the
+                    markup — Flow injects them based on component type.
                   </Text>
                   <Text variant="muted">
                     Secondary text gets its own tighter spacing via Text.flowSpacing.
@@ -113,14 +129,12 @@ export default function DSContent() {
                 </Flow>
               </Card>
             </DemoSection>
-
           </Flow>
         </TabsPanel>
 
         {/* ── Form ───────────────────────────────────────── */}
         <TabsPanel value="form">
           <Flow className="mt-10">
-
             <DemoSection label="Button — variants">
               <div className="flex flex-wrap items-center gap-3">
                 <Button variant="primary">Primary</Button>
@@ -170,14 +184,12 @@ export default function DSContent() {
                 <Radio name="ds-radio" label="Option C — disabled" value="c" disabled />
               </Flow>
             </DemoSection>
-
           </Flow>
         </TabsPanel>
 
         {/* ── Misc ───────────────────────────────────────── */}
         <TabsPanel value="misc">
           <Flow className="mt-10">
-
             <DemoSection label="Badge — variants">
               <div className="flex flex-wrap gap-2">
                 <Badge>Default</Badge>
@@ -192,10 +204,8 @@ export default function DSContent() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Card>
                   <Flow>
-                    <Heading as="h4">Default Card</Heading>
-                    <Text variant="muted">
-                      Surface background with design-token border.
-                    </Text>
+                    <Heading level="h4">Default Card</Heading>
+                    <Text variant="muted">Surface background with design-token border.</Text>
                     <div className="flex gap-2">
                       <Badge>melee</Badge>
                       <Badge>archery</Badge>
@@ -204,7 +214,7 @@ export default function DSContent() {
                 </Card>
                 <Card variant="raised">
                   <Flow>
-                    <Heading as="h4">Raised Card</Heading>
+                    <Heading level="h4">Raised Card</Heading>
                     <Text variant="muted">
                       Elevated surface for layered UI like popovers or panels.
                     </Text>
@@ -223,7 +233,10 @@ export default function DSContent() {
                     <TabsTrigger value="gamma">History</TabsTrigger>
                   </TabsList>
                   <TabsPanel value="alpha">
-                    <Text>Overview content. Tabs nest cleanly — each instance has its own isolated context.</Text>
+                    <Text>
+                      Overview content. Tabs nest cleanly — each instance has its own isolated
+                      context.
+                    </Text>
                   </TabsPanel>
                   <TabsPanel value="beta">
                     <div className="flex flex-wrap gap-2">
@@ -264,25 +277,28 @@ export default function DSContent() {
                   { icon: Flame, name: "Flame" },
                   { icon: Wind, name: "Wind" },
                 ].map(({ icon: Icon, name }) => (
-                  <div key={name} className="flex flex-col items-center gap-2 rounded-lg border border-border p-3 text-white/40">
+                  <div
+                    key={name}
+                    className="border-border flex flex-col items-center gap-2 rounded-lg border p-3 text-white/40"
+                  >
                     <Icon size={20} />
-                    <span className="text-center font-heading text-[0.55rem] uppercase tracking-[0.1em] text-white/25">{name}</span>
+                    <span className="font-heading text-center text-[0.55rem] tracking-[0.1em] text-white/25 uppercase">
+                      {name}
+                    </span>
                   </div>
                 ))}
               </div>
             </DemoSection>
-
           </Flow>
         </TabsPanel>
 
         {/* ── Content ─────────────────────────────────────── */}
         <TabsPanel value="content">
           <Flow className="mt-10">
-
             <DemoSection label="Character profile">
               <Flow>
-                <Eyebrow>Spritfolk — Ranger</Eyebrow>
-                <Heading as="h1">Vaelindra Ashfen</Heading>
+                <Eyebrow deco>Spritfolk — Ranger</Eyebrow>
+                <Heading level="h1">Vaelindra Ashfen</Heading>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="accent">Active</Badge>
                   <Badge variant="success">Veteran</Badge>
@@ -291,25 +307,27 @@ export default function DSContent() {
                   <Badge>Magery 42</Badge>
                 </div>
                 <Text>
-                  Vaelindra emerged from the Elder Forest three seasons past, bearing the ashen markings
-                  of her kin and a longbow carved from heartwood older than the current age. She has
-                  since made a name in the lower ravines — a steady hand for hire, known for clean work
-                  and a distaste for unnecessary bloodshed.
+                  Vaelindra emerged from the Elder Forest three seasons past, bearing the ashen
+                  markings of her kin and a longbow carved from heartwood older than the current
+                  age. She has since made a name in the lower ravines — a steady hand for hire,
+                  known for clean work and a distaste for unnecessary bloodshed.
                 </Text>
                 <Text variant="muted">
-                  Her lineage traces back to the Fenwatch covenant, a nomadic ranger guild that dissolved
-                  during the Black Siege. Though the covenant is gone, its oaths linger — she refuses
-                  contracts that target settlements, no matter the coin offered.
+                  Her lineage traces back to the Fenwatch covenant, a nomadic ranger guild that
+                  dissolved during the Black Siege. Though the covenant is gone, its oaths linger —
+                  she refuses contracts that target settlements, no matter the coin offered.
                 </Text>
                 <Text>
-                  In combat she favours distance, positioning, and patience over brute force. When pressed
-                  into close quarters she switches to twin short blades, a technique drilled into her by
-                  an old mercenary captain whose name she will not share.
+                  In combat she favours distance, positioning, and patience over brute force. When
+                  pressed into close quarters she switches to twin short blades, a technique drilled
+                  into her by an old mercenary captain whose name she will not share.
                 </Text>
                 <div className="flex flex-wrap gap-3">
                   <Button variant="primary">Hire</Button>
                   <Button>Send Message</Button>
-                  <Button variant="ghost">View History <ChevronRight size={14} /></Button>
+                  <Button variant="ghost">
+                    View History <ChevronRight size={14} />
+                  </Button>
                 </div>
               </Flow>
             </DemoSection>
@@ -329,45 +347,54 @@ export default function DSContent() {
                   <TableRow href="#">
                     <Td variant="heading">Vaelindra Ashfen</Td>
                     <Td>Ranger</Td>
-                    <Td><Badge variant="success">Active</Badge></Td>
+                    <Td>
+                      <Badge variant="success">Active</Badge>
+                    </Td>
                     <Td>91</Td>
                     <TableEllipsis onClick={() => {}} />
                   </TableRow>
                   <TableRow href="#">
                     <Td variant="heading">Torven Blackmere</Td>
                     <Td>Warrior</Td>
-                    <Td><Badge variant="accent">Elite</Badge></Td>
+                    <Td>
+                      <Badge variant="accent">Elite</Badge>
+                    </Td>
                     <Td>87</Td>
                     <TableEllipsis onClick={() => {}} />
                   </TableRow>
                   <TableRow href="#">
                     <Td variant="heading">Seraphel the Pale</Td>
                     <Td>Mage</Td>
-                    <Td><Badge>Inactive</Badge></Td>
+                    <Td>
+                      <Badge>Inactive</Badge>
+                    </Td>
                     <Td>74</Td>
                     <TableEllipsis onClick={() => {}} />
                   </TableRow>
                   <TableRow href="#">
                     <Td variant="heading">Gruk Ironjaw</Td>
                     <Td>Berserker</Td>
-                    <Td><Badge variant="warning">Wounded</Badge></Td>
+                    <Td>
+                      <Badge variant="warning">Wounded</Badge>
+                    </Td>
                     <Td>68</Td>
                     <TableEllipsis onClick={() => {}} />
                   </TableRow>
                   <TableRow>
                     <Td variant="heading">Lisseth Vane</Td>
                     <Td>Rogue</Td>
-                    <Td><Badge variant="error">Exiled</Badge></Td>
+                    <Td>
+                      <Badge variant="error">Exiled</Badge>
+                    </Td>
                     <Td>55</Td>
                     <TableEllipsis />
                   </TableRow>
                 </TableBody>
               </Table>
             </DemoSection>
-
           </Flow>
         </TabsPanel>
       </Tabs>
-    </div>
+    </Flow>
   );
 }

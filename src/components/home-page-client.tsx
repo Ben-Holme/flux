@@ -10,6 +10,7 @@ import Button from "@/components/button";
 import VideoModal from "@/components/video-modal";
 import HeroScene from "@/components/hero-scene";
 import RichText from "@/components/rich-text";
+import { Eyebrow, Heading } from "./ui";
 
 const VIDEOS = [
   { name: "gameplay trailer", id: "okXJWVGoaeo" },
@@ -191,74 +192,20 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           return (
             <section
               key={item.sys.id}
-              className="relative box-border flex min-h-screen items-center justify-center overflow-hidden bg-[url(/img/bg.jpg)] px-6 py-20
-                max-[768px]:block max-[768px]:min-h-0 max-[768px]:py-16 max-[768px]:pb-24
-                [&_ul]:m-0 [&_ul]:mt-8 [&_ul]:grid [&_ul]:w-[200%] [&_ul]:grid-cols-2 [&_ul]:gap-6 [&_ul]:p-0
-                max-[768px]:[&_ul]:w-full max-[768px]:[&_ul]:grid-cols-1 max-[768px]:[&_ul]:gap-4
-                [&_li]:relative [&_li]:flex [&_li]:list-none [&_li]:flex-col [&_li]:justify-end [&_li]:overflow-hidden [&_li]:rounded-lg [&_li]:bg-[#111] [&_li]:px-10 [&_li]:pb-10 [&_li]:pt-[25%]
-                max-[768px]:[&_li]:px-6 max-[768px]:[&_li]:pb-6
-                [&_li]:after:pointer-events-none [&_li]:after:absolute [&_li]:after:inset-1 [&_li]:after:rounded [&_li]:after:border [&_li]:after:border-white/10 [&_li]:after:content-[''] [&_li]:after:z-[2]
-                [&_li>p]:relative [&_li>p]:z-[3] [&_li>p]:my-0
-                [&_li>p_strong]:mb-2 [&_li>p_strong]:block [&_li>p_strong]:font-heading [&_li>p_strong]:text-[1.7rem] [&_li>p_strong]:font-normal [&_li>p_strong]:uppercase [&_li>p_strong]:tracking-[0.1em]"
+              className="[&_li>p_strong]:font-heading relative box-border flex min-h-screen items-center justify-center overflow-hidden bg-[url(/img/bg.jpg)] px-6 py-20 max-[768px]:block max-[768px]:min-h-0 max-[768px]:py-16 max-[768px]:pb-24 [&_li]:relative [&_li]:flex [&_li]:list-none [&_li]:flex-col [&_li]:justify-end [&_li]:overflow-hidden [&_li]:rounded-lg [&_li]:bg-[#111] [&_li]:px-10 [&_li]:pt-[25%] [&_li]:pb-10 [&_li]:after:pointer-events-none [&_li]:after:absolute [&_li]:after:inset-1 [&_li]:after:z-[2] [&_li]:after:rounded [&_li]:after:border [&_li]:after:border-white/10 [&_li]:after:content-[''] max-[768px]:[&_li]:px-6 max-[768px]:[&_li]:pb-6 [&_li>p]:relative [&_li>p]:z-[3] [&_li>p]:my-0 [&_li>p_strong]:mb-2 [&_li>p_strong]:block [&_li>p_strong]:text-[1.7rem] [&_li>p_strong]:font-normal [&_li>p_strong]:tracking-[0.1em] [&_li>p_strong]:uppercase [&_ul]:m-0 [&_ul]:mt-8 [&_ul]:grid [&_ul]:w-[200%] [&_ul]:grid-cols-2 [&_ul]:gap-6 [&_ul]:p-0 max-[768px]:[&_ul]:w-full max-[768px]:[&_ul]:grid-cols-1 max-[768px]:[&_ul]:gap-4"
             >
               {imgUrl && (
-                <div className="absolute top-0 left-[42%] right-0 bottom-0 [&>*]:h-full [&>*]:w-full [&>*]:object-cover [&>*]:object-top max-[768px]:hidden">
+                <div className="absolute top-0 right-0 bottom-0 left-[42%] max-[768px]:hidden [&>*]:h-full [&>*]:w-full [&>*]:object-cover [&>*]:object-top">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imgUrl} alt={imgAlt} />
                 </div>
               )}
-              <div className="relative z-[1] flex w-full max-w-[1200px] items-center [&>div]:grow [&>div]:basis-0 [&_p]:text-left max-[768px]:block">
+              <div className="relative z-[1] flex w-full max-w-[1200px] items-center max-[768px]:block [&_p]:text-left [&>div]:grow [&>div]:basis-0">
                 <div>
                   {item.fields.preHeading && (
-                    <div
-                      style={{
-                        fontFamily: "var(--font-heading)",
-                        fontSize: "1rem",
-                        fontWeight: "normal",
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: "0.5rem",
-                        color: "#c8923a",
-                        textShadow:
-                          "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px",
-                        marginBottom: "1.5rem",
-                        whiteSpace: "nowrap",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.2em",
-                      }}
-                    >
-                      <p style={{ margin: 0 }}>{item.fields.preHeading as string}</p>
-                      <svg
-                        width="285"
-                        height="12"
-                        viewBox="0 0 285 12"
-                        fill="none"
-                        className="mt-1"
-                      >
-                        <path
-                          opacity="0.3"
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
-                          fill="url(#sec-line)"
-                        />
-                        <defs>
-                          <linearGradient
-                            id="sec-line"
-                            x1="1"
-                            y1="6.25"
-                            x2="284.04"
-                            y2="6.25"
-                            gradientUnits="userSpaceOnUse"
-                          >
-                            <stop stopColor="white" />
-                            <stop offset="1" stopColor="white" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
+                    <Eyebrow className="mb-6" deco>
+                      {item.fields.preHeading as string}
+                    </Eyebrow>
                   )}
                   {item.fields.content && (
                     <RichText document={item.fields.content as Document} variant="section" />
@@ -275,36 +222,10 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
       {/* ── News preview ────────────────────────────────────── */}
       {posts.length > 0 && (
         <section className="mx-auto max-w-[1200px] px-6 py-16 md:py-20">
-          <div
-            className="relative mb-6 flex items-center justify-start gap-2 whitespace-nowrap font-heading text-base font-normal uppercase tracking-[0.2em] text-[#c8923a]"
-            style={{ textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px" }}
-          >
-            <span>Latest</span>
-            <svg width="285" height="12" viewBox="0 0 285 12" fill="none">
-              <path
-                opacity="0.3"
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
-                fill="url(#news-line)"
-              />
-              <defs>
-                <linearGradient
-                  id="news-line"
-                  x1="1"
-                  y1="6.25"
-                  x2="284.04"
-                  y2="6.25"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stopColor="white" />
-                  <stop offset="1" stopColor="white" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <h2 className="mt-0">News</h2>
-
+          <Eyebrow className="mb-6" deco>
+            Latest
+          </Eyebrow>
+          <Heading level="h2">News</Heading>
           <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
             {posts.map((post) => {
               const thumb = getAssetUrl(post.fields?.image);
@@ -312,7 +233,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
               return (
                 <div key={post.sys.id} className="relative">
                   <Link href={`/devlog/${post.fields?.slug}`} className="group">
-                    <p className="mt-0 mb-2 font-heading text-xs uppercase tracking-[0.1em] text-[#c8923a]">
+                    <p className="font-heading mt-0 mb-2 text-xs tracking-[0.1em] text-[#c8923a] uppercase">
                       {post.fields?.categry?.fields?.name ?? "news"}
                     </p>
                     <div className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']">
@@ -350,9 +271,7 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
                         </div>
                       )}
                     </div>
-                    <h3
-                      className="mt-3 -mb-[0.25em] font-heading text-[1.7rem] font-normal uppercase leading-[1.1] tracking-[0.1em] text-white group-hover:underline"
-                    >
+                    <h3 className="font-heading mt-3 -mb-[0.25em] text-[1.7rem] leading-[1.1] font-normal tracking-[0.1em] text-white uppercase group-hover:underline">
                       {post.fields?.title}
                     </h3>
                     {post.fields?.short && (

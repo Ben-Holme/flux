@@ -31,7 +31,6 @@ export function Tabs({ defaultValue, children, className }: TabsProps) {
   );
 }
 
-Tabs.flowSpacing = "mt-6" as const;
 
 interface TabsListProps {
   children: ReactNode;
