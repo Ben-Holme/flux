@@ -119,6 +119,7 @@ export default function ChroniclePage() {
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDistRef = useRef<number | null>(null);
   const pinchMidRef = useRef<{ x: number; y: number } | null>(null);
+  const lastDragStateRef = useRef(false); // true if last pointer-up was a drag; guards overlay onClick
   const sheetDragActiveRef = useRef(false);
   const sheetDragStartYRef = useRef(0);
   const sheetDraggedRef = useRef(false);
@@ -893,6 +894,7 @@ export default function ChroniclePage() {
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!activePointersRef.current.has(e.pointerId)) return;
     const mount = mountRef.current;
     if (!mount) return;
     const rect = mount.getBoundingClientRect();
@@ -944,6 +946,7 @@ export default function ChroniclePage() {
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!activePointersRef.current.has(e.pointerId)) return;
     const wasPinching = activePointersRef.current.size >= 2;
     activePointersRef.current.delete(e.pointerId);
 
@@ -963,6 +966,7 @@ export default function ChroniclePage() {
       // Tapping empty canvas deselects; location selection is handled by overlay onClick
       setSelectedIdx(null);
     }
+    lastDragStateRef.current = draggingRef.current;
     draggingRef.current = false;
     pointerStartRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -976,6 +980,24 @@ export default function ChroniclePage() {
     }
     draggingRef.current = false;
   }, []);
+
+  // Register move/up/cancel on document so they fire even when pointer is
+  // captured by an overlay element (cross-element setPointerCapture is unreliable).
+  useEffect(() => {
+    const cast = (fn: (e: React.PointerEvent<HTMLDivElement>) => void) =>
+      (e: PointerEvent) => fn(e as unknown as React.PointerEvent<HTMLDivElement>);
+    const move = cast(onPointerMove);
+    const up = cast(onPointerUp);
+    const cancel = cast(onPointerCancel);
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", cancel);
+    return () => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", cancel);
+    };
+  }, [onPointerMove, onPointerUp, onPointerCancel]);
 
   const onSheetHandlePointerDown = useCallback((e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -1069,9 +1091,6 @@ export default function ChroniclePage() {
         ref={mountRef}
         className="absolute inset-0 cursor-grab touch-none"
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
       />
 
       {/* Location overlays — below portrait overlays */}
@@ -1100,6 +1119,7 @@ export default function ChroniclePage() {
               );
             }}
             onClick={() => {
+              if (lastDragStateRef.current) return;
               setSelectedIdx(i);
               focusTargetRef.current = new THREE.Vector3(
                 Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
