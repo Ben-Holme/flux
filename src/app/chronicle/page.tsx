@@ -371,11 +371,12 @@ export default function ChroniclePage() {
   const viewingSeason = viewingSeasonIdx !== null ? (seasons.find((s) => s.number === viewingSeasonIdx) ?? currentSeason) : currentSeason;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
+  const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
 
-  // Per-location top-3 characters by fame within the current season only.
+  // Per-location top-3 characters by fame within the viewing season only.
   const locPortraits = useMemo(() => {
     const charToLocIdx = new Map<number, number>();
-    for (const ev of seasonEvents) {
+    for (const ev of viewingSeasonEvents) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
       const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
@@ -393,7 +394,7 @@ export default function ChroniclePage() {
       arr.splice(3);
     });
     return data;
-  }, [seasonEvents, players, liveLocs]);
+  }, [viewingSeasonEvents, players, liveLocs]);
 
   // Build Three.js scene
   useEffect(() => {
