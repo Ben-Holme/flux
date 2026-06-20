@@ -237,21 +237,6 @@ export default function ChroniclePage() {
       .finally(() => setEventsLoading(false));
   }, []);
 
-  // Season diagnostics — logs to console when both datasets are loaded
-  useEffect(() => {
-    if (eventsLoading || apiSeasons.length === 0) return;
-    const ctxEvents = events.filter((e) => e.type === "seasonContext");
-    const summaryEvents = events.filter((e) => e.type === "seasonSummary");
-    const builtSeasons = buildSeasons(events);
-    console.group("[Chronicle] Season diagnostics");
-    console.log(`Total events: ${events.length}`);
-    console.log(`seasonContext events (${ctxEvents.length}):`, ctxEvents.map((e) => ({ date: e.date, special: (e.special as string)?.slice(0, 80) })));
-    console.log(`seasonSummary events (${summaryEvents.length}):`, summaryEvents.map((e) => ({ date: e.date })));
-    console.log(`apiSeasons (${apiSeasons.length}):`, apiSeasons.map((s, i) => ({ i, name: s.name, start: s.start })));
-    console.log(`Built seasons (${builtSeasons.length}):`, builtSeasons.map((s) => ({ number: s.number, startDate: s.startDate, eventCounts: s.days.map((d) => d.events.length) })));
-    console.groupEnd();
-  }, [eventsLoading, apiSeasons, events]);
-
   useEffect(() => {
     fetch("https://api.unyhagame.com/ueserv/getSeasons-w.php")
       .then((r) => r.json())
@@ -383,11 +368,12 @@ export default function ChroniclePage() {
 
   const seasons = useMemo(() => buildSeasons(events), [events]);
   const currentSeason = seasons[seasons.length - 1] ?? null; // latest season — used for map effects
-  // Resolve by season number in both cases so the timeline matches the selector.
-  // No fallback to seasons.last: if a season has no events data, return null and
-  // let the UI show "No events" rather than silently showing a different season.
-  const resolveSeasonNum = viewingSeasonIdx ?? apiSeasons.length;
-  const viewingSeason = seasons.find((s) => s.number === resolveSeasonNum) ?? null;
+  // apiSeasons may include ancient seasons with no events; built seasons are
+  // numbered 1..M from oldest-with-events. Subtract the offset so API season
+  // index N maps to built season N - (apiSeasons.length - seasons.length).
+  const seasonOffset = apiSeasons.length > 0 ? apiSeasons.length - seasons.length : 0;
+  const resolveSeasonNum = (viewingSeasonIdx ?? apiSeasons.length) - seasonOffset;
+  const viewingSeason = resolveSeasonNum >= 1 ? (seasons.find((s) => s.number === resolveSeasonNum) ?? null) : null;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
   const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
@@ -1331,7 +1317,7 @@ export default function ChroniclePage() {
               </div>
             );
             return (
-              <div className="mt-1 min-w-[180px] max-h-[70vh] overflow-y-auto rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
+              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
                 {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
@@ -1349,23 +1335,6 @@ export default function ChroniclePage() {
                 {sec("Effects")}
                 {row("heightFog", "Height fog")}
                 {sliderRow("Fog near", fogNear, R_MIN, R_MAX, 0.5, setFogNear)}
-                {sec("Season diagnostics")}
-                <div className="font-mono text-[0.58rem] text-white/40 leading-[1.6] break-all">
-                  <div>events: {events.length} | ctx: {events.filter(e => e.type === "seasonContext").length} | sum: {events.filter(e => e.type === "seasonSummary").length}</div>
-                  <div>apiSeasons: {apiSeasons.length} | built: {buildSeasons(events).length}</div>
-                  <div className="mt-1 text-white/25">— apiSeasons —</div>
-                  {apiSeasons.map((s, i) => (
-                    <div key={i}>{i}: {s.name} ({s.start ?? "no start"})</div>
-                  ))}
-                  <div className="mt-1 text-white/25">— built seasons —</div>
-                  {buildSeasons(events).map((s) => (
-                    <div key={s.number}>#{s.number} {s.startDate.toISOString().slice(0,10)} [{s.days.map(d=>d.events.length).join(",")}]</div>
-                  ))}
-                  <div className="mt-1 text-white/25">— ctx dates —</div>
-                  {events.filter(e => e.type === "seasonContext").map((e, i) => (
-                    <div key={i}>{e.date}</div>
-                  ))}
-                </div>
               </div>
             );
           })()}
