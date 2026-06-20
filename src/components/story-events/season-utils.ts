@@ -102,6 +102,20 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
     }
   }
 
+  // The seasonContext at the boundary of season N announces the NEXT season (N+1),
+  // not the current one — the game posts it as a forward-looking prologue.
+  // Shift each season's contextEvent one position forward so season N displays the
+  // ctx that was posted at the boundary of season N-1 (which announced season N).
+  // Season 1 ends up with no contextEvent (its announcement predates tracked data).
+  const origCtxEvents = seasons.map((s) => s.contextEvent);
+  for (let i = 0; i < seasons.length; i++) {
+    const prevCtx = i > 0 ? origCtxEvents[i - 1] : undefined;
+    const sp = prevCtx ? parseSpecial(prevCtx.special) : {};
+    const rawBossDay = (sp.bossday ?? sp.boss_day ?? sp.bossDay) as string | undefined;
+    const bossDay = rawBossDay ? Number(rawBossDay) : 5;
+    seasons[i] = { ...seasons[i], contextEvent: prevCtx, bossDay };
+  }
+
   return seasons;
 }
 
