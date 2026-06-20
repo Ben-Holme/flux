@@ -237,6 +237,21 @@ export default function ChroniclePage() {
       .finally(() => setEventsLoading(false));
   }, []);
 
+  // Season diagnostics — logs to console when both datasets are loaded
+  useEffect(() => {
+    if (eventsLoading || apiSeasons.length === 0) return;
+    const ctxEvents = events.filter((e) => e.type === "seasonContext");
+    const summaryEvents = events.filter((e) => e.type === "seasonSummary");
+    const builtSeasons = buildSeasons(events);
+    console.group("[Chronicle] Season diagnostics");
+    console.log(`Total events: ${events.length}`);
+    console.log(`seasonContext events (${ctxEvents.length}):`, ctxEvents.map((e) => ({ date: e.date, special: (e.special as string)?.slice(0, 80) })));
+    console.log(`seasonSummary events (${summaryEvents.length}):`, summaryEvents.map((e) => ({ date: e.date })));
+    console.log(`apiSeasons (${apiSeasons.length}):`, apiSeasons.map((s, i) => ({ i, name: s.name, start: s.start })));
+    console.log(`Built seasons (${builtSeasons.length}):`, builtSeasons.map((s) => ({ number: s.number, startDate: s.startDate, eventCounts: s.days.map((d) => d.events.length) })));
+    console.groupEnd();
+  }, [eventsLoading, apiSeasons, events]);
+
   useEffect(() => {
     fetch("https://api.unyhagame.com/ueserv/getSeasons-w.php")
       .then((r) => r.json())
