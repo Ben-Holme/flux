@@ -1331,7 +1331,7 @@ export default function ChroniclePage() {
               </div>
             );
             return (
-              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
+              <div className="mt-1 min-w-[180px] max-h-[70vh] overflow-y-auto rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
                 {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
