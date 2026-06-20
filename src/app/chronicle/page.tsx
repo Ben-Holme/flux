@@ -368,10 +368,11 @@ export default function ChroniclePage() {
 
   const seasons = useMemo(() => buildSeasons(events), [events]);
   const currentSeason = seasons[seasons.length - 1] ?? null; // latest season — used for map effects
-  // No fallback to currentSeason when a specific season is chosen: if that season
-  // has no events data yet, return null so the timeline shows "No events" rather
-  // than silently displaying current-season content under the wrong heading.
-  const viewingSeason = viewingSeasonIdx !== null ? (seasons.find((s) => s.number === viewingSeasonIdx) ?? null) : currentSeason;
+  // Resolve by season number in both cases so the timeline matches the selector.
+  // No fallback to seasons.last: if a season has no events data, return null and
+  // let the UI show "No events" rather than silently showing a different season.
+  const resolveSeasonNum = viewingSeasonIdx ?? apiSeasons.length;
+  const viewingSeason = seasons.find((s) => s.number === resolveSeasonNum) ?? null;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
   const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
@@ -1062,10 +1063,7 @@ export default function ChroniclePage() {
 
   const getSeasonLabel = (n: number) => {
     const api = apiSeasons[n - 1];
-    if (!api) return `S${n}`;
-    return api.name
-      .replace(/^(the\s+)?(age|era)\s+of(\s+the)?\s+/i, "")
-      .replace(/^the\s+/i, "");
+    return api?.name ?? `Season ${n}`;
   };
   // Use viewingSeasonIdx directly so the label matches the select even when
   // viewingSeason falls back to currentSeason (no events for that season).
