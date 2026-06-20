@@ -24,7 +24,18 @@ function parseEventDate(dateStr: string): Date {
 
 function buildSeason(number: number, startDate: Date, events: StoryEvent[]): Season {
   const contextEvent = events.find((e) => e.type === "seasonContext");
-  const summaryEvent = events.find((e) => e.type === "seasonSummary");
+
+  // Only accept a summary that follows at least one regular event.
+  // Summaries appearing before events in the slice belong to the previous season
+  // (the game posts them just after the new season's ctx) and are redistributed
+  // by buildSeasons() below.
+  const firstRegularIdx = events.findIndex(
+    (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+  );
+  const summaryEvent =
+    firstRegularIdx >= 0
+      ? events.slice(firstRegularIdx).find((e) => e.type === "seasonSummary")
+      : undefined;
 
   const sp = contextEvent ? parseSpecial(contextEvent.special) : {};
   const rawBossDay = (sp.bossday ?? sp.boss_day ?? sp.bossDay) as string | undefined;
@@ -66,12 +77,32 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
     return [buildSeason(1, startDate, chrono)];
   }
 
-  return ctxIndices.map((ctxIdx, num) => {
+  const seasons = ctxIndices.map((ctxIdx, num) => {
     const nextCtxIdx = ctxIndices[num + 1] ?? chrono.length;
     const slice = chrono.slice(ctxIdx, nextCtxIdx);
     const startDate = parseEventDate(chrono[ctxIdx].date);
     return buildSeason(num + 1, startDate, slice);
   });
+
+  // A seasonSummary appearing before the first regular event in season N's slice
+  // was posted just after the new season opened and describes season N-1.
+  // Carry it back to the previous season if that season has no summary yet.
+  for (let num = 1; num < ctxIndices.length; num++) {
+    const ctxIdx = ctxIndices[num];
+    const nextCtxIdx = ctxIndices[num + 1] ?? chrono.length;
+    const slice = chrono.slice(ctxIdx, nextCtxIdx);
+    const firstRegIdx = slice.findIndex(
+      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+    );
+    const orphan = slice.find(
+      (e, i) => e.type === "seasonSummary" && (firstRegIdx < 0 || i < firstRegIdx),
+    );
+    if (orphan && !seasons[num - 1].summaryEvent) {
+      seasons[num - 1] = { ...seasons[num - 1], summaryEvent: orphan };
+    }
+  }
+
+  return seasons;
 }
 
 export function getCurrentSeason(seasons: Season[]): Season | null {
