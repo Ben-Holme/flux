@@ -1064,7 +1064,10 @@ export default function ChroniclePage() {
       .replace(/^(the\s+)?(age|era)\s+of(\s+the)?\s+/i, "")
       .replace(/^the\s+/i, "");
   };
-  const currentApiSeason = viewingSeason ? (apiSeasons[viewingSeason.number - 1] ?? null) : null;
+  // Use viewingSeasonIdx directly so the label matches the select even when
+  // viewingSeason falls back to currentSeason (no events for that season).
+  const displaySeasonNum = viewingSeasonIdx ?? apiSeasons.length;
+  const currentApiSeason = apiSeasons[displaySeasonNum - 1] ?? null;
 
   const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
   const locEvents = selectedLoc && viewingSeason
@@ -1468,7 +1471,7 @@ export default function ChroniclePage() {
               </div>
             ) : viewingSeason ? (
               <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                {currentApiSeason ? getSeasonLabel(viewingSeason.number) : `Season ${viewingSeason.number}`}
+                {getSeasonLabel(displaySeasonNum)}
               </div>
             ) : (
               <div className="text-[0.8rem] text-white/30">Story Events</div>
