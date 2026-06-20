@@ -1349,6 +1349,23 @@ export default function ChroniclePage() {
                 {sec("Effects")}
                 {row("heightFog", "Height fog")}
                 {sliderRow("Fog near", fogNear, R_MIN, R_MAX, 0.5, setFogNear)}
+                {sec("Season diagnostics")}
+                <div className="font-mono text-[0.58rem] text-white/40 leading-[1.6] break-all">
+                  <div>events: {events.length} | ctx: {events.filter(e => e.type === "seasonContext").length} | sum: {events.filter(e => e.type === "seasonSummary").length}</div>
+                  <div>apiSeasons: {apiSeasons.length} | built: {buildSeasons(events).length}</div>
+                  <div className="mt-1 text-white/25">— apiSeasons —</div>
+                  {apiSeasons.map((s, i) => (
+                    <div key={i}>{i}: {s.name} ({s.start ?? "no start"})</div>
+                  ))}
+                  <div className="mt-1 text-white/25">— built seasons —</div>
+                  {buildSeasons(events).map((s) => (
+                    <div key={s.number}>#{s.number} {s.startDate.toISOString().slice(0,10)} [{s.days.map(d=>d.events.length).join(",")}]</div>
+                  ))}
+                  <div className="mt-1 text-white/25">— ctx dates —</div>
+                  {events.filter(e => e.type === "seasonContext").map((e, i) => (
+                    <div key={i}>{e.date}</div>
+                  ))}
+                </div>
               </div>
             );
           })()}
