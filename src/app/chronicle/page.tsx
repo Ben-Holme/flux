@@ -368,7 +368,10 @@ export default function ChroniclePage() {
 
   const seasons = useMemo(() => buildSeasons(events), [events]);
   const currentSeason = seasons[seasons.length - 1] ?? null; // latest season — used for map effects
-  const viewingSeason = viewingSeasonIdx !== null ? (seasons.find((s) => s.number === viewingSeasonIdx) ?? currentSeason) : currentSeason;
+  // No fallback to currentSeason when a specific season is chosen: if that season
+  // has no events data yet, return null so the timeline shows "No events" rather
+  // than silently displaying current-season content under the wrong heading.
+  const viewingSeason = viewingSeasonIdx !== null ? (seasons.find((s) => s.number === viewingSeasonIdx) ?? null) : currentSeason;
   const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
   const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
   const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
