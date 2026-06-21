@@ -367,10 +367,6 @@ export default function ChroniclePage() {
   }, [events, liveLocs]);
 
   useEffect(() => {
-    setSheetExpanded(false);
-  }, [navStack]);
-
-  useEffect(() => {
     dbgRef.current = dbg;
     if (ambientRef.current) ambientRef.current.visible = dbg.ambient;
     if (dirLightRef.current) dirLightRef.current.visible = dbg.dirLight;
@@ -1225,13 +1221,9 @@ export default function ChroniclePage() {
     };
   }, [viewingSeason, currentNav]);
 
-  const prevNavLabel = navStack.length === 0
-    ? null
-    : navStack.length === 1
-      ? getSeasonLabel(displaySeasonNum)
-      : getBreadcrumbLabel(navStack[navStack.length - 2], players, items);
-
-  const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
+  const panelTitle = currentNav
+    ? getBreadcrumbLabel(currentNav, players, items)
+    : getSeasonLabel(displaySeasonNum);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--map-bg)]">
@@ -1543,30 +1535,10 @@ export default function ChroniclePage() {
               </select>
             </div>
           )}
-          {/* iOS-style nav bar */}
-          {navStack.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
-              <button
-                onClick={popNav}
-                style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-              >
-                <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
-                  {prevNavLabel}
-                </span>
-              </button>
-              <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
-                {navBarTitle}
-              </div>
-              <button
-                onClick={clearNav}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-          )}
+          {/* Context label */}
+          <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.72rem", letterSpacing: ".16em", textTransform: "uppercase", color: navStack.length > 0 ? GOLD : "rgba(255,255,255,0.35)", marginBottom: "14px" }}>
+            {panelTitle}
+          </div>
 
           {/* Tab bar */}
           {navStack.length > 0 && (
@@ -1649,15 +1621,6 @@ export default function ChroniclePage() {
             ) : (
               <div className="text-[0.8rem] text-white/30">Story Events</div>
             )}
-            {navStack.length > 0 && (
-              <button
-                onClick={(ev) => { ev.stopPropagation(); clearNav(); }}
-                className="shrink-0 cursor-pointer border-none bg-transparent py-1 pr-1 pl-4 text-[1.2rem] leading-none text-white/35"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            )}
           </div>
 
           {/* Expanded content */}
@@ -1684,31 +1647,6 @@ export default function ChroniclePage() {
                 </select>
               </div>
             )}
-            {/* iOS-style nav bar */}
-            {navStack.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
-                <button
-                  onClick={popNav}
-                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                >
-                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>
-                    {prevNavLabel}
-                  </span>
-                </button>
-                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
-                  {navBarTitle}
-                </div>
-                <button
-                  onClick={clearNav}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
             {/* Tab bar */}
             {navStack.length > 0 && (
               <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
