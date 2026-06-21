@@ -41,23 +41,24 @@ function buildSeason(number: number, startDate: Date, events: StoryEvent[]): Sea
   const rawBossDay = (sp.bossday ?? sp.boss_day ?? sp.bossDay) as string | undefined;
   const bossDay = rawBossDay ? Number(rawBossDay) : 5;
 
-  const endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-
+  // Build day map dynamically — seasons can exceed 7 days.
   const dayMap = new Map<number, StoryEvent[]>();
-  for (let d = 1; d <= 7; d++) dayMap.set(d, []);
-
   events
     .filter((e) => e.type !== "seasonContext" && e.type !== "seasonSummary")
     .forEach((e) => {
       const ms = parseEventDate(e.date).getTime() - startDate.getTime();
-      const dayNum = Math.max(1, Math.min(7, Math.floor(ms / 86_400_000) + 1));
+      const dayNum = Math.max(1, Math.floor(ms / 86_400_000) + 1);
+      if (!dayMap.has(dayNum)) dayMap.set(dayNum, []);
       dayMap.get(dayNum)!.push(e);
     });
 
-  const days: SeasonDay[] = Array.from({ length: 7 }, (_, i) => ({
+  const totalDays = dayMap.size > 0 ? Math.max(...dayMap.keys()) : 0;
+  const endDate = new Date(startDate.getTime() + totalDays * 24 * 60 * 60 * 1000);
+
+  const days: SeasonDay[] = Array.from({ length: totalDays }, (_, i) => ({
     dayNum: i + 1,
     date: new Date(startDate.getTime() + i * 86_400_000),
-    events: dayMap.get(i + 1)!,
+    events: dayMap.get(i + 1) ?? [],
   }));
 
   return { number, startDate, endDate, contextEvent, summaryEvent, bossDay, days };
@@ -100,20 +101,6 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
     if (orphan && !seasons[num - 1].summaryEvent) {
       seasons[num - 1] = { ...seasons[num - 1], summaryEvent: orphan };
     }
-  }
-
-  // The seasonContext at the boundary of season N announces the NEXT season (N+1),
-  // not the current one — the game posts it as a forward-looking prologue.
-  // Shift each season's contextEvent one position forward so season N displays the
-  // ctx that was posted at the boundary of season N-1 (which announced season N).
-  // Season 1 ends up with no contextEvent (its announcement predates tracked data).
-  const origCtxEvents = seasons.map((s) => s.contextEvent);
-  for (let i = 0; i < seasons.length; i++) {
-    const prevCtx = i > 0 ? origCtxEvents[i - 1] : undefined;
-    const sp = prevCtx ? parseSpecial(prevCtx.special) : {};
-    const rawBossDay = (sp.bossday ?? sp.boss_day ?? sp.bossDay) as string | undefined;
-    const bossDay = rawBossDay ? Number(rawBossDay) : 5;
-    seasons[i] = { ...seasons[i], contextEvent: prevCtx, bossDay };
   }
 
   return seasons;
