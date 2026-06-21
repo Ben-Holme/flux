@@ -74,32 +74,44 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
 
   if (ctxIndices.length === 0) {
     if (chrono.length === 0) return [];
-    const startDate = parseEventDate(chrono[0].date);
+    const firstReg = chrono.find(
+      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+    );
+    const startDate = parseEventDate((firstReg ?? chrono[0]).date);
     return [buildSeason(1, startDate, chrono)];
   }
 
-  const seasons = ctxIndices.map((ctxIdx, num) => {
-    const nextCtxIdx = ctxIndices[num + 1] ?? chrono.length;
-    const slice = chrono.slice(ctxIdx, nextCtxIdx);
-    const startDate = parseEventDate(chrono[ctxIdx].date);
-    return buildSeason(num + 1, startDate, slice);
+  // seasonContext marks the END of a season — it is posted after gameplay concludes.
+  // Season N holds all events from (after ctx[N-2]) up to and including ctx[N-1].
+  // A final slice after the last ctx is the current ongoing season (no ctx yet).
+  const slices: StoryEvent[][] = [];
+  for (let i = 0; i <= ctxIndices.length; i++) {
+    const from = i === 0 ? 0 : ctxIndices[i - 1] + 1;
+    const to = i < ctxIndices.length ? ctxIndices[i] + 1 : chrono.length;
+    if (to > from) slices.push(chrono.slice(from, to));
+  }
+
+  const seasons: Season[] = slices.map((slice, i) => {
+    // Use the first regular event as the season start date.
+    const firstReg = slice.find(
+      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+    );
+    const startDate = parseEventDate((firstReg ?? slice[slice.length - 1]).date);
+    return buildSeason(i + 1, startDate, slice);
   });
 
-  // A seasonSummary appearing before the first regular event in season N's slice
-  // was posted just after the new season opened and describes season N-1.
-  // Carry it back to the previous season if that season has no summary yet.
-  for (let num = 1; num < ctxIndices.length; num++) {
-    const ctxIdx = ctxIndices[num];
-    const nextCtxIdx = ctxIndices[num + 1] ?? chrono.length;
-    const slice = chrono.slice(ctxIdx, nextCtxIdx);
+  // A seasonSummary appearing before any regular events in season N's slice was
+  // posted just after the previous ctx and describes season N-1. Redistribute it.
+  for (let i = 1; i < seasons.length; i++) {
+    const slice = slices[i];
     const firstRegIdx = slice.findIndex(
       (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
     );
     const orphan = slice.find(
-      (e, i) => e.type === "seasonSummary" && (firstRegIdx < 0 || i < firstRegIdx),
+      (e, j) => e.type === "seasonSummary" && (firstRegIdx < 0 || j < firstRegIdx),
     );
-    if (orphan && !seasons[num - 1].summaryEvent) {
-      seasons[num - 1] = { ...seasons[num - 1], summaryEvent: orphan };
+    if (orphan && !seasons[i - 1].summaryEvent) {
+      seasons[i - 1] = { ...seasons[i - 1], summaryEvent: orphan };
     }
   }
 
