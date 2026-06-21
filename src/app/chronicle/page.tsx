@@ -99,7 +99,10 @@ function getBreadcrumbLabel(
     const raw = (players[entry.charId]?.name as string | undefined) ?? `#${entry.charId}`;
     return raw.split("#")[0] || `#${entry.charId}`;
   }
-  if (entry.kind === "item") return (items[entry.itemId] as string | undefined) ?? `#${entry.itemId}`;
+  if (entry.kind === "item") {
+    const raw = (items[entry.itemId] as string | undefined) ?? `#${entry.itemId}`;
+    return raw.split("#")[0] || raw;
+  }
   return "";
 }
 
@@ -154,7 +157,8 @@ function DetailPane({
     );
   }
   if (nav.kind === "item") {
-    const itemName = (items[nav.itemId] as string | undefined) ?? `#${nav.itemId}`;
+    const raw = (items[nav.itemId] as string | undefined) ?? `#${nav.itemId}`;
+    const itemName = raw.split("#")[0] || raw;
     return (
       <div style={{ padding: "8px 0" }}>
         <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", letterSpacing: ".15em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{itemName}</div>
