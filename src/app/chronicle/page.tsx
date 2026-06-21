@@ -84,6 +84,86 @@ function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number)
   return data[(iy * 512 + ix) * 4] / 255;
 }
 
+type NavEntry =
+  | { kind: "location"; locName: string }
+  | { kind: "character"; charId: number }
+  | { kind: "item"; itemId: string | number };
+
+function getBreadcrumbLabel(
+  entry: NavEntry,
+  players: Record<string | number, { name: string; [key: string]: unknown }>,
+  items: Record<string | number, string>,
+): string {
+  if (entry.kind === "location") return entry.locName;
+  if (entry.kind === "character") {
+    const raw = (players[entry.charId]?.name as string | undefined) ?? `#${entry.charId}`;
+    return raw.split("#")[0] || `#${entry.charId}`;
+  }
+  if (entry.kind === "item") return (items[entry.itemId] as string | undefined) ?? `#${entry.itemId}`;
+  return "";
+}
+
+function DetailPane({
+  nav,
+  liveLocs,
+  players,
+  items,
+}: {
+  nav: NavEntry;
+  liveLocs: LiveLoc[];
+  players: Record<string | number, { name: string; [key: string]: unknown }>;
+  items: Record<string | number, string>;
+}) {
+  const statStyle = { fontSize: "0.6rem", textTransform: "uppercase" as const, letterSpacing: ".12em", color: "rgba(255,255,255,0.28)", marginBottom: "3px" };
+  const valStyle = { fontSize: "0.82rem", color: "rgba(255,255,255,0.72)", textTransform: "capitalize" as const };
+
+  if (nav.kind === "location") {
+    const loc = liveLocs.find((l) => l.name === nav.locName);
+    return (
+      <div style={{ padding: "8px 0" }}>
+        {loc?.type && <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: ".14em", color: "rgba(255,255,255,0.25)", marginBottom: "6px" }}>{loc.type}</div>}
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", letterSpacing: ".15em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", marginBottom: "10px" }}>{nav.locName}</div>
+        {loc?.description && <p style={{ margin: "0 0 14px", fontSize: "0.78rem", lineHeight: 1.6, color: "rgba(255,255,255,0.5)" }}>{loc.description}</p>}
+        {loc != null && (
+          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+            <div><div style={statStyle}>Type</div><div style={valStyle}>{loc.type}</div></div>
+            <div>
+              <div style={statStyle}>Hostility</div>
+              <div style={valStyle}>{loc.hostility === 0 ? "Safe" : loc.hostility === 1 ? "Hostile" : loc.hostility === 2 ? "Guarded" : loc.hostility === 3 ? "Dangerous" : String(loc.hostility)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (nav.kind === "character") {
+    const player = players[nav.charId];
+    const rawName = (player?.name as string | undefined) ?? `#${nav.charId}`;
+    const parts = rawName.split("#").filter((p) => p && !p.startsWith("//"));
+    const name = parts[0] || rawName;
+    const house = parts[1] || null;
+    const cls = parts[2] || null;
+    return (
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", letterSpacing: ".15em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", marginBottom: "10px" }}>{name}</div>
+        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+          {house && <div><div style={statStyle}>House</div><div style={valStyle}>{house}</div></div>}
+          {cls && <div><div style={statStyle}>Class</div><div style={valStyle}>{cls}</div></div>}
+        </div>
+      </div>
+    );
+  }
+  if (nav.kind === "item") {
+    const itemName = (items[nav.itemId] as string | undefined) ?? `#${nav.itemId}`;
+    return (
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", letterSpacing: ".15em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{itemName}</div>
+      </div>
+    );
+  }
+  return null;
+}
+
 export default function ChroniclePage() {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -124,7 +204,6 @@ export default function ChroniclePage() {
   const sheetDragStartYRef = useRef(0);
   const sheetDraggedRef = useRef(false);
   const sheetExpandedRef = useRef(false);
-  const selectedIdxRef = useRef<number | null>(null);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
@@ -133,7 +212,8 @@ export default function ChroniclePage() {
   const locRingSvgRefs = useRef<Map<number, SVGSVGElement>>(new Map());
   const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [navStack, setNavStack] = useState<NavEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<"events" | "details">("events");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
@@ -283,7 +363,7 @@ export default function ChroniclePage() {
 
   useEffect(() => {
     setSheetExpanded(false);
-  }, [selectedIdx]);
+  }, [navStack]);
 
   useEffect(() => {
     dbgRef.current = dbg;
@@ -325,9 +405,6 @@ export default function ChroniclePage() {
   useEffect(() => {
     sheetExpandedRef.current = sheetExpanded;
   }, [sheetExpanded]);
-  useEffect(() => {
-    selectedIdxRef.current = selectedIdx;
-  }, [selectedIdx]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
     // Rank by radiusWorld: top 4 locations always visible at R_MAX; rest spread down to R_MIN+2
@@ -970,7 +1047,7 @@ export default function ChroniclePage() {
 
     if (!draggingRef.current) {
       // Tapping empty canvas deselects; location selection is handled by overlay onClick
-      setSelectedIdx(null);
+      setNavStack([]);
     }
     lastDragStateRef.current = draggingRef.current;
     draggingRef.current = false;
@@ -1031,7 +1108,6 @@ export default function ChroniclePage() {
     const delta = e.clientY - sheetDragStartYRef.current;
     const didDrag = sheetDraggedRef.current;
     const isExpanded = sheetExpandedRef.current;
-    const hasLoc = selectedIdxRef.current !== null;
 
     let newExpanded = isExpanded;
     if (didDrag) {
@@ -1071,24 +1147,70 @@ export default function ChroniclePage() {
   const displaySeasonNum = viewingSeasonIdx ?? apiSeasons.length;
   const currentApiSeason = apiSeasons[displaySeasonNum - 1] ?? null;
 
-  const selectedLoc: LiveLoc | null = selectedIdx !== null ? (liveLocs[selectedIdx] ?? null) : null;
+  const clearNav = useCallback(() => {
+    setNavStack([]);
+    setActiveTab("events");
+  }, []);
+
+  const handleCharClick = useCallback((charId: number) => {
+    setNavStack((prev) => [...prev, { kind: "character", charId }]);
+    setActiveTab("events");
+  }, []);
+
+  const handleItemClick = useCallback((itemId: string | number) => {
+    setNavStack((prev) => [...prev, { kind: "item", itemId }]);
+    setActiveTab("events");
+  }, []);
+
+  const handleLocClick = useCallback((locName: string) => {
+    const locIdx = liveLocs.findIndex((l) => l.name === locName);
+    setNavStack([{ kind: "location", locName }]);
+    setActiveTab("events");
+    if (locIdx !== -1) {
+      const loc = liveLocs[locIdx];
+      focusTargetRef.current = new THREE.Vector3(
+        Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
+        (locHeightsRef.current[locIdx] ?? 0) * dispScaleRef.current,
+        Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeZ)),
+      );
+      targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
+    }
+  }, [liveLocs]);
+
+  // Derive location visual selection from navStack (for ring, z-index, camera pan)
+  const navLocEntry = navStack.find((e) => e.kind === "location") as { kind: "location"; locName: string } | undefined;
+  const selectedIdx = navLocEntry ? liveLocs.findIndex((l) => l.name === navLocEntry.locName) : -1;
+  const selectedLoc: LiveLoc | null = selectedIdx >= 0 ? (liveLocs[selectedIdx] ?? null) : null;
+
+  const currentNav = navStack[navStack.length - 1] ?? null;
+
   const locEvents = selectedLoc && viewingSeason
     ? viewingSeason.days.flatMap((d) => d.events).filter((e) => e.location === selectedLoc.name)
     : [];
 
-  // When a location is selected, filter the season's day events to that location only
+  // Filter the season by all active nav entries (AND logic)
   const displaySeason = useMemo(() => {
-    if (!viewingSeason || !selectedLoc) return viewingSeason;
+    if (!viewingSeason || navStack.length === 0) return viewingSeason;
     return {
       ...viewingSeason,
       contextEvent: undefined,
       summaryEvent: undefined,
       days: viewingSeason.days.map((day) => ({
         ...day,
-        events: day.events.filter((e) => e.location === selectedLoc.name),
+        events: day.events.filter((e) => {
+          for (const entry of navStack) {
+            if (entry.kind === "location" && e.location !== entry.locName) return false;
+            if (entry.kind === "character") {
+              const char2 = e.char2 as number | undefined;
+              if (e.primary_char !== entry.charId && char2 !== entry.charId) return false;
+            }
+            if (entry.kind === "item" && String(e.item) !== String(entry.itemId)) return false;
+          }
+          return true;
+        }),
       })),
     };
-  }, [viewingSeason, selectedLoc]);
+  }, [viewingSeason, navStack]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--map-bg)]">
@@ -1126,7 +1248,8 @@ export default function ChroniclePage() {
             }}
             onClick={() => {
               if (lastDragStateRef.current) return;
-              setSelectedIdx(i);
+              setNavStack([{ kind: "location", locName: loc.name }]);
+              setActiveTab("events");
               focusTargetRef.current = new THREE.Vector3(
                 Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
                 (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
@@ -1394,37 +1517,74 @@ export default function ChroniclePage() {
               </select>
             </div>
           )}
-          {selectedLoc && (
-            <>
+          {/* Breadcrumb */}
+          {navStack.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", marginBottom: "10px" }}>
               <button
-                onClick={() => setSelectedIdx(null)}
-                className="absolute top-5 right-5 cursor-pointer border-none bg-transparent px-2 py-1 text-[1.2rem] leading-none text-white/35"
-                aria-label="Close"
+                onClick={clearNav}
+                style={{ background: "none", border: "none", padding: "2px 6px", borderRadius: "4px", fontSize: "0.62rem", letterSpacing: ".1em", color: "rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "var(--font-heading)", textTransform: "uppercase" }}
+              >
+                {getSeasonLabel(displaySeasonNum)}
+              </button>
+              {navStack.map((entry, j) => (
+                <span key={j} style={{ display: "contents" }}>
+                  <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.55rem" }}>▸</span>
+                  <button
+                    onClick={() => { setNavStack(navStack.slice(0, j + 1)); setActiveTab("events"); }}
+                    style={{
+                      background: j === navStack.length - 1 ? "rgba(200,146,58,0.1)" : "none",
+                      border: j === navStack.length - 1 ? "1px solid rgba(200,146,58,0.25)" : "none",
+                      padding: "2px 7px", borderRadius: "4px", fontSize: "0.62rem", letterSpacing: ".1em",
+                      color: j === navStack.length - 1 ? "rgba(200,146,58,0.9)" : "rgba(255,255,255,0.35)",
+                      cursor: "pointer", fontFamily: "var(--font-heading)", textTransform: "uppercase",
+                    }}
+                  >
+                    {getBreadcrumbLabel(entry, players, items)}
+                  </button>
+                </span>
+              ))}
+              <button
+                onClick={clearNav}
+                style={{ marginLeft: "auto", background: "none", border: "none", padding: "2px 8px", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1, color: "rgba(255,255,255,0.3)" }}
+                aria-label="Clear selection"
               >
                 ×
               </button>
-              <div
-                className="font-heading mb-1 text-[1.1rem] leading-[1.3] tracking-[0.15em] uppercase"
-                style={{
-                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : LOC_NAME_FG,
-                  textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-                }}
-              >
-                {selectedLoc.name}
-              </div>
-              {selectedLoc.description && (
-                <p className="mb-3 text-[0.78rem] leading-snug text-white/45">
-                  {selectedLoc.description}
-                </p>
-              )}
-              <div className="mb-4 text-[0.62rem] tracking-[0.1em] text-white/25 uppercase">
-                {locEvents.length} event{locEvents.length !== 1 ? "s" : ""} at this location
-              </div>
-              <div className="mb-2 h-px bg-white/6" />
-            </>
+            </div>
           )}
-          {displaySeason ? (
-            <SeasonTimeline season={displaySeason} players={players} items={items} />
+
+          {/* Tab bar */}
+          {navStack.length > 0 && (
+            <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
+              {(["events", "details"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    background: "none", border: "none", padding: "6px 12px", cursor: "pointer",
+                    fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".12em",
+                    fontFamily: "var(--font-heading)",
+                    color: activeTab === tab ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)",
+                    borderBottom: activeTab === tab ? `2px solid ${GOLD}` : "2px solid transparent",
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "details" && currentNav ? (
+            <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+          ) : displaySeason ? (
+            <SeasonTimeline
+              season={displaySeason}
+              players={players}
+              items={items}
+              onCharClick={handleCharClick}
+              onItemClick={handleItemClick}
+              onLocClick={handleLocClick}
+            />
           ) : eventsLoading ? (
             <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
           ) : (
@@ -1461,15 +1621,9 @@ export default function ChroniclePage() {
             style={{ cursor: sheetExpanded ? "default" : "pointer" }}
             onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
           >
-            {selectedLoc ? (
-              <div
-                className="font-heading text-[1rem] leading-[1.3] tracking-[0.15em] uppercase"
-                style={{
-                  color: eventLocNames.has(selectedLoc.name) ? "var(--gold)" : LOC_NAME_FG,
-                  textShadow: eventLocNames.has(selectedLoc.name) ? `${GOLD} 0 0 8px` : "none",
-                }}
-              >
-                {selectedLoc.name}
+            {currentNav ? (
+              <div className="font-heading text-[0.9rem] tracking-[0.12em] uppercase" style={{ color: GOLD }}>
+                {getBreadcrumbLabel(currentNav, players, items)}
               </div>
             ) : viewingSeason ? (
               <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
@@ -1478,9 +1632,9 @@ export default function ChroniclePage() {
             ) : (
               <div className="text-[0.8rem] text-white/30">Story Events</div>
             )}
-            {selectedLoc && (
+            {navStack.length > 0 && (
               <button
-                onClick={(ev) => { ev.stopPropagation(); setSelectedIdx(null); }}
+                onClick={(ev) => { ev.stopPropagation(); clearNav(); }}
                 className="shrink-0 cursor-pointer border-none bg-transparent py-1 pr-1 pl-4 text-[1.2rem] leading-none text-white/35"
                 aria-label="Close"
               >
@@ -1513,19 +1667,67 @@ export default function ChroniclePage() {
                 </select>
               </div>
             )}
-            {selectedLoc && (
-              <>
-                {selectedLoc.description && (
-                  <p className="mb-2 text-[0.78rem] text-white/45">{selectedLoc.description}</p>
-                )}
-                <div className="mb-4 text-[0.62rem] tracking-[0.1em] text-white/25 uppercase">
-                  {locEvents.length} event{locEvents.length !== 1 ? "s" : ""} at this location
-                </div>
-                <div className="mb-2 h-px bg-white/6" />
-              </>
+            {/* Breadcrumb */}
+            {navStack.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", marginBottom: "10px" }}>
+                <button
+                  onClick={clearNav}
+                  style={{ background: "none", border: "none", padding: "2px 6px", borderRadius: "4px", fontSize: "0.62rem", letterSpacing: ".1em", color: "rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "var(--font-heading)", textTransform: "uppercase" }}
+                >
+                  {getSeasonLabel(displaySeasonNum)}
+                </button>
+                {navStack.map((entry, j) => (
+                  <span key={j} style={{ display: "contents" }}>
+                    <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "0.55rem" }}>▸</span>
+                    <button
+                      onClick={() => { setNavStack(navStack.slice(0, j + 1)); setActiveTab("events"); }}
+                      style={{
+                        background: j === navStack.length - 1 ? "rgba(200,146,58,0.1)" : "none",
+                        border: j === navStack.length - 1 ? "1px solid rgba(200,146,58,0.25)" : "none",
+                        padding: "2px 7px", borderRadius: "4px", fontSize: "0.62rem", letterSpacing: ".1em",
+                        color: j === navStack.length - 1 ? "rgba(200,146,58,0.9)" : "rgba(255,255,255,0.35)",
+                        cursor: "pointer", fontFamily: "var(--font-heading)", textTransform: "uppercase",
+                      }}
+                    >
+                      {getBreadcrumbLabel(entry, players, items)}
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
-            {displaySeason ? (
-              <SeasonTimeline season={displaySeason} players={players} items={items} />
+
+            {/* Tab bar */}
+            {navStack.length > 0 && (
+              <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
+                {(["events", "details"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      background: "none", border: "none", padding: "6px 12px", cursor: "pointer",
+                      fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".12em",
+                      fontFamily: "var(--font-heading)",
+                      color: activeTab === tab ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)",
+                      borderBottom: activeTab === tab ? `2px solid ${GOLD}` : "2px solid transparent",
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "details" && currentNav ? (
+              <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+            ) : displaySeason ? (
+              <SeasonTimeline
+                season={displaySeason}
+                players={players}
+                items={items}
+                onCharClick={handleCharClick}
+                onItemClick={handleItemClick}
+                onLocClick={handleLocClick}
+              />
             ) : eventsLoading ? (
               <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
             ) : (

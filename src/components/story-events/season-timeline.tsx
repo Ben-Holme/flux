@@ -103,9 +103,12 @@ interface Props {
   season: Season;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
   items: Record<string | number, string>;
+  onCharClick?: (charId: number) => void;
+  onItemClick?: (itemId: string | number) => void;
+  onLocClick?: (locName: string) => void;
 }
 
-export default function SeasonTimeline({ season, players, items }: Props) {
+export default function SeasonTimeline({ season, players, items, onCharClick, onItemClick, onLocClick }: Props) {
   return (
     <div>
       <SeasonHeader season={season} />
@@ -132,6 +135,9 @@ export default function SeasonTimeline({ season, players, items }: Props) {
                 event={event}
                 players={players}
                 items={items}
+                onCharClick={onCharClick}
+                onItemClick={onItemClick}
+                onLocClick={onLocClick}
               />
             ))
           )}

@@ -12,6 +12,9 @@ interface Props {
   event: StoryEvent;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
   items: Record<string | number, string>;
+  onCharClick?: (charId: number) => void;
+  onItemClick?: (itemId: string | number) => void;
+  onLocClick?: (locName: string) => void;
 }
 
 function SpecialDisclosure({
@@ -56,12 +59,14 @@ function SpecialDisclosure({
   );
 }
 
-export default function EventCard({ event, players, items }: Props) {
+export default function EventCard({ event, players, items, onCharClick, onItemClick, onLocClick }: Props) {
   const displayType = (event.type === "seasonContext" || event.type === "seasonSummary") ? "season" : event.type;
   const cfg    = EVENT_TYPES[displayType] || { label: event.type, symbol: "○", color: "#888" };
   const sp     = parseSpecial(event.special);
   const player = players[event.primary_char] ?? { name: `#${event.primary_char}` };
   const itemName = event.item ? (items[event.item] ?? `item #${event.item}`) : null;
+  const char2Id = event.char2 != null && event.char2 !== 0 ? Number(event.char2) : undefined;
+  const char2 = char2Id != null ? (players[char2Id] ?? { name: `#${char2Id}` }) : null;
 
   const hasBody = (
     event.type === "trip" ||
@@ -70,7 +75,7 @@ export default function EventCard({ event, players, items }: Props) {
     event.type === "introStory" ||
     (event.type === "tome"     && (sp.type || sp.lvl)) ||
     (event.type === "ench"     && (sp.type || sp.lvl)) ||
-    (event.type === "owch"     && (itemName || (sp.context && sp.context !== "0"))) ||
+    (event.type === "owch"     && (itemName || (sp.context && sp.context !== "0") || char2 != null)) ||
     (event.type === "minigame" && sp.skill)
   );
 
@@ -88,7 +93,10 @@ export default function EventCard({ event, players, items }: Props) {
         <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.68rem", letterSpacing: ".18em", textTransform: "uppercase", color: cfg.color }}>
           {event.type}
         </span>
-        <span style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem", marginLeft: "auto" }}>{event.location}</span>
+        <span
+          style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem", marginLeft: "auto", cursor: onLocClick && event.location ? "pointer" : "default" }}
+          onClick={() => event.location && onLocClick?.(event.location)}
+        >{event.location}</span>
         <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.72rem" }}>·</span>
         <span style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem" }}>{formatDate(event.date)}</span>
         {(event.story_points ?? 0) > 0 && (
@@ -101,7 +109,10 @@ export default function EventCard({ event, players, items }: Props) {
 
       {/* Player */}
       {event.primary_char !== 0 && (
-        <div style={{ padding: "10px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div
+          style={{ padding: "10px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onCharClick ? "pointer" : "default" }}
+          onClick={() => onCharClick?.(event.primary_char)}
+        >
           <PlayerDisplay player={player} />
         </div>
       )}
@@ -166,11 +177,27 @@ export default function EventCard({ event, players, items }: Props) {
 
           {event.type === "owch" && (
             <div>
-              {itemName && <ItemDisplay itemStr={itemName as string} />}
+              {itemName && (
+                <div
+                  style={{ display: "inline-block", cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
+                >
+                  <ItemDisplay itemStr={itemName as string} />
+                </div>
+              )}
               {sp.context && sp.context !== "0" && (
                 <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", textTransform: "capitalize" }}>
                   {sp.context as string}
                 </p>
+              )}
+              {char2 && (
+                <div
+                  style={{ marginTop: "10px", cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
+                  onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
+                >
+                  <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: ".1em", color: "rgba(255,255,255,0.18)", marginBottom: "4px" }}>vs.</div>
+                  <PlayerDisplay player={char2} />
+                </div>
               )}
             </div>
           )}
