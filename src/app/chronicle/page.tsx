@@ -1510,168 +1510,23 @@ export default function ChroniclePage() {
 
       {/* Desktop side panel — always visible, shows season timeline */}
       {!isMobile && (
-        <div className="absolute top-0 right-0 bottom-0 z-20 w-[min(340px,90vw)] overflow-y-auto border-l border-white/7 bg-[var(--panel-bg)] px-4 pt-20 pb-8 backdrop-blur-lg">
-          {/* Season selector */}
-          {apiSeasons.length > 0 && (
-            <div className="mb-4">
-              <select
-                value={viewingSeasonIdx ?? apiSeasons.length}
-                onChange={(e) => {
-                  const num = Number(e.target.value);
-                  setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                  setNavStack([]);
-                  setSlideDir("back");
-                }}
-                className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-              >
-                <option value={0}>All seasons</option>
-                {apiSeasons.map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {/* iOS-style nav bar */}
-          {navStack.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
-              <button
-                onClick={popNav}
-                style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-              >
-                <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-              </button>
-              <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
-                {navBarTitle}
-              </div>
-              <button
-                onClick={clearNav}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Tab bar */}
-          {navStack.length > 0 && (
-            <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
-              {(["events", "details"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    background: "none", border: "none", padding: "6px 12px", cursor: "pointer",
-                    fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".12em",
-                    fontFamily: "var(--font-heading)",
-                    color: activeTab === tab ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)",
-                    borderBottom: activeTab === tab ? `2px solid ${GOLD}` : "2px solid transparent",
-                  }}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
-            {activeTab === "details" && currentNav ? (
-              <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
-            ) : viewingSeasonIdx === 0 ? (
-              seasons.length > 0 ? [...seasons].reverse().map((season) => {
-                const fs = filterSeasonByNav(season, currentNav);
-                if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
-                return (
-                  <div key={season.number} style={{ marginBottom: "32px" }}>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                      {getSeasonLabel(season.number + seasonOffset)}
-                    </div>
-                    <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
-                  </div>
-                );
-              }) : eventsLoading ? (
-                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-              ) : (
-                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-              )
-            ) : displaySeason ? (
-              <SeasonTimeline
-                season={displaySeason}
-                players={players}
-                items={items}
-                onCharClick={handleCharClick}
-                onItemClick={handleItemClick}
-                onLocClick={handleLocClick}
-              />
-            ) : eventsLoading ? (
-              <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-            ) : (
-              <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Mobile bottom sheet — season timeline, always draggable */}
-      {isMobile && (
-        <div
-          ref={sheetElRef}
-          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
-          style={{
-            transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
-            transition: "transform 0.3s ease",
-          }}
-        >
-          {/* Drag handle */}
-          <div
-            className="flex shrink-0 cursor-pointer touch-none justify-center pt-3 pb-2"
-            onPointerDown={onSheetHandlePointerDown}
-            onPointerMove={onSheetHandlePointerMove}
-            onPointerUp={onSheetHandlePointerUp}
-            onPointerCancel={onSheetHandlePointerCancel}
-            onClick={() => !sheetDraggedRef.current && setSheetExpanded((v) => !v)}
-          >
-            <div className="h-1 w-9 rounded-sm bg-white/25" />
-          </div>
-
-          {/* Peek header */}
-          <div
-            className="flex shrink-0 items-center justify-between px-5 pt-1 pb-3"
-            style={{ cursor: sheetExpanded ? "default" : "pointer" }}
-            onClick={() => !sheetDraggedRef.current && !sheetExpanded && setSheetExpanded(true)}
-          >
-            {currentNav ? (
-              <div className="font-heading text-[0.9rem] tracking-[0.12em] uppercase" style={{ color: GOLD }}>
-                {getBreadcrumbLabel(currentNav, players, items)}
-              </div>
-            ) : viewingSeason ? (
-              <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                {getSeasonLabel(displaySeasonNum)}
-              </div>
-            ) : (
-              <div className="text-[0.8rem] text-white/30">Story Events</div>
-            )}
-          </div>
-
-          {/* Expanded content */}
-          <div
-            className="flex-1 overflow-y-auto px-4 pb-8"
-            style={{ opacity: sheetExpanded ? 1 : 0, transition: "opacity 0.15s ease" }}
-          >
+        <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)] backdrop-blur-lg">
+          {/* Sticky header */}
+          <div className="shrink-0 px-4 pt-20 pb-2">
             {/* Season selector */}
             {apiSeasons.length > 0 && (
-              <div className="mb-3">
+              <div className="mb-4">
                 <select
                   value={viewingSeasonIdx ?? apiSeasons.length}
                   onChange={(e) => {
                     const num = Number(e.target.value);
                     setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                    setNavStack([]);
+                    setSlideDir("back");
                   }}
                   className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
                 >
+                  <option value={0}>All seasons</option>
                   {apiSeasons.map((_, i) => (
                     <option key={i + 1} value={i + 1}>
                       {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
@@ -1702,10 +1557,9 @@ export default function ChroniclePage() {
                 </button>
               </div>
             )}
-
             {/* Tab bar */}
             {navStack.length > 0 && (
-              <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
+              <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 {(["events", "details"] as const).map((tab) => (
                   <button
                     key={tab}
@@ -1723,7 +1577,166 @@ export default function ChroniclePage() {
                 ))}
               </div>
             )}
+          </div>
 
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
+            <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
+              {activeTab === "details" && currentNav ? (
+                <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+              ) : viewingSeasonIdx === 0 ? (
+                seasons.length > 0 ? [...seasons].reverse().map((season) => {
+                  const fs = filterSeasonByNav(season, currentNav);
+                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
+                  return (
+                    <div key={season.number} style={{ marginBottom: "32px" }}>
+                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                        {getSeasonLabel(season.number + seasonOffset)}
+                      </div>
+                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                    </div>
+                  );
+                }) : eventsLoading ? (
+                  <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                ) : (
+                  <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                )
+              ) : displaySeason ? (
+                <SeasonTimeline
+                  season={displaySeason}
+                  players={players}
+                  items={items}
+                  onCharClick={handleCharClick}
+                  onItemClick={handleItemClick}
+                  onLocClick={handleLocClick}
+                />
+              ) : eventsLoading ? (
+                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+              ) : (
+                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile bottom sheet — season timeline, always draggable */}
+      {isMobile && (
+        <div
+          ref={sheetElRef}
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
+          style={{
+            transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
+            transition: "transform 0.3s ease",
+          }}
+        >
+          {/* Drag handle */}
+          <div
+            className="flex shrink-0 cursor-pointer touch-none justify-center pt-3 pb-2"
+            onPointerDown={onSheetHandlePointerDown}
+            onPointerMove={onSheetHandlePointerMove}
+            onPointerUp={onSheetHandlePointerUp}
+            onPointerCancel={onSheetHandlePointerCancel}
+            onClick={() => !sheetDraggedRef.current && setSheetExpanded((v) => !v)}
+          >
+            <div className="h-1 w-9 rounded-sm bg-white/25" />
+          </div>
+
+          {/* Peek header — only visible when collapsed */}
+          {!sheetExpanded && (
+            <div
+              className="flex shrink-0 cursor-pointer items-center px-5 pt-1 pb-3"
+              onClick={() => !sheetDraggedRef.current && setSheetExpanded(true)}
+            >
+              {currentNav ? (
+                <div className="font-heading text-[0.9rem] tracking-[0.12em] uppercase" style={{ color: GOLD }}>
+                  {getBreadcrumbLabel(currentNav, players, items)}
+                </div>
+              ) : viewingSeason ? (
+                <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
+                  {getSeasonLabel(displaySeasonNum)}
+                </div>
+              ) : (
+                <div className="text-[0.8rem] text-white/30">Story Events</div>
+              )}
+            </div>
+          )}
+
+          {/* Sticky controls — season selector, iOS nav, tabs */}
+          {sheetExpanded && (
+            <div className="shrink-0 border-b border-white/5 px-4 pt-2 pb-0">
+              {/* Season selector */}
+              {apiSeasons.length > 0 && (
+                <div className="mb-3">
+                  <select
+                    value={viewingSeasonIdx ?? apiSeasons.length}
+                    onChange={(e) => {
+                      const num = Number(e.target.value);
+                      setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                      setNavStack([]);
+                      setSlideDir("back");
+                    }}
+                    className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
+                  >
+                    <option value={0}>All seasons</option>
+                    {apiSeasons.map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {/* iOS-style nav bar */}
+              {navStack.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "32px" }}>
+                  <button
+                    onClick={popNav}
+                    style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
+                  >
+                    <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
+                    <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
+                  </button>
+                  <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+                    {navBarTitle}
+                  </div>
+                  <button
+                    onClick={clearNav}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {/* Tab bar */}
+              {navStack.length > 0 && (
+                <div style={{ display: "flex" }}>
+                  {(["events", "details"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      style={{
+                        background: "none", border: "none", padding: "6px 12px", cursor: "pointer",
+                        fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".12em",
+                        fontFamily: "var(--font-heading)",
+                        color: activeTab === tab ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)",
+                        borderBottom: activeTab === tab ? `2px solid ${GOLD}` : "2px solid transparent",
+                      }}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Scrollable content */}
+          <div
+            className="flex-1 overflow-y-auto px-4 pt-3 pb-8"
+            style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
+          >
             <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
