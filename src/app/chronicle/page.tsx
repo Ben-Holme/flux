@@ -5,6 +5,7 @@ import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
 import { buildSeasons, getCurrentSeason } from "@/components/story-events/season-utils";
+import type { Season } from "@/components/story-events/season-utils";
 import { buildLookup } from "@/components/story-events/utils";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -166,6 +167,27 @@ function DetailPane({
     );
   }
   return null;
+}
+
+function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
+  if (!nav) return season;
+  return {
+    ...season,
+    contextEvent: undefined,
+    summaryEvent: undefined,
+    days: season.days.map((day) => ({
+      ...day,
+      events: day.events.filter((e) => {
+        if (nav.kind === "location") return e.location === nav.locName;
+        if (nav.kind === "character") {
+          const char2 = e.char2 as number | undefined;
+          return e.primary_char === nav.charId || char2 === nav.charId;
+        }
+        if (nav.kind === "item") return String(e.item) === String(nav.itemId);
+        return true;
+      }),
+    })),
+  };
 }
 
 export default function ChroniclePage() {
@@ -1199,31 +1221,18 @@ export default function ChroniclePage() {
     e.kind === "location" ? `L:${e.locName}` : e.kind === "character" ? `C:${e.charId}` : `I:${String(e.itemId)}`
   ).join(">") || "root";
 
-  // Filter season by the topmost nav entry only
-  const displaySeason = useMemo(() => {
-    if (!viewingSeason || !currentNav) return viewingSeason;
-    return {
-      ...viewingSeason,
-      contextEvent: undefined,
-      summaryEvent: undefined,
-      days: viewingSeason.days.map((day) => ({
-        ...day,
-        events: day.events.filter((e) => {
-          if (currentNav.kind === "location") return e.location === currentNav.locName;
-          if (currentNav.kind === "character") {
-            const char2 = e.char2 as number | undefined;
-            return e.primary_char === currentNav.charId || char2 === currentNav.charId;
-          }
-          if (currentNav.kind === "item") return String(e.item) === String(currentNav.itemId);
-          return true;
-        }),
-      })),
-    };
-  }, [viewingSeason, currentNav]);
+  const displaySeason = useMemo(
+    () => (viewingSeason ? filterSeasonByNav(viewingSeason, currentNav) : null),
+    [viewingSeason, currentNav],
+  );
 
-  const panelTitle = currentNav
-    ? getBreadcrumbLabel(currentNav, players, items)
-    : getSeasonLabel(displaySeasonNum);
+  const prevNavLabel = navStack.length === 0
+    ? null
+    : navStack.length === 1
+      ? (viewingSeasonIdx === 0 ? "All seasons" : getSeasonLabel(displaySeasonNum))
+      : getBreadcrumbLabel(navStack[navStack.length - 2], players, items);
+
+  const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--map-bg)]">
@@ -1481,20 +1490,6 @@ export default function ChroniclePage() {
           })()}
       </div>
 
-      {/* Header overlay */}
-      <div className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-gradient-to-b from-black/70 to-transparent px-6 pt-5 pb-4">
-        {currentApiSeason && (
-          <div className="font-heading text-[0.8rem] tracking-[0.2em] uppercase text-white/50">
-            {currentApiSeason.name}
-          </div>
-        )}
-        <div className="mt-1 text-[0.72rem] tracking-[0.05em] text-white/30">
-          {eventsLoading
-            ? "Loading events…"
-            : `${seasonEvents.length} events · ${eventLocNames.size} locations visited`}
-        </div>
-      </div>
-
       {/* Legend */}
       <div className="pointer-events-none absolute bottom-6 left-6 z-10 flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
@@ -1524,9 +1519,12 @@ export default function ChroniclePage() {
                 onChange={(e) => {
                   const num = Number(e.target.value);
                   setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                  setNavStack([]);
+                  setSlideDir("back");
                 }}
                 className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
               >
+                <option value={0}>All seasons</option>
                 {apiSeasons.map((_, i) => (
                   <option key={i + 1} value={i + 1}>
                     {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
@@ -1535,10 +1533,28 @@ export default function ChroniclePage() {
               </select>
             </div>
           )}
-          {/* Context label */}
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.72rem", letterSpacing: ".16em", textTransform: "uppercase", color: navStack.length > 0 ? GOLD : "rgba(255,255,255,0.35)", marginBottom: "14px" }}>
-            {panelTitle}
-          </div>
+          {/* iOS-style nav bar */}
+          {navStack.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
+              <button
+                onClick={popNav}
+                style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
+              >
+                <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
+              </button>
+              <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+                {navBarTitle}
+              </div>
+              <button
+                onClick={clearNav}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* Tab bar */}
           {navStack.length > 0 && (
@@ -1564,6 +1580,23 @@ export default function ChroniclePage() {
           <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
             {activeTab === "details" && currentNav ? (
               <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+            ) : viewingSeasonIdx === 0 ? (
+              seasons.length > 0 ? [...seasons].reverse().map((season) => {
+                const fs = filterSeasonByNav(season, currentNav);
+                if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
+                return (
+                  <div key={season.number} style={{ marginBottom: "32px" }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                      {getSeasonLabel(season.number + seasonOffset)}
+                    </div>
+                    <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                  </div>
+                );
+              }) : eventsLoading ? (
+                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+              ) : (
+                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+              )
             ) : displaySeason ? (
               <SeasonTimeline
                 season={displaySeason}
@@ -1647,6 +1680,29 @@ export default function ChroniclePage() {
                 </select>
               </div>
             )}
+            {/* iOS-style nav bar */}
+            {navStack.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
+                <button
+                  onClick={popNav}
+                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
+                >
+                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
+                </button>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+                  {navBarTitle}
+                </div>
+                <button
+                  onClick={clearNav}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             {/* Tab bar */}
             {navStack.length > 0 && (
               <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: "12px" }}>
@@ -1671,6 +1727,23 @@ export default function ChroniclePage() {
             <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+              ) : viewingSeasonIdx === 0 ? (
+                seasons.length > 0 ? [...seasons].reverse().map((season) => {
+                  const fs = filterSeasonByNav(season, currentNav);
+                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
+                  return (
+                    <div key={season.number} style={{ marginBottom: "32px" }}>
+                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                        {getSeasonLabel(season.number + seasonOffset)}
+                      </div>
+                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                    </div>
+                  );
+                }) : eventsLoading ? (
+                  <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                ) : (
+                  <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                )
               ) : displaySeason ? (
                 <SeasonTimeline
                   season={displaySeason}
