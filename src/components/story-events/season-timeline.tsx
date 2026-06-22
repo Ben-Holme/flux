@@ -113,7 +113,7 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
     <div>
       <SeasonHeader season={season} />
 
-      {season.days.map((day) => (
+      {[...season.days].reverse().map((day) => (
         <div key={day.dayNum}>
           <DayDivider
             dayNum={day.dayNum}
@@ -129,7 +129,7 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
               No events
             </div>
           ) : (
-            day.events.map((event, i) => (
+            [...day.events].reverse().map((event, i) => (
               <EventCard
                 key={(event.id as string) ?? `${day.dayNum}-${i}`}
                 event={event}
