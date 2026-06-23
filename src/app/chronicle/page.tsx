@@ -816,7 +816,15 @@ export default function ChroniclePage() {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
           const revealAt = revealAtRef.current[i] ?? R_MAX;
-          const locOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
+          const zoomOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
+          // Fade locations that are far from the camera orbit target
+          const dx = loc.threeX - targetRef.current.x;
+          const dz = loc.threeZ - targetRef.current.z;
+          const distFromTarget = Math.sqrt(dx * dx + dz * dz);
+          const visR = radiusRef.current * 0.55;
+          const fadeW = Math.max(2.5, visR * 0.4);
+          const distOpacity = Math.max(0, Math.min(1, (visR - distFromTarget) / fadeW));
+          const locOpacity = zoomOpacity * distOpacity;
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
           const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
