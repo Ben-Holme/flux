@@ -430,14 +430,19 @@ export default function ChroniclePage() {
   }, [sheetExpanded]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
-    // Rank by radiusWorld: top 4 locations always visible at R_MAX; rest spread down to R_MIN+2
-    const K = 4;
+    // Rank by radiusWorld: top 3 largest get revealAt above R_MAX so they're fully
+    // opaque at maximum zoom-out; the rest spread linearly down to R_MIN+2
+    const K = 3;
     const sorted = liveLocs.map((l, i) => ({ i, r: l.radiusWorld })).sort((a, b) => a.r - b.r);
     const N = sorted.length;
     const out = new Array(N).fill(R_MIN + 2);
     sorted.forEach(({ i }, rank) => {
-      const t = N > K ? Math.min(1, rank / (N - K)) : 1;
-      out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+      if (rank >= N - K) {
+        out[i] = R_MAX + 3; // fully visible at max zoom-out
+      } else {
+        const t = N > K ? rank / (N - K) : 0;
+        out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+      }
     });
     revealAtRef.current = out;
     if (hmDataRef.current)
@@ -816,7 +821,11 @@ export default function ChroniclePage() {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
           const revealAt = revealAtRef.current[i] ?? R_MAX;
-          const zoomOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
+          const zoomOutOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
+          // Large-radius locations fade out when zoomed in close (you're "inside" their area)
+          const fadeOutAt = Math.max(0, (loc.radiusWorld - 1.0) * 5);
+          const zoomInOpacity = Math.max(0, Math.min(1, (radiusRef.current - fadeOutAt) / 3));
+          const zoomOpacity = zoomOutOpacity * zoomInOpacity;
           // Fade locations that are far from the camera orbit target
           const dx = loc.threeX - targetRef.current.x;
           const dz = loc.threeZ - targetRef.current.z;
