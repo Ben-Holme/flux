@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/cn";
 import EventCard from "./event-card";
 import { parseSpecial } from "./utils";
 import Stat from "./stat";
@@ -18,28 +19,20 @@ function SeasonHeader({ season }: { season: Season }) {
   const stats = Object.entries(sp).filter(([k, v]) => k !== "seasoncontext" && v !== true);
 
   return (
-    <div style={{
-      background: "rgba(0,0,0,0.5)",
-      backdropFilter: "blur(14px)",
-      borderRadius: "8px",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderLeft: "3px solid #f4a86a",
-      marginBottom: "24px",
-      padding: "18px 20px",
-    }}>
-      <div style={{
-        fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".18em",
-        color: "#f4a86a", marginBottom: "10px",
-      }}>
+    <div
+      className="mb-6 rounded-lg border border-white/[0.08] bg-black/50 px-5 py-[18px] backdrop-blur-[14px]"
+      style={{ borderLeft: "3px solid #f4a86a" }}
+    >
+      <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-[#f4a86a]">
         ◇ Season {season.number} · {fmtDate(season.startDate)} – {fmtDate(season.endDate)}
       </div>
       {sp.seasoncontext && (
-        <p style={{ margin: "0 0 14px", lineHeight: 1.75, color: "rgba(255,255,255,0.82)" }}>
+        <p className="mb-3.5 leading-[1.75] text-white/[0.82]">
           {sp.seasoncontext as string}
         </p>
       )}
       {stats.length > 0 && (
-        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex flex-wrap gap-5 border-t border-white/[0.06] pt-3">
           {stats.map(([k, v]) => <Stat key={k} label={k} value={v as string} />)}
         </div>
       )}
@@ -51,50 +44,35 @@ function SeasonFooter({ event }: { event: StoryEvent }) {
   const sp = parseSpecial(event.special);
   if (!sp.beginning && !sp.middle && !sp.end) return null;
   return (
-    <div style={{
-      background: "rgba(0,0,0,0.4)",
-      backdropFilter: "blur(14px)",
-      borderRadius: "8px",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderLeft: "3px solid #f4a86a",
-      marginTop: "8px",
-      padding: "16px 20px",
-    }}>
-      <div style={{
-        fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".18em",
-        color: "rgba(255,255,255,0.28)", marginBottom: "12px",
-      }}>
+    <div
+      className="mt-2 rounded-lg border border-white/[0.06] bg-black/40 px-5 py-4 backdrop-blur-[14px]"
+      style={{ borderLeft: "3px solid #f4a86a" }}
+    >
+      <div className="mb-3 text-[0.6rem] uppercase tracking-[0.18em] text-white/[0.28]">
         ◇ Season Summary
       </div>
-      {sp.beginning && <p style={{ margin: "0 0 12px", lineHeight: 1.75, color: "rgba(255,255,255,0.72)" }}>{sp.beginning as string}</p>}
-      {sp.middle    && <p style={{ margin: "0 0 12px", lineHeight: 1.75, color: "rgba(255,255,255,0.72)" }}>{sp.middle as string}</p>}
-      {sp.end       && <p style={{ margin: 0, lineHeight: 1.75, color: "rgba(255,255,255,0.72)" }}>{sp.end as string}</p>}
+      {sp.beginning && <p className="mb-3 leading-[1.75] text-white/70">{sp.beginning as string}</p>}
+      {sp.middle    && <p className="mb-3 leading-[1.75] text-white/70">{sp.middle as string}</p>}
+      {sp.end       && <p className="leading-[1.75] text-white/70">{sp.end as string}</p>}
     </div>
   );
 }
 
 function DayDivider({ dayNum, date, isBossDay }: { dayNum: number; date: Date; isBossDay: boolean }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "12px",
-      margin: "24px 0 12px",
-    }}>
-      <div style={{
-        fontFamily: "var(--font-heading)", fontSize: "0.62rem", letterSpacing: ".16em",
-        textTransform: "uppercase", whiteSpace: "nowrap",
-        color: isBossDay ? "#b8442a" : "rgba(255,255,255,0.28)",
-      }}>
+    <div className="mt-6 mb-3 flex items-center gap-3">
+      <div className={cn(
+        "font-heading text-[0.62rem] uppercase tracking-[0.16em] whitespace-nowrap",
+        isBossDay ? "text-[#b8442a]" : "text-white/[0.28]",
+      )}>
         Day {dayNum} · {fmtDate(date)}
       </div>
       {isBossDay && (
-        <div style={{
-          fontFamily: "var(--font-heading)", fontSize: "0.58rem", letterSpacing: ".14em",
-          textTransform: "uppercase", color: "#b8442a", whiteSpace: "nowrap",
-        }}>
+        <div className="font-heading text-[0.58rem] uppercase tracking-[0.14em] text-[#b8442a] whitespace-nowrap">
           ⚔ Boss Arrives
         </div>
       )}
-      <div style={{ flex: 1, height: "1px", background: isBossDay ? "rgba(184,68,42,0.3)" : "rgba(255,255,255,0.06)" }} />
+      <div className={cn("h-px flex-1", isBossDay ? "bg-[rgba(184,68,42,0.3)]" : "bg-white/[0.06]")} />
     </div>
   );
 }
@@ -113,7 +91,7 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
     <div>
       <SeasonHeader season={season} />
 
-      {[...season.days].reverse().map((day) => (
+      {season.days.map((day) => (
         <div key={day.dayNum}>
           <DayDivider
             dayNum={day.dayNum}
@@ -121,15 +99,11 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
             isBossDay={day.dayNum === season.bossDay}
           />
           {day.events.length === 0 ? (
-            <div style={{
-              padding: "10px 0 4px",
-              fontSize: "0.7rem", color: "rgba(255,255,255,0.15)",
-              letterSpacing: ".06em",
-            }}>
+            <div className="pb-1 pt-2.5 text-[0.7rem] tracking-[0.06em] text-white/[0.15]">
               No events
             </div>
           ) : (
-            [...day.events].reverse().map((event, i) => (
+            day.events.map((event, i) => (
               <EventCard
                 key={(event.id as string) ?? `${day.dayNum}-${i}`}
                 event={event}
