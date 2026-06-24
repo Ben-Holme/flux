@@ -28,6 +28,35 @@ interface ContainerData {
   items: Item[];
 }
 
+interface ShopEntry {
+  itemId: string;
+  price: number;
+}
+
+interface Quest {
+  id: string;
+  title: string;
+  giver: string;
+  description: string;
+  objective: { type: "kill"; target: string; count: number; label: string };
+  reward: { gold: number; itemId?: string; itemQty?: number };
+}
+
+interface NpcDef {
+  id: string;
+  name: string;
+  title: string;
+  x: number;
+  y: number;
+  type: "vendor" | "quest_giver";
+  recolor: Record<string, string>;
+  shop?: ShopEntry[];
+  questId?: string;
+  greeting: string;
+}
+
+type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue";
+
 // ── Pixi Game Engine & Data Arrays ──────────────────────────────────────────
 
 const PALETTE: Record<string, string | null> = {
@@ -79,6 +108,16 @@ const RECOLOR_WOLF: Record<string, string> = {
 };
 const RECOLOR_RAT: Record<string, string> = {
   "3": "p", "4": "q", "5": "c", "6": "d", "7": "j", "8": "1", "9": "l",
+};
+// NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal
+const RECOLOR_NPC_VENDOR: Record<string, string> = {
+  "3": "q", "4": "c", "5": "d", "6": "n", "7": "c", "8": "8", "9": "m",
+};
+const RECOLOR_NPC_SMITH: Record<string, string> = {
+  "3": "u", "4": "v", "5": "w", "6": "n", "7": "n", "8": "8", "9": "9",
+};
+const RECOLOR_NPC_QUEST: Record<string, string> = {
+  "3": "t", "4": "a", "5": "b", "6": "s", "7": "p", "8": "8", "9": "m",
 };
 
 const TORSO_FRONT: string[] = [
@@ -158,6 +197,83 @@ const WALK_LEGS: string[][] = [
 
 const IDLE_LEGS = WALK_LEGS[0];
 const IDLE_EYES = ["0000138118310000", "0000133113310000"];
+
+// Equipment overlay — 16×24, same dimensions as knight. '0' = transparent (base shows through).
+// Renders on top of the base knight sprite at the same anchor/position.
+const EQ_HELM_IRON: string[] = [
+  "0000066666600000",  // gold crown band over the helmet top
+  "0000000fff000000",  // steel-grey dome highlights
+  "0000000f90000000",  // steel dome with glint
+  "000000ffe0000000",  // steel brow ridge
+  "0000000000000000",  // keep base ember eyes
+  "000000f0f0000000",  // steel visor cheekplates
+  "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000",
+];
+
+// Sword sprite — 6×15, held tip-down. Anchor (0.5, 0) = pommel end.
+const EQ_SWORD_IRON: string[] = [
+  "011100",  // pommel
+  "016160",  // grip gold wrap
+  "016160",
+  "066660",  // crossguard
+  "0f9f00",  // blade — steel sides, bright centre
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "00f900",  // blade narrows toward tip
+  "000f00",
+  "000000",
+];
+
+// Pickaxe sprite — 8×10, head at top, handle down
+const EQ_PICKAXE: string[] = [
+  "0000c110",
+  "000c1760",
+  "00c17660",
+  "0c176600",
+  "07116000",
+  "01100000",
+  "01000000",
+  "01000000",
+  "01000000",
+  "00000000",
+];
+
+// Axe sprite — 7×10
+const EQ_AXE: string[] = [
+  "0006c10",
+  "006cc10",
+  "06ccc10",
+  "06c7610",
+  "06c7610",
+  "006cc10",
+  "001c110",
+  "000110 ",
+  "000100 ",
+  "000000 ",
+];
+
+// Shield sprite — 8×8, anchor (0.5, 0.5) = centre
+const EQ_SHIELD_WOOD: string[] = [
+  "01111110",
+  "1ddddd11",
+  "1dk6kdd1",
+  "1dkkkdd1",
+  "1dk6kdd1",
+  "1dkkkdd1",
+  "1ddddd11",
+  "01111110",
+];
 
 const GIANT_PINE_TREE: string[] = [
   "000000000000000a000000000000000",
@@ -779,6 +895,7 @@ interface Monster {
   walkBack: import("pixi.js").Texture[];
   deathFrames: import("pixi.js").Texture[];
   // Per-enemy stats
+  monsterType: string;
   speed: number;
   detectRadius: number;
   damage: number;
@@ -818,6 +935,70 @@ const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
 function createItem(id: string, qty: number): Item {
   return { id, ...ITEM_DB[id], qty };
 }
+
+function getSellPrice(itemId: string): number {
+  const SELL: Record<string, number> = {
+    apple: 2, iron_ore: 4, wolf_pelt: 12, rat_pelt: 6, orc_tooth: 10,
+    bone: 2, runic_shard: 20, red_cap: 5, ghost_cap: 10,
+    bloodroot: 6, nightshade: 8, wood_plank: 3, branch: 1, coal: 2, stone: 1,
+    diamond: 40, iron_sword: 35, wood_shield: 25, iron_helm: 20, pickaxe: 18, axe: 18,
+  };
+  return SELL[itemId] ?? 0;
+}
+
+const QUESTS: Quest[] = [
+  {
+    id: "filed_assessment",
+    title: "The Filed Assessment",
+    giver: "danna",
+    description: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Two months ago, not one back since. The road is thick with the restless dead. Kill five of the skeletons and return to me.",
+    objective: { type: "kill", target: "skeleton", count: 5, label: "Skeletons slain" },
+    reward: { gold: 6 },
+  },
+];
+
+const NPC_DEFS: NpcDef[] = [
+  {
+    id: "mira",
+    name: "Mira",
+    title: "Merchant",
+    x: 870, y: 870,
+    type: "vendor",
+    recolor: RECOLOR_NPC_VENDOR,
+    shop: [
+      { itemId: "apple",      price: 5  },
+      { itemId: "iron_ore",   price: 8  },
+      { itemId: "wood_plank", price: 6  },
+    ],
+    greeting: "Stock is low, but I can cover the basics.",
+  },
+  {
+    id: "bram",
+    name: "Bram",
+    title: "Blacksmith",
+    x: 1130, y: 870,
+    type: "vendor",
+    recolor: RECOLOR_NPC_SMITH,
+    shop: [
+      { itemId: "iron_sword",  price: 80 },
+      { itemId: "wood_shield", price: 60 },
+      { itemId: "iron_helm",   price: 50 },
+      { itemId: "pickaxe",     price: 40 },
+      { itemId: "axe",         price: 40 },
+    ],
+    greeting: "You want steel. I have it.",
+  },
+  {
+    id: "danna",
+    name: "Danna",
+    title: "Factor",
+    x: 1000, y: 800,
+    type: "quest_giver",
+    recolor: RECOLOR_NPC_QUEST,
+    questId: "filed_assessment",
+    greeting: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Not one came back.",
+  },
+];
 
 // ── Character & Skills ────────────────────────────────────────────────────────
 
@@ -912,8 +1093,8 @@ export default function PixelTestMapPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // React UI State
-  const [uiMode, setUiMode] = useState<"closed" | "inventory" | "looting">("closed");
-  const uiModeRef = useRef<"closed" | "inventory" | "looting">("closed");
+  const [uiMode, setUiMode] = useState<UiMode>("closed");
+  const uiModeRef = useRef<UiMode>("closed");
   
   const [inventory, setInventory] = useState<Item[]>([
     createItem("apple", 3),
@@ -929,6 +1110,9 @@ export default function PixelTestMapPage() {
   const [lootTarget, setLootTarget] = useState<ContainerData | null>(null);
   const [splitModal, setSplitModal] = useState<{ itemIndex: number, max: number } | null>(null);
   const [splitQty, setSplitQty] = useState<number>(1);
+  const [activeNpcId, setActiveNpcId] = useState<string | null>(null);
+  const [shopTab, setShopTab] = useState<"buy" | "sell">("buy");
+  const [questProgress, setQuestProgress] = useState<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
 
   // Character system
   const [character, setCharacter] = useState<Character | null>(null);
@@ -942,6 +1126,7 @@ export default function PixelTestMapPage() {
   const gainFameRef = useRef<(amount: number) => void>(() => {});
   const addItemRef = useRef<(id: string, qty: number) => void>(() => {});
   const equipmentRef = useRef<Equipment>({ head: null, chest: null, mainhand: null, offhand: null });
+  const questProgressRef = useRef<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
 
   useEffect(() => { setCharacter(loadCharacter()); }, []);
   useEffect(() => { charRef.current = character; charCreationRef.current = character === null; }, [character]);
@@ -1048,20 +1233,85 @@ export default function PixelTestMapPage() {
     setLootTarget({ ...lootTarget, items: [] });
   };
 
+  function applyToInventory(inv: Item[], newItem: Item): Item[] {
+    const next = [...inv];
+    if (newItem.maxStack > 1) {
+      const existing = next.find(i => i.id === newItem.id && i.qty < i.maxStack);
+      if (existing) {
+        const space = existing.maxStack - existing.qty;
+        const addAmt = Math.min(space, newItem.qty);
+        existing.qty += addAmt;
+        if (addAmt < newItem.qty && next.length < 16) next.push({ ...newItem, qty: newItem.qty - addAmt });
+        return next;
+      }
+    }
+    if (next.length < 16) next.push({ ...newItem });
+    return next;
+  }
+
+  function handleBuy(itemId: string, price: number) {
+    setInventory(prev => {
+      const gi = prev.findIndex(i => i.id === "gold");
+      if (gi < 0 || prev[gi].qty < price) return prev;
+      let next = prev.map((it, i) => i === gi ? { ...it, qty: it.qty - price } : it).filter(it => it.qty > 0);
+      return applyToInventory(next, createItem(itemId, 1));
+    });
+  }
+
+  function handleSell(invIndex: number) {
+    setInventory(prev => {
+      const item = prev[invIndex];
+      if (!item || item.id === "gold") return prev;
+      const sp = getSellPrice(item.id);
+      if (sp <= 0) return prev;
+      let next = item.qty > 1
+        ? prev.map((it, i) => i === invIndex ? { ...it, qty: it.qty - 1 } : it)
+        : prev.filter((_, i) => i !== invIndex);
+      return applyToInventory(next, createItem("gold", sp));
+    });
+  }
+
+  function handleAcceptQuest(questId: string) {
+    const next = { ...questProgressRef.current, [questId]: { status: "active" as const, progress: 0 } };
+    questProgressRef.current = next;
+    setQuestProgress(next);
+  }
+
+  function handleCompleteQuest(questId: string) {
+    const quest = QUESTS.find(q => q.id === questId);
+    if (!quest) return;
+    const next = { ...questProgressRef.current, [questId]: { status: "done" as const, progress: quest.objective.count } };
+    questProgressRef.current = next;
+    setQuestProgress(next);
+    setInventory(prev => applyToInventory(prev, createItem("gold", quest.reward.gold)));
+    if (quest.reward.itemId) setInventory(prev => applyToInventory(prev, createItem(quest.reward.itemId!, quest.reward.itemQty ?? 1)));
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "i" || e.key === "I" || e.key === "Tab") {
         e.preventDefault();
         setShowCharPanel(false);
-        setUiMode(prev => prev === "closed" ? "inventory" : "closed");
+        setUiMode(prev => {
+          const next = prev === "closed" ? "inventory" : "closed";
+          uiModeRef.current = next; // sync immediately — no useEffect lag
+          return next;
+        });
         setSplitModal(null);
       }
       if (e.key === "c" || e.key === "C") {
+        uiModeRef.current = "closed";
         setUiMode("closed");
         setSplitModal(null);
-        setShowCharPanel(prev => !prev);
+        setShowCharPanel(prev => {
+          const next = !prev;
+          showCharPanelRef.current = next;
+          return next;
+        });
       }
       if (e.key === "Escape") {
+        uiModeRef.current = "closed";
+        showCharPanelRef.current = false;
         setUiMode("closed");
         setShowCharPanel(false);
         setSplitModal(null);
@@ -1149,6 +1399,13 @@ export default function PixelTestMapPage() {
       ];
       const deathTextures = await makeTextures(deathArrays);
 
+      // Equipment textures
+      const eqHelmTex  = await canvasToTexture(PIXI, drawPixelArt(EQ_HELM_IRON, PX));
+      const eqSwordTex = await canvasToTexture(PIXI, drawPixelArt(EQ_SWORD_IRON, PX));
+      const eqPickTex  = await canvasToTexture(PIXI, drawPixelArt(EQ_PICKAXE, PX));
+      const eqAxeTex   = await canvasToTexture(PIXI, drawPixelArt(EQ_AXE, PX));
+      const eqShieldTex = await canvasToTexture(PIXI, drawPixelArt(EQ_SHIELD_WOOD, PX));
+
       const skeletonMap: Record<string, string> = {
         "3": "e", 
         "4": "9", 
@@ -1193,6 +1450,11 @@ export default function PixelTestMapPage() {
       const ratWalkBack = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_BACK, l), RECOLOR_RAT)));
       const ratDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_RAT)));
 
+      // NPC textures — idle front animation using distinct recolor palettes
+      const npcVendorTex = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_VENDOR)));
+      const npcSmithTex  = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_SMITH)));
+      const npcQuestTex  = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_QUEST)));
+
       // Enemy configs
       interface MonsterConfig {
         idleFront: import("pixi.js").Texture[];
@@ -1200,6 +1462,7 @@ export default function PixelTestMapPage() {
         walkFront: import("pixi.js").Texture[];
         walkBack: import("pixi.js").Texture[];
         deathFrames: import("pixi.js").Texture[];
+        monsterType: string;
         hp: number;
         speed: number;
         detectRadius: number;
@@ -1214,30 +1477,35 @@ export default function PixelTestMapPage() {
       const SKELETON_CFG: MonsterConfig = {
         idleFront: skelIdleFront, idleBack: skelIdleBack,
         walkFront: skelWalkFront, walkBack: skelWalkBack, deathFrames: skelDeathTextures,
+        monsterType: "skeleton",
         hp: 50, speed: 1, detectRadius: 350, damage: 20,
         dropId: "bone", dropQty: 1, skillOnKill: "Melee", fameOnKill: 3,
       };
       const ORC_GRUNT_CFG: MonsterConfig = {
         idleFront: orcIdleFront, idleBack: orcIdleBack,
         walkFront: orcWalkFront, walkBack: orcWalkBack, deathFrames: orcDeathFrames,
+        monsterType: "orc_grunt",
         hp: 70, speed: 0.9, detectRadius: 350, damage: 30,
         dropId: "orc_tooth", dropQty: 1, skillOnKill: "Melee", fameOnKill: 5,
       };
       const ORC_SHAMAN_CFG: MonsterConfig = {
         idleFront: shamIdleFront, idleBack: shamIdleBack,
         walkFront: shamWalkFront, walkBack: shamWalkBack, deathFrames: shamDeathFrames,
+        monsterType: "orc_shaman",
         hp: 50, speed: 0.7, detectRadius: 400, damage: 15,
         dropId: "runic_shard", dropQty: 1, skillOnKill: "Magery", fameOnKill: 8,
       };
       const WOLF_CFG: MonsterConfig = {
         idleFront: wolfIdleFront, idleBack: wolfIdleBack,
         walkFront: wolfWalkFront, walkBack: wolfWalkBack, deathFrames: wolfDeathFrames,
+        monsterType: "wolf",
         hp: 35, speed: 1.4, detectRadius: 300, damage: 15,
         dropId: "wolf_pelt", dropQty: 1, skillOnKill: "Huntercraft", fameOnKill: 4,
       };
       const CAVE_RAT_CFG: MonsterConfig = {
         idleFront: ratIdleFront, idleBack: ratIdleBack,
         walkFront: ratWalkFront, walkBack: ratWalkBack, deathFrames: ratDeathFrames,
+        monsterType: "cave_rat",
         hp: 20, speed: 1.6, detectRadius: 200, damage: 10,
         dropId: "rat_pelt", dropQty: 1, skillOnKill: "Huntercraft", fameOnKill: 2,
         scale: 0.55,
@@ -1354,6 +1622,7 @@ export default function PixelTestMapPage() {
           state: "idle", vx: 0, vy: 0, knockback: 0, hitFlash: 0, facing: "front",
           idleFront: cfg.idleFront, idleBack: cfg.idleBack,
           walkFront: cfg.walkFront, walkBack: cfg.walkBack, deathFrames: cfg.deathFrames,
+          monsterType: cfg.monsterType,
           speed: cfg.speed, detectRadius: cfg.detectRadius, damage: cfg.damage,
           dropId: cfg.dropId, dropQty: cfg.dropQty,
           skillOnKill: cfg.skillOnKill, fameOnKill: cfg.fameOnKill,
@@ -1603,6 +1872,46 @@ export default function PixelTestMapPage() {
         });
       }
 
+      // ── Friendly NPCs ──────────────────────────────────────────────────────────
+      for (const npc of NPC_DEFS) {
+        const npcTex = npc.id === "bram" ? npcSmithTex : npc.id === "danna" ? npcQuestTex : npcVendorTex;
+        const npcSprite = new PIXI.AnimatedSprite(npcTex);
+        npcSprite.anchor.set(0.5, 1);
+        npcSprite.x = npc.x;
+        npcSprite.y = npc.y;
+        npcSprite.animationSpeed = 3 / 60;
+        npcSprite.play();
+        npcSprite.zIndex = npc.y;
+        worldContainer.addChild(npcSprite);
+
+        const nameLabel = new PIXI.Text({
+          text: npc.name,
+          style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 3 } },
+        });
+        nameLabel.anchor.set(0.5, 1);
+        nameLabel.x = npc.x;
+        nameLabel.y = npc.y - 74;
+        nameLabel.zIndex = npc.y + 1;
+        worldContainer.addChild(nameLabel);
+
+        // Capture npc in closure
+        const capturedNpc = npc;
+        interactables.push({
+          x: npc.x, y: npc.y, radius: 80,
+          isInteractive: () => true,
+          getPrompt: () => capturedNpc.type === "vendor"
+            ? `[F] Trade with ${capturedNpc.name}`
+            : `[F] Talk to ${capturedNpc.name}`,
+          onInteract: () => {
+            const mode: UiMode = capturedNpc.type === "vendor" ? "shop" : "dialogue";
+            uiModeRef.current = mode;
+            setActiveNpcId(capturedNpc.id);
+            setShopTab("buy");
+            setUiMode(mode);
+          },
+        });
+      }
+
       for (let i = 0; i < 2500; i++) {
         const tx = Math.random() * 4000;
         const ty = Math.random() * 4000;
@@ -1667,6 +1976,25 @@ export default function PixelTestMapPage() {
       knight.animationSpeed = 3 / 60;
       knight.play();
       worldContainer.addChild(knight);
+
+      // Equipment overlay sprites — synced to knight position every tick
+      // helmOverlay: same anchor/size as knight, renders on top
+      const helmOverlay = new PIXI.Sprite(eqHelmTex);
+      helmOverlay.anchor.set(0.5, 1);
+      helmOverlay.visible = false;
+      worldContainer.addChild(helmOverlay);
+
+      // Weapon sprite: anchor at pommel top (0.5, 0), hangs downward from shoulder
+      const weaponOverlay = new PIXI.Sprite(eqSwordTex);
+      weaponOverlay.anchor.set(0.5, 0);
+      weaponOverlay.visible = false;
+      worldContainer.addChild(weaponOverlay);
+
+      // Shield sprite: anchor at centre (0.5, 0.5)
+      const shieldOverlay = new PIXI.Sprite(eqShieldTex);
+      shieldOverlay.anchor.set(0.5, 0.5);
+      shieldOverlay.visible = false;
+      worldContainer.addChild(shieldOverlay);
 
       const slashGfx = new PIXI.Graphics();
       slashGfx.visible = false;
@@ -1903,23 +2231,33 @@ export default function PixelTestMapPage() {
 
       function updateFacing() {
         if (state === "attack" || state === "dash" || state === "dead") return;
-        
+
         const left = keys["ArrowLeft"] || keys["a"] || keys["A"];
         const right = keys["ArrowRight"] || keys["d"] || keys["D"];
         const up = keys["ArrowUp"] || keys["w"] || keys["W"];
         const down = keys["ArrowDown"] || keys["s"] || keys["S"];
 
+        // Mouse aim offset from knight (screen centre = knight position)
+        const mDx = mouseX - app!.screen.width / 2;
+        const mDy = mouseY - app!.screen.height / 2;
+
         let newFacing = facing;
         if (down) newFacing = "front";
         else if (up) newFacing = "back";
-        
+        else {
+          // Face toward mouse when no keyboard up/down pressed
+          newFacing = mDy >= 0 ? "front" : "back";
+        }
+
         if (newFacing !== facing) {
           facing = newFacing;
           setState(state);
         }
-        
+
+        // Horizontal flip: keyboard wins, otherwise follow mouse
         if (left) knight.scale.x = -1;
-        if (right) knight.scale.x = 1;
+        else if (right) knight.scale.x = 1;
+        else knight.scale.x = mDx >= 0 ? 1 : -1;
       }
 
       function tryMoveEntity(entity: { x: number, y: number }, dx: number, dy: number, speed: number) {
@@ -1966,11 +2304,23 @@ export default function PixelTestMapPage() {
       let dashConsumed = false;
       let interactConsumed = false;
 
+      // Mouse aim state
+      let mouseX = app!.screen.width / 2;
+      let mouseY = app!.screen.height / 2;
+      const mouseButtons: Record<number, boolean> = {};
+      let mouseAttackConsumed = false;
+
+      // Key-age expiry: every keydown (including repeat) resets the counter for that key.
+      // If a movement key hasn't fired a keydown in >90 ticks (~1.5s at 60fps), auto-release it.
+      // Held keys produce keydown repeats every ~2 frames, so 90 ticks is very conservative.
+      const keyAge: Record<string, number> = {};
+      let tickCount = 0;
+
       const onDown = (e: KeyboardEvent) => {
         // Prevent default only if we are playing
         if (uiModeRef.current === "closed" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key))
           e.preventDefault();
-        
+
         if (!keys[e.key]) {
           if (e.key === "j" || e.key === "J" || e.key === "z" || e.key === "Z")
             attackConsumed = false;
@@ -1980,17 +2330,62 @@ export default function PixelTestMapPage() {
           if (e.key === "f" || e.key === "F") interactConsumed = false;
         }
         keys[e.key] = true;
+        keyAge[e.key] = tickCount; // refresh age on every keydown (including repeat)
       };
       const onUp = (e: KeyboardEvent) => {
         keys[e.key] = false;
+        delete keyAge[e.key];
       };
+      const onMouseMove = (e: MouseEvent) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      };
+      const onMouseDown = (e: MouseEvent) => {
+        mouseButtons[e.button] = true;
+        if (e.button === 0) mouseAttackConsumed = false;
+      };
+      const onMouseUp = (e: MouseEvent) => {
+        mouseButtons[e.button] = false;
+        if (e.button === 0) mouseAttackConsumed = false;
+      };
+      // Clear all held inputs — called on any focus-loss event
+      const clearAllInput = () => {
+        for (const k of Object.keys(keys)) keys[k] = false;
+        for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
+        attackConsumed = false;
+        mouseAttackConsumed = false;
+        dashConsumed = false;
+      };
+      const onBlur = clearAllInput;
+      const onVisibilityChange = () => { if (document.hidden) clearAllInput(); };
+      const onContextMenu = () => clearAllInput();
       window.addEventListener("keydown", onDown);
       window.addEventListener("keyup", onUp);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("blur", onBlur);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      window.addEventListener("contextmenu", onContextMenu);
 
       // ── Ticker ────────────────────────────────────────────────────────────────
       app.ticker.add(() => {
+        tickCount++;
+
         if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current) {
+          // Flush keys so nothing is still "held" when the UI closes
+          for (const k of Object.keys(keys)) keys[k] = false;
+          for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
           return;
+        }
+
+        // Auto-release any key that hasn't received a keydown event in 90 ticks (~1.5s).
+        // Held keys generate repeat keydown events every ~2 ticks, so this only fires on stuck keys.
+        for (const k of Object.keys(keys)) {
+          if (keys[k] && tickCount - (keyAge[k] ?? 0) > 90) {
+            keys[k] = false;
+            delete keyAge[k];
+          }
         }
 
         const left = keys["ArrowLeft"] || keys["a"] || keys["A"];
@@ -2030,43 +2425,55 @@ export default function PixelTestMapPage() {
             dieConsumed = true;
             setState("dead");
           } else {
-            const wantAttack = (keys["j"] || keys["J"] || keys["z"] || keys["Z"]) && !attackConsumed;
+            const keyAttack = (keys["j"] || keys["J"] || keys["z"] || keys["Z"]) && !attackConsumed;
+            const mouseAttack = mouseButtons[0] && !mouseAttackConsumed;
+            const wantAttack = keyAttack || mouseAttack;
             if (wantAttack && (state === "idle" || state === "walk")) {
               attackConsumed = true;
+              mouseAttackConsumed = true;
               setState("attack", true);
             }
             if (!keys["j"] && !keys["J"] && !keys["z"] && !keys["Z"]) attackConsumed = false;
 
             if (state === "attack" && knight.currentFrame === 2 && slashTimer === 0) {
-              const dir = knight.scale.x;
-              const sx = knight.x + dir * 38;
-              const sy = knight.y - 52;
+              // Aim direction from knight toward mouse in world space
+              const rawDx = mouseX - app!.screen.width / 2;
+              const rawDy = mouseY - app!.screen.height / 2;
+              const aimLen = Math.hypot(rawDx, rawDy) || 1;
+              const aNx = rawDx / aimLen;
+              const aNy = rawDy / aimLen;
+              const pNx = -aNy; // perpendicular
+              const pNy = aNx;
+
+              const ox = knight.x + aNx * 20;
+              const oy = knight.y - 20 + aNy * 20;
               slashGfx.clear();
               slashGfx
-                .moveTo(sx - dir * 8, sy - 22)
-                .lineTo(sx + dir * 28, sy + 18)
+                .moveTo(ox + pNx * 26, oy + pNy * 26)
+                .lineTo(ox + aNx * 44 - pNx * 26, oy + aNy * 44 - pNy * 26)
                 .stroke({ color: 0xffd98f, width: 5 });
               slashGfx
-                .moveTo(sx + dir * 12, sy - 28)
-                .lineTo(sx - dir * 4, sy + 12)
+                .moveTo(ox + pNx * 14, oy + pNy * 14)
+                .lineTo(ox + aNx * 36, oy + aNy * 36)
                 .stroke({ color: 0xffffff, width: 2 });
               slashGfx.visible = true;
               slashTimer = 4;
 
-              // Hit Monsters
+              // Hit Monsters — cone toward mouse aim direction
               const meleeDmg = Math.max(5, 5 + Math.floor((charRef.current?.skills.Melee ?? 0) * 0.025));
               for (const m of monsters) {
                 if (m.state === "dead") continue;
                 const dx = m.sprite.x - knight.x;
                 const dy = m.sprite.y - knight.y;
                 const dist = Math.hypot(dx, dy);
+                const dot = dist > 0 ? (dx / dist) * aNx + (dy / dist) * aNy : 0;
 
-                if (dist < 80 && Math.abs(dy) < 50 && dx * dir >= -10) {
+                if (dist < 85 && dot > 0.25) {
                   m.hp -= meleeDmg;
                   m.knockback = 12;
                   m.hitFlash = 6;
-                  m.vx = dir;
-                  m.vy = dy > 0 ? 0.5 : -0.5;
+                  m.vx = aNx;
+                  m.vy = aNy;
                   gainSkillRef.current("Melee", 5);
 
                   spawnFloatingText(`-${meleeDmg}`, m.sprite.x, m.sprite.y - 50, 0xffffff);
@@ -2085,6 +2492,22 @@ export default function PixelTestMapPage() {
                       addItemRef.current(m.dropId, m.dropQty ?? 1);
                       const dropName = ITEM_DB[m.dropId]?.name ?? m.dropId;
                       spawnFloatingText(`+${m.dropQty ?? 1} ${dropName}`, m.sprite.x, m.sprite.y - 20, 0xa69581);
+                    }
+                    // Quest kill tracking
+                    const qMap = questProgressRef.current;
+                    let qChanged = false;
+                    const nextQMap = { ...qMap };
+                    for (const [qId, qp] of Object.entries(qMap)) {
+                      if (qp.status !== "active") continue;
+                      const quest = QUESTS.find(q => q.id === qId);
+                      if (!quest || quest.objective.type !== "kill" || m.monsterType !== quest.objective.target) continue;
+                      const newProg = Math.min(qp.progress + 1, quest.objective.count);
+                      nextQMap[qId] = { status: newProg >= quest.objective.count ? "ready" : "active", progress: newProg };
+                      qChanged = true;
+                    }
+                    if (qChanged) {
+                      questProgressRef.current = nextQMap;
+                      setQuestProgress(nextQMap);
                     }
                   }
                 }
@@ -2235,7 +2658,7 @@ export default function PixelTestMapPage() {
                 m.sprite.play();
               }
 
-              if (dist < 30 && playerInvuln === 0 && state !== "dead") {
+              if (dist < 30 && playerInvuln === 0) {
                 const defReduction = Math.min(0.5, (charRef.current?.skills.Defense ?? 0) / 2000);
                 const dmgTaken = Math.max(1, Math.round(m.damage * (1 - defReduction)));
                 playerHp -= dmgTaken;
@@ -2306,13 +2729,65 @@ export default function PixelTestMapPage() {
 
         knight.zIndex = knight.y;
 
-        worldContainer.x = app.screen.width / 2 - knight.x;
-        worldContainer.y = app.screen.height / 2 - knight.y;
+        // Sync equipment overlays to knight every frame
+        {
+          const eq = equipmentRef.current;
+          const flip = knight.scale.x;
+          const kAlpha = knight.alpha;
+          const kTint = knight.tint as number;
+
+          // Helm overlay — drawn at exact same position/scale as knight base
+          helmOverlay.visible = !!eq.head;
+          if (helmOverlay.visible) {
+            helmOverlay.x = knight.x;
+            helmOverlay.y = knight.y;
+            helmOverlay.scale.x = flip;
+            helmOverlay.alpha = kAlpha;
+            helmOverlay.tint = kTint;
+            helmOverlay.zIndex = knight.y + 0.5;
+          }
+
+          // Weapon overlay — at hand level (right of centre when flip=1)
+          const mainId = eq.mainhand?.id;
+          weaponOverlay.visible = !!mainId;
+          if (weaponOverlay.visible) {
+            if (mainId === "pickaxe") weaponOverlay.texture = eqPickTex;
+            else if (mainId === "axe") weaponOverlay.texture = eqAxeTex;
+            else weaponOverlay.texture = eqSwordTex;
+
+            weaponOverlay.x = knight.x + flip * 22;
+            weaponOverlay.y = knight.y - 68;
+            weaponOverlay.scale.x = flip;
+            weaponOverlay.alpha = kAlpha;
+            weaponOverlay.tint = kTint;
+            weaponOverlay.zIndex = knight.y + 0.3;
+          }
+
+          // Shield overlay — offhand side (left when flip=1)
+          shieldOverlay.visible = !!eq.offhand;
+          if (shieldOverlay.visible) {
+            shieldOverlay.x = knight.x - flip * 22;
+            shieldOverlay.y = knight.y - 56;
+            shieldOverlay.scale.x = flip;
+            shieldOverlay.alpha = kAlpha;
+            shieldOverlay.tint = kTint;
+            shieldOverlay.zIndex = knight.y - 0.5;
+          }
+        }
+
+        worldContainer.x = app!.screen.width / 2 - knight.x;
+        worldContainer.y = app!.screen.height / 2 - knight.y;
       });
 
       (app as any)._cleanup = () => {
         window.removeEventListener("keydown", onDown);
         window.removeEventListener("keyup", onUp);
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mousedown", onMouseDown);
+        window.removeEventListener("mouseup", onMouseUp);
+        window.removeEventListener("blur", onBlur);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("contextmenu", onContextMenu);
       };
     })();
 
@@ -2344,8 +2819,8 @@ export default function PixelTestMapPage() {
   );
 
   return (
-    <div className="bg-[#08060a] relative w-screen h-screen overflow-hidden font-mono">
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className="bg-[#08060a] relative w-screen h-screen overflow-hidden font-mono" suppressHydrationWarning>
+      <div ref={containerRef} className="absolute inset-0" suppressHydrationWarning />
       
       {/* Character HUD — name + fame below HP bar */}
       {character && (
@@ -2364,7 +2839,7 @@ export default function PixelTestMapPage() {
           Unyha — Pixel World
         </p>
         <p className="font-mono text-[9px] tracking-[0.2em] text-white/20 uppercase">
-          WASD move · J attack · Shift dash · F interact · I inventory · C character · Esc close
+          WASD move · LMB / J attack · Shift dash · F interact/talk · I inventory · C character · Esc close
         </p>
       </div>
 
@@ -2586,6 +3061,139 @@ export default function PixelTestMapPage() {
           </div>
         </div>
       )}
+
+      {/* ── Shop Overlay ──────────────────────────────────────────────────────── */}
+      {uiMode === "shop" && activeNpcId && (() => {
+        const npc = NPC_DEFS.find(n => n.id === activeNpcId);
+        if (!npc || !npc.shop) return null;
+        const gold = inventory.find(i => i.id === "gold")?.qty ?? 0;
+        return (
+          <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="w-[680px] bg-[#16131f] border-[6px] border-[#3d3555] p-6 font-mono relative">
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f" }}>{npc.title}</p>
+              <h2 className="text-[#e8e3d4] text-xl uppercase tracking-widest mb-4">{npc.name}</h2>
+
+              <div className="flex gap-0 mb-4 border-b border-[#3d3555]">
+                {(["buy", "sell"] as const).map(tab => (
+                  <button key={tab} onClick={() => setShopTab(tab)}
+                    className={`px-6 py-2 text-[11px] uppercase tracking-widest border-b-2 -mb-[2px] ${shopTab === tab ? "border-[#ffd98f] text-[#ffd98f]" : "border-transparent text-[#564870] hover:text-[#a69581]"}`}
+                  >{tab}</button>
+                ))}
+                <div className="ml-auto flex items-center pr-1 pb-2">
+                  <span className="text-[#ffd98f] text-sm">🪙 {gold}</span>
+                </div>
+              </div>
+
+              {shopTab === "buy" && (
+                <div className="grid grid-cols-5 gap-3">
+                  {npc.shop.map(entry => {
+                    const item = ITEM_DB[entry.itemId];
+                    const canAfford = gold >= entry.price;
+                    return (
+                      <button key={entry.itemId} onClick={() => handleBuy(entry.itemId, entry.price)} disabled={!canAfford}
+                        className={`p-3 border-2 flex flex-col items-center gap-1 transition-colors ${canAfford ? "border-[#3d3555] bg-[#0d0b12] hover:border-[#ffd98f] cursor-pointer" : "border-[#16131f] bg-[#0d0b12] opacity-40 cursor-not-allowed"}`}
+                      >
+                        <span className="text-2xl">{item.icon}</span>
+                        <span className="text-[#e8e3d4] text-[10px] text-center leading-tight">{item.name}</span>
+                        <span className="text-[#ffd98f] text-[10px]">🪙 {entry.price}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {shopTab === "sell" && (
+                <div>
+                  <p className="text-[#564870] text-[10px] mb-3 uppercase tracking-widest">Click an item to sell one.</p>
+                  <div className="grid grid-cols-8 gap-2">
+                    {inventory.map((item, i) => {
+                      if (item.id === "gold") return null;
+                      const sp = getSellPrice(item.id);
+                      return (
+                        <button key={i} onClick={() => handleSell(i)} disabled={sp <= 0}
+                          className={`p-1 border-2 flex flex-col items-center gap-0.5 ${sp > 0 ? "border-[#3d3555] bg-[#0d0b12] hover:border-[#ffd98f] cursor-pointer" : "border-[#16131f] bg-[#0d0b12] opacity-30 cursor-not-allowed"}`}
+                        >
+                          <span className="text-xl">{item.icon}</span>
+                          {item.qty > 1 && <span className="text-[9px] text-white/50">x{item.qty}</span>}
+                          {sp > 0 && <span className="text-[9px] text-[#ffd98f]">🪙{sp}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => { uiModeRef.current = "closed"; setUiMode("closed"); setActiveNpcId(null); }}
+                className="absolute -top-4 -right-4 w-10 h-10 bg-[#b8442a] border-4 border-[#16131f] text-white font-bold hover:bg-[#ff0000]"
+              >X</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Dialogue Overlay ──────────────────────────────────────────────────── */}
+      {uiMode === "dialogue" && activeNpcId && (() => {
+        const npc = NPC_DEFS.find(n => n.id === activeNpcId);
+        if (!npc) return null;
+        const quest = npc.questId ? QUESTS.find(q => q.id === npc.questId) : undefined;
+        const qp = quest ? questProgress[quest.id] : undefined;
+
+        let dialogueText = npc.greeting;
+        let showAccept = false;
+        let showComplete = false;
+
+        if (quest) {
+          if (!qp) {
+            dialogueText = quest.description;
+            showAccept = true;
+          } else if (qp.status === "active") {
+            dialogueText = `${quest.objective.label}: ${qp.progress}/${quest.objective.count}. Come back when it is done.`;
+          } else if (qp.status === "ready") {
+            dialogueText = "You have done what I asked. Take your coin.";
+            showComplete = true;
+          } else {
+            dialogueText = npc.greeting;
+          }
+        }
+
+        return (
+          <div className="absolute inset-0 z-[1000000] flex items-end justify-center pb-20">
+            <div className="w-[660px] bg-[#0d0b12]/95 border-4 border-[#3d3555] p-6 font-mono" style={{ backdropFilter: "blur(4px)" }}>
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f" }}>{npc.title}</p>
+              <p className="text-[#e8e3d4] text-base uppercase tracking-widest mb-4">{npc.name}</p>
+              <p className="text-[#a69581] text-sm leading-relaxed mb-5">{dialogueText}</p>
+
+              {quest && qp?.status === "active" && (
+                <div className="mb-5">
+                  <div className="flex justify-between text-[9px] text-[#564870] mb-1 uppercase tracking-widest">
+                    <span>{quest.objective.label}</span>
+                    <span>{qp.progress}/{quest.objective.count}</span>
+                  </div>
+                  <div className="h-1 bg-[#16131f] w-full">
+                    <div className="h-1 bg-[#ffd98f] transition-all" style={{ width: `${(qp.progress / quest.objective.count) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {showAccept && quest && (
+                  <button onClick={() => handleAcceptQuest(quest.id)}
+                    className="px-5 py-2 border-2 border-[#ffd98f] bg-[#3d3555] text-[#ffd98f] text-[11px] uppercase tracking-widest hover:bg-[#564870]"
+                  >Accept</button>
+                )}
+                {showComplete && quest && (
+                  <button onClick={() => handleCompleteQuest(quest.id)}
+                    className="px-5 py-2 border-2 border-[#ffd98f] bg-[#3d3555] text-[#ffd98f] text-[11px] uppercase tracking-widest hover:bg-[#564870]"
+                  >Collect Reward</button>
+                )}
+                <button onClick={() => { uiModeRef.current = "closed"; setUiMode("closed"); setActiveNpcId(null); }}
+                  className="px-5 py-2 border-2 border-[#3d3555] text-[#564870] text-[11px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#a69581]"
+                >Farewell</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

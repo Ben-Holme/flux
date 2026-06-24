@@ -97,7 +97,7 @@ export default function SeasonXPage() {
                 <Flow>
                   <div className="flex items-center gap-2">
                     {icon}
-                    <Eyebrow muted>{label}</Eyebrow>
+                    <span className="font-heading text-[0.65rem] tracking-[0.15em] uppercase text-white/40">{label}</span>
                   </div>
                   <Heading level="h4">{value}</Heading>
                   <Text>{detail}</Text>
@@ -124,7 +124,7 @@ export default function SeasonXPage() {
             <Card>
               <Flow>
                 <div className="flex items-center gap-2">
-                  <Eyebrow muted>What Persists</Eyebrow>
+                  <span className="font-heading text-[0.65rem] tracking-[0.15em] uppercase text-white/40">What Persists</span>
                 </div>
                 <Heading level="h2">The File is Reopened</Heading>
                 <Text>
@@ -155,7 +155,7 @@ export default function SeasonXPage() {
             <Card>
               <Flow>
                 <div className="flex items-center gap-2">
-                  <Eyebrow muted>How to Join</Eyebrow>
+                  <span className="font-heading text-[0.65rem] tracking-[0.15em] uppercase text-white/40">How to Join</span>
                 </div>
                 <Heading level="h2">Get in the Test</Heading>
                 <Text>
