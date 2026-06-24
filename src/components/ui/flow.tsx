@@ -29,7 +29,7 @@ const FLOW_SPACING = new Map<React.ComponentType<any>, string>([
 
 // Per-level heading margins
 const HEADING_LEVEL_SPACING = new Map<string, string>([
-  ["h1", "mt-12"],
+  ["h1", "mt-6"],
   ["h2", "mt-10"],
   ["h3", "mt-8"],
   ["h4", "mt-6"],
@@ -88,7 +88,7 @@ export function Flow({ children, as: Tag = "div", className }: FlowProps) {
         : undefined) ??
       FLOW_SPACING.get(child.type as React.ComponentType<any>) ?? // eslint-disable-line @typescript-eslint/no-explicit-any
       (child.type as { flowSpacing?: string }).flowSpacing ??
-      "mt-4";
+      "mt-12";
 
     // If the child can't receive className, wrap it so spacing still applies.
     if (!forwardsClassName(child.type)) {

@@ -11,6 +11,8 @@ interface TextProps {
   className?: string;
 }
 
+const BASE_CLASS = "max-w-prose";
+
 const VARIANT_CLASS: Record<TextVariant, string> = {
   default: "text-white/70",
   muted: "text-white/40",
@@ -18,5 +20,5 @@ const VARIANT_CLASS: Record<TextVariant, string> = {
 };
 
 export function Text({ variant = "default", as: Tag = "p", children, className }: TextProps) {
-  return <Tag className={cn(VARIANT_CLASS[variant], className)}>{children}</Tag>;
+  return <Tag className={cn(BASE_CLASS, VARIANT_CLASS[variant], className)}>{children}</Tag>;
 }

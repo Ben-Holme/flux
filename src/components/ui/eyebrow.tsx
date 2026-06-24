@@ -5,18 +5,24 @@ interface EyebrowProps {
   children: ReactNode;
   className?: string;
   deco?: boolean;
+  muted?: boolean;
 }
 
-export function Eyebrow({ children, className, deco }: EyebrowProps) {
+export function Eyebrow({ children, className, deco, muted }: EyebrowProps) {
   return (
     <div
       className={cn("relative flex items-center justify-start gap-2 whitespace-nowrap", className)}
     >
       <p
         className={cn(
-          "font-heading text-base font-normal tracking-[0.2em] text-[#ffd98f] uppercase",
+          "font-heading text-base font-normal tracking-[0.2em] uppercase",
+          muted ? "text-white/40" : "text-[#ffd98f]",
         )}
-        style={{ textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }}
+        style={
+          muted
+            ? {}
+            : { textShadow: "#ffd98f 0px 0px 6px, #ffd98f 0px 0px 12px, #ffd98f 0px 0px 32px" }
+        }
       >
         {children}
       </p>
