@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unyha Knight — Pixel Art</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #0d0b12;
+      background-image: url('/img/bg.jpg');
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      font-family: 'Courier New', monospace;
+    }
+    h1 {
+      color: #ffd98f;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      text-shadow: #ffd98f 0 0 12px;
+      margin: 0;
+    }
+    .scales {
+      display: flex;
+      align-items: flex-end;
+      gap: 32px;
+    }
+    .scale-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .label {
+      color: rgba(255,255,255,0.25);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    button {
+      background: rgba(44,38,64,0.8);
+      color: #ffd98f;
+      border: 1px solid rgba(255,217,143,0.3);
+      padding: 10px 24px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-size: 11px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #3d3555; }
+  </style>
+</head>
+<body>
+  <h1>Unyha Knight</h1>
+
+  <div class="scales">
+    <div class="scale-wrap">
+      <canvas id="c1"></canvas>
+      <span class="label">1×</span>
+    </div>
+    <div class="scale-wrap">
+      <canvas id="c2"></canvas>
+      <span class="label">4×</span>
+    </div>
+    <div class="scale-wrap">
+      <canvas id="c3"></canvas>
+      <span class="label">8×</span>
+    </div>
+  </div>
+
+  <button onclick="dl()">Download PNG (4×)</button>
+
+  <script>
+    // Unyha palette
+    const C = {
+      '1': '#0d0b12', // black outline
+      '2': '#16131f', // void deep
+      '3': '#2c2640', // dark armor
+      '4': '#3d3555', // mid armor
+      '5': '#564870', // light armor
+      '6': '#ffd98f', // gold
+      '7': '#c8923a', // gold dim
+      '8': '#b8442a', // ember — eyes
+      '9': '#e8e3d4', // parchment highlight
+    };
+
+    // 16×24 knight, front-facing
+    // helmet → gorget → pauldrons → breastplate → belt → tassets → greaves → sabatons
+    const rows = [
+      '0000011111100000', // 00 helmet crown
+      '0000134444310000', // 01 helmet dome
+      '0000134594310000', // 02 dome highlight
+      '0000133343310000', // 03 brow ridge
+      '0000138118310000', // 04 visor — ember eyes, dark bridge
+      '0000133663310000', // 05 lower visor — gold slit
+      '0001133333310000', // 06 chin guard / gorget
+      '0013344444431000', // 07 gorget widens to shoulders
+      '0134454444543410', // 08 pauldrons full width
+      '0134455455543410', // 09 upper chest — armour highlights
+      '0133456666543310', // 10 breastplate — gold sigil upper
+      '0133366666633310', // 11 breastplate — gold band
+      '0133336666333310', // 12 breastplate — gold sigil lower
+      '0113337667333110', // 13 plackart — belt line
+      '0016666666666100', // 14 gold belt
+      '0011333443331100', // 15 fauld / tassets upper
+      '0001334443331000', // 16 tassets lower
+      '0001331001331000', // 17 upper greaves — legs split
+      '0001331001331000', // 18 greaves
+      '0001341001431000', // 19 knee cops — slightly wider
+      '0001331001331000', // 20 lower greaves
+      '0001331001331000', // 21 lower greaves
+      '0001331001331000', // 22 ankles
+      '0013331001333100', // 23 sabatons — wider feet
+    ];
+
+    function draw(canvas, scale) {
+      canvas.width  = 16 * scale;
+      canvas.height = rows.length * scale;
+      const ctx = canvas.getContext('2d');
+      rows.forEach((row, r) => {
+        for (let c = 0; c < row.length; c++) {
+          const ch = row[c];
+          if (ch === '0') continue;
+          ctx.fillStyle = C[ch];
+          ctx.fillRect(c * scale, r * scale, scale, scale);
+        }
+      });
+    }
+
+    draw(document.getElementById('c1'), 1);
+    draw(document.getElementById('c2'), 4);
+    draw(document.getElementById('c3'), 8);
+
+    function dl() {
+      const tmp = document.createElement('canvas');
+      draw(tmp, 4);
+      const a = document.createElement('a');
+      a.download = 'unyha-knight.png';
+      a.href = tmp.toDataURL();
+      a.click();
+    }
+  </script>
+</body>
+</html>
