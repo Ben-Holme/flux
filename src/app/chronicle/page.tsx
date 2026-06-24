@@ -430,18 +430,19 @@ export default function ChroniclePage() {
   }, [sheetExpanded]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
-    // Rank by radiusWorld: top 3 largest get revealAt above R_MAX so they're fully
-    // opaque at maximum zoom-out; the rest spread linearly down to R_MIN+2
+    // revealAt tied directly to radiusWorld: small locations disappear as soon as you
+    // zoom out past their natural scale; top 3 largest pinned above R_MAX so they're
+    // fully opaque at maximum zoom-out.
     const K = 3;
     const sorted = liveLocs.map((l, i) => ({ i, r: l.radiusWorld })).sort((a, b) => a.r - b.r);
     const N = sorted.length;
     const out = new Array(N).fill(R_MIN + 2);
-    sorted.forEach(({ i }, rank) => {
+    sorted.forEach(({ i, r }, rank) => {
       if (rank >= N - K) {
         out[i] = R_MAX + 3; // fully visible at max zoom-out
       } else {
-        const t = N > K ? rank / (N - K) : 0;
-        out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
+        // r * 12 ≈ natural zoom target (r * 10) with a small buffer
+        out[i] = Math.min(R_MAX, Math.max(R_MIN + 2, r * 12));
       }
     });
     revealAtRef.current = out;
