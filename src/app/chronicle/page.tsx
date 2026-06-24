@@ -817,8 +817,8 @@ export default function ChroniclePage() {
           if (!loc) return;
           const revealAt = revealAtRef.current[i] ?? R_MAX;
           const zoomOutOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
-          // Large-radius locations fade out when zoomed in close (you're "inside" their area)
-          const fadeOutAt = Math.max(0, (loc.radiusWorld - 1.0) * 5);
+          // Fade out as soon as the camera zooms past the location's natural focus radius
+          const fadeOutAt = Math.min(R_MAX - 5, loc.radiusWorld * 10);
           const zoomInOpacity = Math.max(0, Math.min(1, (radiusRef.current - fadeOutAt) / 3));
           const zoomOpacity = zoomOutOpacity * zoomInOpacity;
           // Fade locations that are far from the camera orbit target
