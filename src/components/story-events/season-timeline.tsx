@@ -21,9 +21,9 @@ function SeasonHeader({ season }: { season: Season }) {
   return (
     <div
       className="mb-6 rounded-lg border border-white/[0.08] bg-black/50 px-5 py-[18px] backdrop-blur-[14px]"
-      style={{ borderLeft: "3px solid #ffd98f" }}
+      style={{ borderLeft: "3px solid var(--gold)" }}
     >
-      <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-[#ffd98f]">
+      <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-gold">
         ◇ Season {season.number} · {fmtDate(season.startDate)} – {fmtDate(season.endDate)}
       </div>
       {sp.seasoncontext && (
@@ -46,7 +46,7 @@ function SeasonFooter({ event }: { event: StoryEvent }) {
   return (
     <div
       className="mt-2 rounded-lg border border-white/[0.06] bg-black/40 px-5 py-4 backdrop-blur-[14px]"
-      style={{ borderLeft: "3px solid #ffd98f" }}
+      style={{ borderLeft: "3px solid var(--gold)" }}
     >
       <div className="mb-3 text-[0.6rem] uppercase tracking-[0.18em] text-white/[0.28]">
         ◇ Season Summary
