@@ -5,7 +5,7 @@ const EVENT_TYPES: Record<string, { label: string; icon: string; color: string }
   tome:       { label: "Tome",     icon: "/unyha-icons/quest.svg",      color: "#7fa8e1" },
   ench:       { label: "Enchant",  icon: "/unyha-icons/mage.svg",       color: "#7fe1a8" },
   minigame:   { label: "Activity", icon: "/unyha-icons/Skills.svg",     color: "#c8923a" },
-  season:     { label: "Season",   icon: "/unyha-icons/Time.svg",       color: "#f4a86a" },
+  season:     { label: "Season",   icon: "/unyha-icons/Time.svg",       color: "#ffd98f" },
 };
 
 export default EVENT_TYPES;
