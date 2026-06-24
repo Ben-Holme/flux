@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 
 type ItemType = "weapon" | "armor" | "consumable" | "material";
 
+type ItemQuality = "common" | "uncommon" | "rare";
+
 interface Item {
   id: string;
   name: string;
@@ -14,6 +16,8 @@ interface Item {
   qty: number;
   maxStack: number;
   slot?: "head" | "chest" | "mainhand" | "offhand";
+  bonuses?: Partial<Record<SkillName, number>>;
+  quality?: ItemQuality;
 }
 
 interface Equipment {
@@ -55,7 +59,7 @@ interface NpcDef {
   greeting: string;
 }
 
-type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue";
+type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting";
 
 // ── Pixi Game Engine & Data Arrays ──────────────────────────────────────────
 
@@ -698,6 +702,121 @@ const HERB_PATCH: string[] = [
   "0000000000000000",
 ];
 
+const FORGE_STATION: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "00iiiiiiiiiiii00",
+  "00iuuuuuuuuuui00",
+  "00iuuegegeguui00",
+  "00iuueggggeuui00",
+  "00iuuuuuuuuuui00",
+  "00iiiiiiiiiiii00",
+  "0000iiiiiiiii000",
+  "0000iiiiiiiii000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+const ALCHEMY_TABLE_STA: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000nnnnnnn00000",
+  "000n0h5h5h0n0000",
+  "000nnhhhhhhn0000",
+  "0000nnnnnnn00000",
+  "000ccccccccccc00",
+  "0000c000000c0000",
+  "0000c000000c0000",
+  "0000d000000d0000",
+  "0000d000000d0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+const LOOM_STA: string[] = [
+  "0000000000000000",
+  "0000dd0000dd0000",
+  "0000dc0000cd0000",
+  "0000dcccccccd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dcccccccd000",
+  "0000dc0000cd0000",
+  "0000dd0000dd0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+const WOODBENCH_STA: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000iiii0000i000",
+  "0qqqqqqqqqqqqq00",
+  "0ccccccccccccc00",
+  "0c0000000000c000",
+  "0cdddddddddddc00",
+  "0c0000000000dc00",
+  "0dd000000dddd000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+// ── Crafting ──────────────────────────────────────────────────────────────────
+
+type CraftStationType = "forge" | "alchemy" | "loom" | "woodbench";
+
+const STATION_LABELS: Record<CraftStationType, string> = {
+  forge: "Forge",
+  alchemy: "Alchemy Table",
+  loom: "Loom",
+  woodbench: "Woodbench",
+};
+
+interface Recipe {
+  id: string;
+  result: string;
+  resultQty: number;
+  ingredients: Array<{ id: string; qty: number }>;
+  skill: SkillName;
+  minSkill: number;
+  xp: number;
+  station: CraftStationType;
+}
+
+const RECIPES: Recipe[] = [
+  // Forge — Blacksmithing
+  { id: "r_pickaxe",    result: "pickaxe",    resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
+  { id: "r_axe",        result: "axe",        resultQty: 1, ingredients: [{id:"iron_ore",qty:1},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
+  { id: "r_iron_sword", result: "iron_sword", resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"coal",qty:1}],  skill:"Blacksmithing", minSkill:100, xp:20, station:"forge" },
+  { id: "r_iron_helm",  result: "iron_helm",  resultQty: 1, ingredients: [{id:"iron_ore",qty:3}],                    skill:"Blacksmithing", minSkill:200, xp:30, station:"forge" },
+  // Alchemy
+  { id: "r_heal_potion",  result: "heal_potion",  resultQty: 1, ingredients: [{id:"bloodroot",qty:1},{id:"ghost_cap",qty:1}],   skill:"Alchemy", minSkill:50,  xp:12, station:"alchemy" },
+  { id: "r_poison_vial",  result: "poison_vial",  resultQty: 1, ingredients: [{id:"nightshade",qty:1},{id:"rat_pelt",qty:1}],   skill:"Alchemy", minSkill:150, xp:20, station:"alchemy" },
+  // Loom — Tailoring
+  { id: "r_leather_tunic", result: "leather_tunic", resultQty: 1, ingredients: [{id:"wolf_pelt",qty:3}], skill:"Tailoring", minSkill:100, xp:25, station:"loom" },
+  // Woodbench — Woodworking
+  { id: "r_arrow",       result: "arrow",       resultQty: 5, ingredients: [{id:"branch",qty:1}],                            skill:"Woodworking", minSkill:0,   xp:5,  station:"woodbench" },
+  { id: "r_wood_shield", result: "wood_shield", resultQty: 1, ingredients: [{id:"wood_plank",qty:3}],                        skill:"Woodworking", minSkill:50,  xp:15, station:"woodbench" },
+  { id: "r_short_bow",   result: "short_bow",   resultQty: 1, ingredients: [{id:"branch",qty:2},{id:"wolf_pelt",qty:1}],    skill:"Woodworking", minSkill:150, xp:30, station:"woodbench" },
+];
+
 const DOOR_CLOSED: string[] = [
   "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
   "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
@@ -913,9 +1032,9 @@ const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
   apple: { name: "Apple", type: "consumable", icon: "🍎", maxStack: 10 },
   iron_ore: { name: "Iron Ore", type: "material", icon: "🪨", maxStack: 50 },
   diamond: { name: "Diamond", type: "material", icon: "💎", maxStack: 10 },
-  iron_sword: { name: "Iron Sword", type: "weapon", icon: "⚔️", maxStack: 1, slot: "mainhand" },
-  wood_shield: { name: "Wooden Shield", type: "armor", icon: "🛡️", maxStack: 1, slot: "offhand" },
-  iron_helm: { name: "Iron Helm", type: "armor", icon: "🪖", maxStack: 1, slot: "head" },
+  iron_sword: { name: "Iron Sword", type: "weapon", icon: "⚔️", maxStack: 1, slot: "mainhand", bonuses: { Melee: 50 }, quality: "common" },
+  wood_shield: { name: "Wooden Shield", type: "armor", icon: "🛡️", maxStack: 1, slot: "offhand", bonuses: { Defense: 20 }, quality: "common" },
+  iron_helm: { name: "Iron Helm", type: "armor", icon: "🪖", maxStack: 1, slot: "head", bonuses: { Defense: 30 }, quality: "common" },
   wolf_pelt: { name: "Wolf Pelt", type: "material", icon: "🐺", maxStack: 20 },
   orc_tooth: { name: "Orc Tooth", type: "material", icon: "🦷", maxStack: 30 },
   runic_shard: { name: "Runic Shard", type: "material", icon: "🔮", maxStack: 5 },
@@ -929,7 +1048,12 @@ const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
   red_cap: { name: "Red Cap", type: "material", icon: "🍄", maxStack: 20 },
   ghost_cap: { name: "Ghost Cap", type: "material", icon: "🍄", maxStack: 10 },
   pickaxe: { name: "Pickaxe", type: "weapon", icon: "⛏️", maxStack: 1, slot: "mainhand" },
-  axe: { name: "Axe", type: "weapon", icon: "🪓", maxStack: 1, slot: "mainhand" },
+  axe: { name: "Axe", type: "weapon", icon: "🪓", maxStack: 1, slot: "mainhand", bonuses: { Melee: 20 } },
+  heal_potion: { name: "Healing Potion", type: "consumable", icon: "🧪", maxStack: 5 },
+  poison_vial: { name: "Poison Vial", type: "consumable", icon: "☠️", maxStack: 5 },
+  leather_tunic: { name: "Leather Tunic", type: "armor", icon: "🥼", maxStack: 1, slot: "chest", bonuses: { Defense: 20 }, quality: "common" },
+  short_bow: { name: "Short Bow", type: "weapon", icon: "🏹", maxStack: 1, slot: "mainhand", bonuses: { Archery: 50 }, quality: "common" },
+  arrow: { name: "Arrow", type: "material", icon: "🪃", maxStack: 99 },
 };
 
 function createItem(id: string, qty: number): Item {
@@ -942,6 +1066,7 @@ function getSellPrice(itemId: string): number {
     bone: 2, runic_shard: 20, red_cap: 5, ghost_cap: 10,
     bloodroot: 6, nightshade: 8, wood_plank: 3, branch: 1, coal: 2, stone: 1,
     diamond: 40, iron_sword: 35, wood_shield: 25, iron_helm: 20, pickaxe: 18, axe: 18,
+    heal_potion: 15, poison_vial: 20, leather_tunic: 30, short_bow: 40, arrow: 1,
   };
   return SELL[itemId] ?? 0;
 }
@@ -985,6 +1110,8 @@ const NPC_DEFS: NpcDef[] = [
       { itemId: "iron_helm",   price: 50 },
       { itemId: "pickaxe",     price: 40 },
       { itemId: "axe",         price: 40 },
+      { itemId: "arrow",       price: 2  },
+      { itemId: "short_bow",   price: 55 },
     ],
     greeting: "You want steel. I have it.",
   },
@@ -1087,6 +1214,59 @@ function fameTitle(fame: number): string {
   return "Wanderer";
 }
 
+const CHRONICLE_KEY = "unyha_chronicle";
+const MILESTONES_KEY = "unyha_milestones";
+
+interface ChronicleEntry { text: string; fame: number; ts: number; }
+
+function loadChronicle(): ChronicleEntry[] {
+  try { return JSON.parse(localStorage.getItem(CHRONICLE_KEY) ?? "[]"); } catch { return []; }
+}
+function saveChronicle(entries: ChronicleEntry[]): void {
+  try { localStorage.setItem(CHRONICLE_KEY, JSON.stringify(entries.slice(0, 60))); } catch {}
+}
+function loadMilestones(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(MILESTONES_KEY) ?? "[]")); } catch { return new Set(); }
+}
+function saveMilestones(s: Set<string>): void {
+  try { localStorage.setItem(MILESTONES_KEY, JSON.stringify([...s])); } catch {}
+}
+
+const SKILL_MILESTONES: Partial<Record<SkillName, [number, string, number][]>> = {
+  Melee:         [[250, "sharpened their blade to journeyman grade", 10], [500, "earned the mark of the Swordmaster", 20]],
+  Archery:       [[250, "can loose an arrow true at fifty paces", 10]],
+  Magery:        [[250, "spoke their first Words of Power without hesitation", 10]],
+  Herbalism:     [[250, "knows every leaf and root that grows in the forest", 8]],
+  Mining:        [[250, "reads the stone like an open book", 8]],
+  Blacksmithing: [[250, "hammered iron into something worth calling a weapon", 8]],
+  Tailoring:     [[250, "stitched a garment that would not shame a merchant", 8]],
+  Alchemy:       [[250, "brewed their first true draught", 8]],
+};
+
+const GAME_TIME_KEY = "unyha_game_time";
+const TICKS_PER_HOUR = 3600; // 60 fps × 60 real seconds = 1 game hour
+const TICKS_PER_DAY = TICKS_PER_HOUR * 24;
+
+function loadGameTime(): { day: number; tickInDay: number } {
+  try {
+    const raw = localStorage.getItem(GAME_TIME_KEY);
+    if (!raw) return { day: 1, tickInDay: 6 * TICKS_PER_HOUR };
+    return JSON.parse(raw);
+  } catch { return { day: 1, tickInDay: 6 * TICKS_PER_HOUR }; }
+}
+function saveGameTime(day: number, tickInDay: number): void {
+  try { localStorage.setItem(GAME_TIME_KEY, JSON.stringify({ day, tickInDay })); } catch {}
+}
+function hourPeriod(h: number): string {
+  if (h === 5) return "Dawn";
+  if (h <= 8) return "Morning";
+  if (h <= 11) return "Forenoon";
+  if (h <= 13) return "Noon";
+  if (h <= 16) return "Afternoon";
+  if (h <= 18) return "Dusk";
+  return "Night";
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PixelTestMapPage() {
@@ -1113,6 +1293,14 @@ export default function PixelTestMapPage() {
   const [activeNpcId, setActiveNpcId] = useState<string | null>(null);
   const [shopTab, setShopTab] = useState<"buy" | "sell">("buy");
   const [questProgress, setQuestProgress] = useState<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
+  const [activeCraftStation, setActiveCraftStation] = useState<CraftStationType | null>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [chronicle, setChronicle] = useState<ChronicleEntry[]>([]);
+  const [showChronicle, setShowChronicle] = useState(false);
+  const addChronicleRef = useRef<(text: string, fame: number) => void>(() => {});
+  const firedMilestonesRef = useRef<Set<string>>(new Set());
+  const [gameTime, setGameTime] = useState<{ day: number; hour: number }>({ day: 1, hour: 6 });
+  const setGameTimeRef = useRef<(day: number, hour: number) => void>(() => {});
 
   // Character system
   const [character, setCharacter] = useState<Character | null>(null);
@@ -1126,18 +1314,50 @@ export default function PixelTestMapPage() {
   const gainFameRef = useRef<(amount: number) => void>(() => {});
   const addItemRef = useRef<(id: string, qty: number) => void>(() => {});
   const equipmentRef = useRef<Equipment>({ head: null, chest: null, mainhand: null, offhand: null });
+  const equipBonusRef = useRef<Partial<Record<SkillName, number>>>({});
+  const inventoryRef = useRef<Item[]>([]);
   const questProgressRef = useRef<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
+  const handleTakeAllRef = useRef<() => void>(() => {});
 
   useEffect(() => { setCharacter(loadCharacter()); }, []);
+  useEffect(() => {
+    setChronicle(loadChronicle());
+    firedMilestonesRef.current = loadMilestones();
+  }, []);
   useEffect(() => { charRef.current = character; charCreationRef.current = character === null; }, [character]);
   useEffect(() => { showCharPanelRef.current = showCharPanel; }, [showCharPanel]);
-  useEffect(() => { equipmentRef.current = equipment; }, [equipment]);
+  useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
+  useEffect(() => {
+    equipmentRef.current = equipment;
+    const totals: Partial<Record<SkillName, number>> = {};
+    for (const item of Object.values(equipment)) {
+      if (!item?.bonuses) continue;
+      for (const [skill, val] of Object.entries(item.bonuses) as [SkillName, number][]) {
+        totals[skill] = (totals[skill] ?? 0) + val;
+      }
+    }
+    equipBonusRef.current = totals;
+  }, [equipment]);
 
   gainSkillRef.current = (skill, xp) => {
     setCharacter(prev => {
       if (!prev) return prev;
-      const updated = { ...prev, skills: addSkillXp(prev.skills, skill, xp) };
+      const oldVal = prev.skills[skill] ?? 0;
+      const newSkills = addSkillXp(prev.skills, skill, xp);
+      const newVal = newSkills[skill];
+      const updated = { ...prev, skills: newSkills };
       saveCharacter(updated);
+      const milestones = SKILL_MILESTONES[skill];
+      if (milestones) {
+        for (const [threshold, text, fame] of milestones) {
+          const key = `skill:${skill}:${threshold}`;
+          if (oldVal < threshold && newVal >= threshold && !firedMilestonesRef.current.has(key)) {
+            firedMilestonesRef.current.add(key);
+            saveMilestones(firedMilestonesRef.current);
+            setTimeout(() => addChronicleRef.current(`${prev.name} ${text}.`, fame), 0);
+          }
+        }
+      }
       return updated;
     });
   };
@@ -1149,7 +1369,17 @@ export default function PixelTestMapPage() {
       return updated;
     });
   };
+  addChronicleRef.current = (text, fame) => {
+    const entry: ChronicleEntry = { text, fame, ts: Date.now() };
+    setChronicle(prev => {
+      const next = [entry, ...prev].slice(0, 60);
+      saveChronicle(next);
+      return next;
+    });
+    if (fame > 0) gainFameRef.current(fame);
+  };
   addItemRef.current = (id, qty) => addItemToInventory(createItem(id, qty));
+  setGameTimeRef.current = (day, hour) => setGameTime({ day, hour });
 
   function handleCreateCharacter() {
     const name = charCreationName.trim();
@@ -1188,19 +1418,16 @@ export default function PixelTestMapPage() {
 
   const handleEquip = (invIndex: number) => {
     const item = inventory[invIndex];
-    if (!item.slot) return;
-    
-    setEquipment(prev => {
-      const next = { ...prev };
-      const oldEquip = next[item.slot!];
-      next[item.slot!] = item;
-      
-      setInventory(invPrev => {
-        const invNext = [...invPrev];
-        invNext.splice(invIndex, 1);
-        if (oldEquip) invNext.push(oldEquip);
-        return invNext;
-      });
+    if (!item?.slot) return;
+    const oldEquip = equipment[item.slot];
+
+    setEquipment(prev => ({ ...prev, [item.slot!]: item }));
+    setInventory(prev => {
+      // Guard: don't splice the wrong slot if inventory changed since render
+      if (prev[invIndex]?.id !== item.id) return prev;
+      const next = [...prev];
+      next.splice(invIndex, 1);
+      if (oldEquip) next.push(oldEquip);
       return next;
     });
   };
@@ -1230,8 +1457,11 @@ export default function PixelTestMapPage() {
   const handleTakeAll = () => {
     if (!lootTarget) return;
     lootTarget.items.forEach(item => addItemToInventory(item));
-    setLootTarget({ ...lootTarget, items: [] });
+    uiModeRef.current = "closed";
+    setUiMode("closed");
+    setLootTarget(null);
   };
+  handleTakeAllRef.current = handleTakeAll;
 
   function applyToInventory(inv: Item[], newItem: Item): Item[] {
     const next = [...inv];
@@ -1287,6 +1517,42 @@ export default function PixelTestMapPage() {
     if (quest.reward.itemId) setInventory(prev => applyToInventory(prev, createItem(quest.reward.itemId!, quest.reward.itemQty ?? 1)));
   }
 
+  function handleCraft(recipeId: string) {
+    const recipe = RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return;
+    if ((charRef.current?.skills[recipe.skill] ?? 0) < recipe.minSkill) return;
+    setInventory(prev => {
+      const draft = prev.map(i => ({ ...i }));
+      for (const ing of recipe.ingredients) {
+        let need = ing.qty;
+        for (const item of draft) {
+          if (item.id === ing.id && need > 0) {
+            const take = Math.min(item.qty, need);
+            item.qty -= take;
+            need -= take;
+          }
+        }
+        if (need > 0) return prev;
+      }
+      const result = draft.filter(i => i.qty > 0);
+      const newItem = createItem(recipe.result, recipe.resultQty);
+      if (newItem.maxStack > 1) {
+        const slot = result.find(i => i.id === newItem.id && i.qty < i.maxStack);
+        if (slot) { slot.qty += newItem.qty; return result; }
+      }
+      result.push(newItem);
+      return result;
+    });
+    gainSkillRef.current(recipe.skill, recipe.xp);
+    const craftKey = `craft:first:${recipe.station}`;
+    if (!firedMilestonesRef.current.has(craftKey)) {
+      firedMilestonesRef.current.add(craftKey);
+      saveMilestones(firedMilestonesRef.current);
+      const itemName = ITEM_DB[recipe.result]?.name ?? recipe.result;
+      addChronicleRef.current(`${charRef.current?.name ?? "They"} crafted their first ${itemName}.`, 8);
+    }
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "i" || e.key === "I" || e.key === "Tab") {
@@ -1309,11 +1575,18 @@ export default function PixelTestMapPage() {
           return next;
         });
       }
+      if (e.key === "f" || e.key === "F") {
+        if (uiModeRef.current === "looting") handleTakeAllRef.current();
+      }
+      if (e.key === "l" || e.key === "L") {
+        setShowChronicle(prev => !prev);
+      }
       if (e.key === "Escape") {
         uiModeRef.current = "closed";
         showCharPanelRef.current = false;
         setUiMode("closed");
         setShowCharPanel(false);
+        setShowChronicle(false);
         setSplitModal(null);
       }
     };
@@ -1550,6 +1823,32 @@ export default function PixelTestMapPage() {
       uiContainer.zIndex = 100000;
       app.stage.addChild(uiContainer);
 
+      // Day/Night overlays — sit above worldContainer (zIndex 0) but below uiContainer
+      app.stage.sortableChildren = true;
+      worldContainer.zIndex = 0;
+
+      const nightOverlay = new PIXI.Graphics();
+      nightOverlay.rect(0, 0, 8000, 8000).fill(0x0011aa);
+      nightOverlay.alpha = 0;
+      nightOverlay.zIndex = 50000;
+      app.stage.addChild(nightOverlay);
+
+      const dawnOverlay = new PIXI.Graphics();
+      dawnOverlay.rect(0, 0, 8000, 8000).fill(0xaa3300);
+      dawnOverlay.alpha = 0;
+      dawnOverlay.zIndex = 50001;
+      app.stage.addChild(dawnOverlay);
+
+      const savedTime = loadGameTime();
+      let gameDay = savedTime.day;
+      let tickInDay = savedTime.tickInDay;
+      let lastGameHour = Math.floor(tickInDay / TICKS_PER_HOUR);
+      let isNight = lastGameHour >= 19 || lastGameHour < 5;
+      let saveTimerTick = 0;
+      setGameTimeRef.current(gameDay, lastGameHour);
+
+      const lanternGlows: import("pixi.js").Graphics[] = [];
+
       const healthBg = new PIXI.Graphics();
       healthBg.rect(20, 20, 200, 20).fill({ color: 0x111111 });
       uiContainer.addChild(healthBg);
@@ -1562,9 +1861,21 @@ export default function PixelTestMapPage() {
       hpText.position.set(24, 22);
       uiContainer.addChild(hpText);
 
+      const manaBg = new PIXI.Graphics();
+      manaBg.rect(20, 46, 200, 12).fill({ color: 0x111111 });
+      uiContainer.addChild(manaBg);
+      const manaBar = new PIXI.Graphics();
+      manaBar.rect(20, 46, 200, 12).fill({ color: 0x3a7fc1 });
+      uiContainer.addChild(manaBar);
+      const manaText = new PIXI.Text({ text: "20/20", style: { fontFamily: "monospace", fontSize: 10, fill: 0xaaddff } });
+      manaText.position.set(24, 48);
+      uiContainer.addChild(manaText);
+
       let playerHp = 100;
       const playerMaxHp = 100;
       let playerInvuln = 0;
+      let playerMana = 20;
+      let manaRegenTick = 0;
 
       const grassBg = new PIXI.Graphics();
       grassBg.rect(0, 0, 4000, 4000).fill({ texture: grassTex });
@@ -1596,6 +1907,115 @@ export default function PixelTestMapPage() {
           }
         };
         app?.ticker.add(tick);
+      }
+
+      // ── Spell Projectiles ─────────────────────────────────────────────────────
+      interface Projectile {
+        gfx: import("pixi.js").Graphics;
+        x: number; y: number;
+        vx: number; vy: number;
+        life: number;
+        damage: number;
+        color: number;
+        hitSkill: SkillName;
+      }
+      const projectiles: Projectile[] = [];
+
+      function castFirebolt(fromX: number, fromY: number, toX: number, toY: number) {
+        const effectiveMagery = (charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0);
+        const dmg = Math.max(8, 15 + Math.floor(effectiveMagery * 0.02));
+        const dx = toX - fromX; const dy = toY - fromY;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = dx / len; const ny = dy / len;
+        const gfx = new PIXI.Graphics();
+        gfx.circle(0, 0, 7).fill({ color: 0xb8442a });
+        gfx.circle(0, 0, 4).fill({ color: 0xe16565 });
+        gfx.circle(0, 0, 2).fill({ color: 0xffd98f });
+        gfx.x = fromX + nx * 24; gfx.y = fromY - 20 + ny * 24;
+        gfx.zIndex = 15000;
+        worldContainer.addChild(gfx);
+        projectiles.push({ gfx, x: gfx.x, y: gfx.y, vx: nx * 9, vy: ny * 9, life: 44, damage: dmg, color: 0xe16565, hitSkill: "Magery" });
+        gainSkillRef.current("Magery", 3);
+        playerMana -= 8;
+      }
+
+      function castHealSelf() {
+        const heal = 25;
+        playerHp = Math.min(playerMaxHp, playerHp + heal);
+        playerMana -= 12;
+        gainSkillRef.current("Magery", 5);
+        gainSkillRef.current("Meditation", 3);
+        spawnFloatingText(`+${heal} HP`, knight.x, knight.y - 60, 0x6dbd6d);
+      }
+
+      function handleMonsterKill(m: Monster, killSkill: SkillName) {
+        m.state = "dead";
+        m.sprite.textures = m.deathFrames;
+        m.sprite.loop = false;
+        m.sprite.gotoAndPlay(0);
+        m.hpBar.visible = false;
+        m.hpBarBg.visible = false;
+        gainSkillRef.current(killSkill, 10);
+        if (m.skillOnKill && m.skillOnKill !== killSkill) gainSkillRef.current(m.skillOnKill, 15);
+        gainFameRef.current(m.fameOnKill ?? 3);
+        const killKey = `kill:${m.monsterType}:first`;
+        if (!firedMilestonesRef.current.has(killKey)) {
+          firedMilestonesRef.current.add(killKey);
+          saveMilestones(firedMilestonesRef.current);
+          const killTemplates: Partial<Record<string, [string, number]>> = {
+            skeleton:   [`${charRef.current?.name ?? "They"} felled their first skeleton in the mine.`, 5],
+            orc_grunt:  [`${charRef.current?.name ?? "They"} drove a blade through their first orc.`, 5],
+            orc_shaman: [`${charRef.current?.name ?? "They"} silenced the shaman's runes.`, 20],
+            wolf:       [`${charRef.current?.name ?? "They"} brought down their first wolf.`, 5],
+            cave_rat:   [`${charRef.current?.name ?? "They"} cleared a rat from the mine.`, 2],
+          };
+          const tmpl = killTemplates[m.monsterType];
+          if (tmpl) addChronicleRef.current(tmpl[0], tmpl[1]);
+        }
+        if (m.dropId) {
+          addItemRef.current(m.dropId, m.dropQty ?? 1);
+          spawnFloatingText(`+${m.dropQty ?? 1} ${ITEM_DB[m.dropId]?.name ?? m.dropId}`, m.sprite.x, m.sprite.y - 20, 0xa69581);
+        }
+        const qMap = questProgressRef.current;
+        const nextQMap = { ...qMap };
+        let qChanged = false;
+        for (const [qId, qp] of Object.entries(qMap)) {
+          if (qp.status !== "active") continue;
+          const quest = QUESTS.find(q => q.id === qId);
+          if (!quest || quest.objective.type !== "kill" || m.monsterType !== quest.objective.target) continue;
+          const newProg = Math.min(qp.progress + 1, quest.objective.count);
+          nextQMap[qId] = { status: newProg >= quest.objective.count ? "ready" : "active", progress: newProg };
+          qChanged = true;
+        }
+        if (qChanged) { questProgressRef.current = nextQMap; setQuestProgress(nextQMap); }
+      }
+
+      function castArrow(fromX: number, fromY: number, toX: number, toY: number) {
+        const effectiveArchery = (charRef.current?.skills.Archery ?? 0) + (equipBonusRef.current.Archery ?? 0);
+        const dmg = Math.max(5, 10 + Math.floor(effectiveArchery * 0.02));
+        const dx = toX - fromX; const dy = toY - fromY;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = dx / len; const ny = dy / len;
+        const angle = Math.atan2(ny, nx);
+        const gfx = new PIXI.Graphics();
+        gfx.moveTo(-12, 0).lineTo(8, 0).stroke({ color: 0xc8b99a, width: 2 });
+        gfx.moveTo(8, -3).lineTo(14, 0).lineTo(8, 3).stroke({ color: 0xf5f5f5, width: 1 });
+        gfx.moveTo(-12, 0).lineTo(-16, -3).stroke({ color: 0xa69581, width: 1 });
+        gfx.moveTo(-12, 0).lineTo(-16, 3).stroke({ color: 0xa69581, width: 1 });
+        gfx.rotation = angle;
+        gfx.x = fromX + nx * 20; gfx.y = fromY - 24 + ny * 20;
+        gfx.zIndex = 15000;
+        worldContainer.addChild(gfx);
+        projectiles.push({ gfx, x: gfx.x, y: gfx.y, vx: nx * 12, vy: ny * 12, life: 30, damage: dmg, color: 0xe8e3d4, hitSkill: "Archery" });
+        setInventory(prev => {
+          const next = prev.map(i => ({ ...i }));
+          const idx = next.findIndex(i => i.id === "arrow");
+          if (idx < 0) return prev;
+          next[idx].qty--;
+          if (next[idx].qty <= 0) next.splice(idx, 1);
+          return next;
+        });
+        gainSkillRef.current("Archery", 3);
       }
 
       function spawnMonster(cfg: MonsterConfig, x: number, y: number) {
@@ -1872,6 +2292,39 @@ export default function PixelTestMapPage() {
         });
       }
 
+      // ── Crafting Stations ─────────────────────────────────────────────────────
+      const [forgeTex]   = await makeTextures([FORGE_STATION]);
+      const [alchTex]    = await makeTextures([ALCHEMY_TABLE_STA]);
+      const [loomTex]    = await makeTextures([LOOM_STA]);
+      const [benchTex]   = await makeTextures([WOODBENCH_STA]);
+
+      function placeStation(
+        tex: import("pixi.js").Texture,
+        x: number, y: number,
+        stationId: CraftStationType,
+      ) {
+        const sp = new PIXI.Sprite(tex);
+        sp.anchor.set(0.5, 1);
+        sp.x = x; sp.y = y; sp.zIndex = y;
+        worldContainer.addChild(sp);
+        interactables.push({
+          x, y: y - 8, radius: 70,
+          isInteractive: () => true,
+          getPrompt: () => `[F] Use ${STATION_LABELS[stationId]}`,
+          onInteract: () => {
+            setActiveCraftStation(stationId);
+            setSelectedRecipeId(null);
+            uiModeRef.current = "crafting";
+            setUiMode("crafting");
+          }
+        });
+      }
+
+      placeStation(forgeTex,  1400, 790,  "forge");
+      placeStation(alchTex,   850,  1370, "alchemy");
+      placeStation(loomTex,   1380, 1370, "loom");
+      placeStation(benchTex,  900,  760,  "woodbench");
+
       // ── Friendly NPCs ──────────────────────────────────────────────────────────
       for (const npc of NPC_DEFS) {
         const npcTex = npc.id === "bram" ? npcSmithTex : npc.id === "danna" ? npcQuestTex : npcVendorTex;
@@ -1967,6 +2420,7 @@ export default function PixelTestMapPage() {
         glow.position.set(pos[0], pos[1] - 40);
         glow.zIndex = 10000;
         worldContainer.addChild(glow);
+        lanternGlows.push(glow);
       }
 
       const knight = new PIXI.AnimatedSprite(idleFrontTextures);
@@ -2104,6 +2558,7 @@ export default function PixelTestMapPage() {
         xp: number,
         drops: Array<[string, number]>,
         respawnMs: number,
+        nightOnly = false,
       ) {
         const sp = new PIXI.Sprite(tex);
         sp.anchor.set(0.5, 1);
@@ -2114,11 +2569,15 @@ export default function PixelTestMapPage() {
         harvestNodes.push(node);
         interactables.push({
           x, y: y - 8, radius: 70,
-          isInteractive: () => !node.harvested,
-          getPrompt: () => toolId && equipmentRef.current.mainhand?.id !== toolId
-            ? `[F] ${actionLabel} (need ${ITEM_DB[toolId]?.name ?? toolId})`
-            : `[F] ${actionLabel}`,
+          isInteractive: () => !node.harvested && (!nightOnly || isNight),
+          getPrompt: () => {
+            if (nightOnly && !isNight) return `[F] ${actionLabel} (night only)`;
+            return toolId && equipmentRef.current.mainhand?.id !== toolId
+              ? `[F] ${actionLabel} (need ${ITEM_DB[toolId]?.name ?? toolId})`
+              : `[F] ${actionLabel}`;
+          },
           onInteract: () => {
+            if (nightOnly && !isNight) return;
             if (toolId && equipmentRef.current.mainhand?.id !== toolId) return;
             node.harvested = true;
             node.harvestedAt = Date.now();
@@ -2141,9 +2600,9 @@ export default function PixelTestMapPage() {
 
       // Mushrooms (Alchemy) — damp ground south of the mine entrance
       placeHarvestNode(mushTex, 3100, 1250, "Pick Mushroom", null, "Alchemy", 6, [["red_cap", 1]], 90_000);
-      placeHarvestNode(mushTex, 3250, 1350, "Pick Mushroom", null, "Alchemy", 6, [["ghost_cap", 1]], 120_000);
+      placeHarvestNode(mushTex, 3250, 1350, "Pick Mushroom", null, "Alchemy", 6, [["ghost_cap", 1]], 120_000, true);
       placeHarvestNode(mushTex, 3450, 1280, "Pick Mushroom", null, "Alchemy", 6, [["red_cap", 1]], 90_000);
-      placeHarvestNode(mushTex, 3600, 1320, "Pick Mushroom", null, "Alchemy", 10, [["ghost_cap", 1]], 120_000);
+      placeHarvestNode(mushTex, 3600, 1320, "Pick Mushroom", null, "Alchemy", 10, [["ghost_cap", 1]], 120_000, true);
 
       // Tree stumps (Lumberjacking) — northwest forest
       placeHarvestNode(stumpTex, 180, 350,  "Chop", "axe", "Lumberjacking", 10, [["wood_plank", 2], ["branch", 1]], 180_000);
@@ -2303,6 +2762,8 @@ export default function PixelTestMapPage() {
       let restartConsumed = false;
       let dashConsumed = false;
       let interactConsumed = false;
+      let spellConsumed = false;
+      let healConsumed = false;
 
       // Mouse aim state
       let mouseX = app!.screen.width / 2;
@@ -2368,9 +2829,99 @@ export default function PixelTestMapPage() {
       document.addEventListener("visibilitychange", onVisibilityChange);
       window.addEventListener("contextmenu", onContextMenu);
 
+      // ── Custom cursor ─────────────────────────────────────────────────────────
+      const cursorGfx = new PIXI.Graphics();
+      cursorGfx.zIndex = 999999;
+      app.stage.addChild(cursorGfx);
+
+      function drawCursor(weaponId: string | undefined) {
+        cursorGfx.clear();
+        if (weaponId === "short_bow") {
+          // Crosshair — shadow then bright
+          cursorGfx.circle(0, 0, 7).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.circle(0, 0, 7).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.moveTo(-13, 0).lineTo(-9, 0).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.moveTo(9, 0).lineTo(13, 0).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.moveTo(0, -13).lineTo(0, -9).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.moveTo(0, 9).lineTo(0, 13).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.moveTo(-13, 0).lineTo(-9, 0).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.moveTo(9, 0).lineTo(13, 0).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.moveTo(0, -13).lineTo(0, -9).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.moveTo(0, 9).lineTo(0, 13).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.circle(0, 0, 2).fill({ color: 0xffd98f });
+        } else if (weaponId && ["iron_sword", "axe"].includes(weaponId)) {
+          // Diagonal sword — shadow then blade
+          cursorGfx.moveTo(-8, 9).lineTo(8, -7).stroke({ color: 0x000000, width: 4 });
+          cursorGfx.moveTo(-8, 8).lineTo(8, -8).stroke({ color: 0xe8e3d4, width: 2 });
+          // Crossguard
+          cursorGfx.moveTo(-4, -2).lineTo(4, 2).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.moveTo(-4, -2).lineTo(4, 2).stroke({ color: 0xffd98f, width: 1.5 });
+          // Handle
+          cursorGfx.moveTo(-8, 8).lineTo(-11, 12).stroke({ color: 0xa69581, width: 2 });
+          // Tip
+          cursorGfx.circle(8, -8, 2).fill({ color: 0xffd98f });
+        } else {
+          // Default: simple pointer dot
+          cursorGfx.circle(0, 0, 4).stroke({ color: 0x000000, width: 3 });
+          cursorGfx.circle(0, 0, 4).stroke({ color: 0xe8e3d4, width: 1.5 });
+          cursorGfx.circle(0, 0, 1.5).fill({ color: 0xe8e3d4 });
+        }
+      }
+
+      let lastCursorWeapon = "__init__";
+      drawCursor(undefined);
+
       // ── Ticker ────────────────────────────────────────────────────────────────
       app.ticker.add(() => {
         tickCount++;
+
+        // ── Day/Night cycle (advances regardless of UI state) ─────────────────
+        tickInDay++;
+        if (tickInDay >= TICKS_PER_DAY) {
+          tickInDay = 0;
+          gameDay++;
+          saveGameTime(gameDay, tickInDay);
+        }
+        const gameHour = Math.floor(tickInDay / TICKS_PER_HOUR);
+        isNight = gameHour >= 19 || gameHour < 5;
+        const isDawnDusk = gameHour === 5 || gameHour === 17 || gameHour === 18;
+        // Smoothly fade overlays
+        const targetNight = isNight ? 0.55 : 0;
+        const targetDawn = isDawnDusk ? 0.22 : 0;
+        const step = 0.0015;
+        if (nightOverlay.alpha < targetNight) nightOverlay.alpha = Math.min(targetNight, nightOverlay.alpha + step);
+        else if (nightOverlay.alpha > targetNight) nightOverlay.alpha = Math.max(targetNight, nightOverlay.alpha - step);
+        if (dawnOverlay.alpha < targetDawn) dawnOverlay.alpha = Math.min(targetDawn, dawnOverlay.alpha + step);
+        else if (dawnOverlay.alpha > targetDawn) dawnOverlay.alpha = Math.max(targetDawn, dawnOverlay.alpha - step);
+        // Lantern glow
+        const targetGlow = isNight ? 1 : (isDawnDusk ? 0.6 : 0.12);
+        const glowStep = 0.008;
+        for (const g of lanternGlows) {
+          if (g.alpha < targetGlow) g.alpha = Math.min(targetGlow, g.alpha + glowStep);
+          else if (g.alpha > targetGlow) g.alpha = Math.max(targetGlow, g.alpha - glowStep);
+        }
+        // HUD update on hour change
+        if (gameHour !== lastGameHour) {
+          lastGameHour = gameHour;
+          setGameTimeRef.current(gameDay, gameHour);
+        }
+        // Persist every real minute
+        saveTimerTick++;
+        if (saveTimerTick >= 3600) {
+          saveTimerTick = 0;
+          saveGameTime(gameDay, tickInDay);
+        }
+
+        // ── Custom cursor ────────────────────────────────────────────────────
+        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current;
+        cursorGfx.visible = !uiOpen;
+        cursorGfx.x = mouseX;
+        cursorGfx.y = mouseY;
+        const curWeapon = equipmentRef.current.mainhand?.id;
+        if (curWeapon !== lastCursorWeapon) {
+          lastCursorWeapon = curWeapon ?? "__none__";
+          drawCursor(curWeapon);
+        }
 
         if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current) {
           // Flush keys so nothing is still "held" when the UI closes
@@ -2417,6 +2968,7 @@ export default function PixelTestMapPage() {
             dashCooldown = 0;
             facing = "front";
             playerHp = playerMaxHp;
+            playerMana = 20 + Math.floor(((charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0)) / 20);
             playerInvuln = 0;
             setState("idle", true);
           }
@@ -2435,10 +2987,44 @@ export default function PixelTestMapPage() {
             }
             if (!keys["j"] && !keys["J"] && !keys["z"] && !keys["Z"]) attackConsumed = false;
 
+            // Spell casting
+            if (!spellConsumed && (keys["q"] || keys["Q"]) && (state === "idle" || state === "walk")) {
+              if (playerMana >= 8) {
+                spellConsumed = true;
+                const wx = knight.x + (mouseX - app!.screen.width / 2);
+                const wy = knight.y + (mouseY - app!.screen.height / 2);
+                castFirebolt(knight.x, knight.y, wx, wy);
+                spawnFloatingText("Firebolt", knight.x, knight.y - 65, 0xe16565);
+              }
+            }
+            if (!keys["q"] && !keys["Q"]) spellConsumed = false;
+
+            if (!healConsumed && (keys["e"] || keys["E"]) && (state === "idle" || state === "walk")) {
+              const effectiveMagery = (charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0);
+              if (playerMana >= 12 && effectiveMagery >= 100) {
+                healConsumed = true;
+                castHealSelf();
+              }
+            }
+            if (!keys["e"] && !keys["E"]) healConsumed = false;
+
             if (state === "attack" && knight.currentFrame === 2 && slashTimer === 0) {
-              // Aim direction from knight toward mouse in world space
+              const isBow = equipmentRef.current.mainhand?.id === "short_bow";
               const rawDx = mouseX - app!.screen.width / 2;
               const rawDy = mouseY - app!.screen.height / 2;
+
+              if (isBow) {
+                const hasArrow = inventoryRef.current.some(i => i.id === "arrow" && i.qty > 0);
+                if (hasArrow) {
+                  const wx = knight.x + rawDx;
+                  const wy = knight.y + rawDy;
+                  castArrow(knight.x, knight.y, wx, wy);
+                } else {
+                  spawnFloatingText("No arrows!", knight.x, knight.y - 60, 0xb8442a);
+                }
+                slashTimer = 4; // reuse cooldown to prevent spam
+              } else {
+              // Aim direction from knight toward mouse in world space
               const aimLen = Math.hypot(rawDx, rawDy) || 1;
               const aNx = rawDx / aimLen;
               const aNy = rawDy / aimLen;
@@ -2460,7 +3046,7 @@ export default function PixelTestMapPage() {
               slashTimer = 4;
 
               // Hit Monsters — cone toward mouse aim direction
-              const meleeDmg = Math.max(5, 5 + Math.floor((charRef.current?.skills.Melee ?? 0) * 0.025));
+              const meleeDmg = Math.max(5, 5 + Math.floor(((charRef.current?.skills.Melee ?? 0) + (equipBonusRef.current.Melee ?? 0)) * 0.025));
               for (const m of monsters) {
                 if (m.state === "dead") continue;
                 const dx = m.sprite.x - knight.x;
@@ -2478,40 +3064,10 @@ export default function PixelTestMapPage() {
 
                   spawnFloatingText(`-${meleeDmg}`, m.sprite.x, m.sprite.y - 50, 0xffffff);
 
-                  if (m.hp <= 0) {
-                    m.state = "dead";
-                    m.sprite.textures = m.deathFrames;
-                    m.sprite.loop = false;
-                    m.sprite.gotoAndPlay(0);
-                    m.hpBar.visible = false;
-                    m.hpBarBg.visible = false;
-                    gainSkillRef.current("Melee", 10);
-                    if (m.skillOnKill && m.skillOnKill !== "Melee") gainSkillRef.current(m.skillOnKill, 15);
-                    gainFameRef.current(m.fameOnKill ?? 3);
-                    if (m.dropId) {
-                      addItemRef.current(m.dropId, m.dropQty ?? 1);
-                      const dropName = ITEM_DB[m.dropId]?.name ?? m.dropId;
-                      spawnFloatingText(`+${m.dropQty ?? 1} ${dropName}`, m.sprite.x, m.sprite.y - 20, 0xa69581);
-                    }
-                    // Quest kill tracking
-                    const qMap = questProgressRef.current;
-                    let qChanged = false;
-                    const nextQMap = { ...qMap };
-                    for (const [qId, qp] of Object.entries(qMap)) {
-                      if (qp.status !== "active") continue;
-                      const quest = QUESTS.find(q => q.id === qId);
-                      if (!quest || quest.objective.type !== "kill" || m.monsterType !== quest.objective.target) continue;
-                      const newProg = Math.min(qp.progress + 1, quest.objective.count);
-                      nextQMap[qId] = { status: newProg >= quest.objective.count ? "ready" : "active", progress: newProg };
-                      qChanged = true;
-                    }
-                    if (qChanged) {
-                      questProgressRef.current = nextQMap;
-                      setQuestProgress(nextQMap);
-                    }
-                  }
+                  if (m.hp <= 0) handleMonsterKill(m, "Melee");
                 }
               }
+              } // end else (melee)
             }
 
             if (dashCooldown > 0) dashCooldown--;
@@ -2659,7 +3215,7 @@ export default function PixelTestMapPage() {
               }
 
               if (dist < 30 && playerInvuln === 0) {
-                const defReduction = Math.min(0.5, (charRef.current?.skills.Defense ?? 0) / 2000);
+                const defReduction = Math.min(0.5, ((charRef.current?.skills.Defense ?? 0) + (equipBonusRef.current.Defense ?? 0)) / 2000);
                 const dmgTaken = Math.max(1, Math.round(m.damage * (1 - defReduction)));
                 playerHp -= dmgTaken;
                 playerInvuln = 45;
@@ -2693,6 +3249,48 @@ export default function PixelTestMapPage() {
         
         healthBar.width = Math.max(0, (playerHp / playerMaxHp) * 200);
         hpText.text = `${Math.max(0, playerHp)}/${playerMaxHp}`;
+
+        // Mana regen + bar
+        const effectiveMagery = (charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0);
+        const playerMaxMana = 20 + Math.floor(effectiveMagery / 20);
+        if (state !== "dead") {
+          const isMovingNow = !!(left || right || up || down);
+          manaRegenTick++;
+          const regenRate = isMovingNow ? 180 : 90;
+          if (manaRegenTick >= regenRate && playerMana < playerMaxMana) {
+            playerMana = Math.min(playerMaxMana, playerMana + 1);
+            manaRegenTick = 0;
+            if (!isMovingNow) gainSkillRef.current("Meditation", 1);
+          }
+        }
+        manaBar.width = Math.max(0, (playerMana / Math.max(1, playerMaxMana)) * 200);
+        manaText.text = `${Math.floor(playerMana)}/${playerMaxMana}`;
+
+        // Projectile updates
+        for (let pi = projectiles.length - 1; pi >= 0; pi--) {
+          const p = projectiles[pi];
+          p.x += p.vx; p.y += p.vy;
+          p.life--;
+          p.gfx.x = p.x; p.gfx.y = p.y;
+          p.gfx.alpha = Math.min(1, p.life / 8);
+          let hit = false;
+          for (const m of monsters) {
+            if (m.state === "dead") continue;
+            if (Math.hypot(m.sprite.x - p.x, m.sprite.y - p.y) < 22) {
+              m.hp -= p.damage;
+              m.hitFlash = 6;
+              spawnFloatingText(`-${p.damage}`, m.sprite.x, m.sprite.y - 50, p.color);
+              gainSkillRef.current(p.hitSkill, 8);
+              if (m.hp <= 0) handleMonsterKill(m, p.hitSkill);
+              hit = true;
+              break;
+            }
+          }
+          if (hit || p.life <= 0) {
+            worldContainer.removeChild(p.gfx);
+            projectiles.splice(pi, 1);
+          }
+        }
 
         for (const house of houses) {
           const { bounds, roofContainer } = house;
@@ -2800,27 +3398,41 @@ export default function PixelTestMapPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const ItemCell = ({ item, onClick }: { item?: Item | null, onClick?: () => void }) => (
-    <div 
-      onClick={onClick}
-      className={`w-12 h-12 border-4 ${item ? 'border-[#3d3555] bg-[#16131f] cursor-pointer hover:border-[#ffd98f]' : 'border-[#16131f] bg-[#0d0b12]'} flex items-center justify-center relative select-none`}
-    >
-      {item && (
-        <>
-          <span className="text-2xl drop-shadow-md">{item.icon}</span>
-          {item.qty > 1 && (
-            <span className="absolute bottom-[-6px] right-[-2px] text-[10px] font-bold text-white shadow-black drop-shadow-md">
-              x{item.qty}
-            </span>
-          )}
-        </>
-      )}
-    </div>
-  );
+  const QUALITY_BORDER: Record<ItemQuality, string> = {
+    common: "#3d3555",
+    uncommon: "#ffd98f",
+    rare: "#e16565",
+  };
+
+  const ItemCell = ({ item, onClick }: { item?: Item | null, onClick?: () => void }) => {
+    const borderColor = item?.quality ? QUALITY_BORDER[item.quality] : item ? "#3d3555" : "#16131f";
+    const bonusLines = item?.bonuses
+      ? Object.entries(item.bonuses).map(([sk, v]) => `+${(v as number) / 10} ${sk}`).join(", ")
+      : null;
+    return (
+      <div
+        onClick={onClick}
+        title={bonusLines ? `${item!.name}\n${bonusLines}` : item?.name}
+        className={`w-12 h-12 border-4 ${item ? "bg-[#16131f] cursor-pointer hover:opacity-80" : "bg-[#0d0b12]"} flex items-center justify-center relative select-none`}
+        style={{ borderColor }}
+      >
+        {item && (
+          <>
+            <span className="text-2xl drop-shadow-md">{item.icon}</span>
+            {item.qty > 1 && (
+              <span className="absolute bottom-[-6px] right-[-2px] text-[10px] font-bold text-white shadow-black drop-shadow-md">
+                x{item.qty}
+              </span>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="bg-[#08060a] relative w-screen h-screen overflow-hidden font-mono" suppressHydrationWarning>
-      <div ref={containerRef} className="absolute inset-0" suppressHydrationWarning />
+      <div ref={containerRef} className="absolute inset-0 cursor-none" suppressHydrationWarning />
       
       {/* Character HUD — name + fame below HP bar */}
       {character && (
@@ -2830,6 +3442,7 @@ export default function PixelTestMapPage() {
           </p>
           <p className="text-[#e8e3d4] text-[12px] uppercase">{character.name}</p>
           <p className="text-[#564870] text-[9px]">{character.charClass} · Fame {character.fame}</p>
+          <p className="text-[#564870] text-[9px]">Day {gameTime.day} · {hourPeriod(gameTime.hour)}</p>
         </div>
       )}
 
@@ -2839,7 +3452,7 @@ export default function PixelTestMapPage() {
           Unyha — Pixel World
         </p>
         <p className="font-mono text-[9px] tracking-[0.2em] text-white/20 uppercase">
-          WASD move · LMB / J attack · Shift dash · F interact/talk · I inventory · C character · Esc close
+          WASD move · LMB / J attack · Shift dash · Q firebolt · E heal · F interact · I inventory · C character · L chronicle
         </p>
       </div>
 
@@ -2920,7 +3533,8 @@ export default function PixelTestMapPage() {
                 <div className="flex flex-col gap-1.5">
                   {skills.map(skill => {
                     const raw = character.skills[skill] ?? 0;
-                    const displayed = Math.floor(raw / 10);
+                    const bonus = equipBonusRef.current[skill] ?? 0;
+                    const effective = raw + bonus;
                     const pct = (raw / 1000) * 100;
                     return (
                       <div key={skill} className="flex items-center gap-2">
@@ -2928,7 +3542,8 @@ export default function PixelTestMapPage() {
                         <div className="flex-1 h-1.5 bg-[#0d0b12]">
                           <div className="h-full bg-[#ffd98f] transition-all" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-[#e8e3d4] text-[10px] w-7 text-right tabular-nums">{displayed}</span>
+                        <span className="text-[#e8e3d4] text-[10px] w-7 text-right tabular-nums">{Math.floor(effective / 10)}</span>
+                        {bonus > 0 && <span className="text-[#6dbd6d] text-[9px] tabular-nums">+{Math.floor(bonus / 10)}</span>}
                       </div>
                     );
                   })}
@@ -3033,7 +3648,7 @@ export default function PixelTestMapPage() {
                 onClick={handleTakeAll}
                 className="mt-auto bg-[#3d3555] border-4 border-[#16131f] text-[#e8e3d4] px-6 py-2 uppercase tracking-widest hover:bg-[#564870] hover:text-white"
               >
-                Take All
+                [F] Take All
               </button>
             </div>
 
@@ -3194,6 +3809,121 @@ export default function PixelTestMapPage() {
           </div>
         );
       })()}
+
+      {/* ── Crafting Overlay ──────────────────────────────────────────────────── */}
+      {uiMode === "crafting" && activeCraftStation && (() => {
+        const stationRecipes = RECIPES.filter(r => r.station === activeCraftStation);
+        const selected = stationRecipes.find(r => r.id === selectedRecipeId) ?? stationRecipes[0] ?? null;
+        const skillVal = selected
+          ? (character?.skills[selected.skill] ?? 0) + (equipBonusRef.current[selected.skill] ?? 0)
+          : 0;
+        const canCraft = selected
+          ? skillVal >= selected.minSkill &&
+            selected.ingredients.every(ing => (inventory.find(i => i.id === ing.id)?.qty ?? 0) >= ing.qty)
+          : false;
+
+        return (
+          <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="w-[700px] bg-[#16131f] border-[6px] border-[#3d3555] p-6 font-mono relative">
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f" }}>Crafting</p>
+              <h2 className="text-[#e8e3d4] text-xl uppercase tracking-widest mb-5">{STATION_LABELS[activeCraftStation]}</h2>
+
+              <div className="flex gap-4">
+                {/* Recipe list */}
+                <div className="w-[220px] flex flex-col gap-1">
+                  {stationRecipes.map(r => {
+                    const sv = character?.skills[r.skill] ?? 0;
+                    const locked = sv < r.minSkill;
+                    const isSel = (selectedRecipeId ?? stationRecipes[0]?.id) === r.id;
+                    return (
+                      <button key={r.id} onClick={() => setSelectedRecipeId(r.id)}
+                        className={`flex items-center justify-between px-3 py-2 border text-left transition-colors
+                          ${isSel ? "border-[#ffd98f] bg-[#0d0b12]" : "border-[#3d3555] bg-[#0d0b12] hover:border-[#564870]"}
+                          ${locked ? "opacity-40" : ""}`}
+                      >
+                        <span className="text-[#e8e3d4] text-[11px]">{ITEM_DB[r.result]?.name ?? r.result}</span>
+                        {locked
+                          ? <span className="text-[#564870] text-[9px]">{r.skill} {Math.floor(r.minSkill / 10)}</span>
+                          : <span className="text-[#6dbd6d] text-[10px]">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Recipe detail */}
+                {selected && (
+                  <div className="flex-1 flex flex-col gap-3">
+                    <div>
+                      <p className="text-[#a69581] text-[9px] uppercase tracking-widest mb-1">Result</p>
+                      <p className="text-[#e8e3d4] text-sm">
+                        {selected.resultQty > 1 ? `${selected.resultQty}× ` : ""}{ITEM_DB[selected.result]?.icon} {ITEM_DB[selected.result]?.name ?? selected.result}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[#a69581] text-[9px] uppercase tracking-widest mb-2">Ingredients</p>
+                      {selected.ingredients.map(ing => {
+                        const have = inventory.find(i => i.id === ing.id)?.qty ?? 0;
+                        const ok = have >= ing.qty;
+                        return (
+                          <p key={ing.id} className={`text-[11px] mb-1 ${ok ? "text-[#e8e3d4]" : "text-[#b8442a]"}`}>
+                            {ITEM_DB[ing.id]?.icon} {ITEM_DB[ing.id]?.name ?? ing.id} — {have}/{ing.qty} {ok ? "✓" : "✗"}
+                          </p>
+                        );
+                      })}
+                    </div>
+                    <div>
+                      <p className="text-[#a69581] text-[9px] uppercase tracking-widest mb-1">Requires</p>
+                      <p className={`text-[11px] ${skillVal >= selected.minSkill ? "text-[#6dbd6d]" : "text-[#b8442a]"}`}>
+                        {selected.skill} {Math.floor(selected.minSkill / 10)} — you have {Math.floor(skillVal / 10)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { if (canCraft) handleCraft(selected.id); }}
+                      disabled={!canCraft}
+                      className={`mt-2 px-6 py-3 border-2 text-[12px] uppercase tracking-widest transition-colors
+                        ${canCraft
+                          ? "border-[#ffd98f] text-[#ffd98f] bg-[#3d3555] hover:bg-[#564870] cursor-pointer"
+                          : "border-[#3d3555] text-[#564870] cursor-not-allowed opacity-50"}`}
+                    >Craft</button>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => { uiModeRef.current = "closed"; setUiMode("closed"); }}
+                className="absolute -top-4 -right-4 w-10 h-10 bg-[#b8442a] border-4 border-[#16131f] text-white font-bold hover:bg-[#ff0000]"
+              >X</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Chronicle Panel ─────────────────────────────────────────────────── */}
+      {showChronicle && (
+        <div className="absolute inset-0 z-[1000000] flex items-end justify-end p-8 pointer-events-none">
+          <div className="w-[420px] max-h-[70vh] flex flex-col bg-[#0d0b12]/95 border-[4px] border-[#3d3555] pointer-events-auto font-mono">
+            <div className="px-6 pt-6 pb-4 border-b border-[#16131f]">
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f" }}>Autochronicle</p>
+              <h2 className="text-[#e8e3d4] text-xl uppercase tracking-widest">Chronicle</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {chronicle.length === 0 ? (
+                <p className="text-[#564870] text-sm italic">Your deeds have not yet been recorded.</p>
+              ) : (
+                chronicle.map((entry) => (
+                  <div key={entry.ts} className="mb-4 pb-4 border-b border-[#16131f] last:border-0 last:mb-0">
+                    <p className="text-[#e8e3d4] text-sm leading-relaxed">{entry.text}</p>
+                    {entry.fame > 0 && <p className="text-[#ffd98f] text-[10px] mt-1">+{entry.fame} Fame</p>}
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => setShowChronicle(false)}
+              className="mx-6 mb-6 mt-2 border border-[#3d3555] text-[#564870] py-1.5 text-[10px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f] transition-colors"
+            >Close [L]</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
