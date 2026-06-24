@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { Eyebrow } from "@/components/ui";
+import { Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 const inputClass =
@@ -75,9 +75,7 @@ function LoginForm() {
       </div>
 
       {error && (
-        <p className="mb-[18px] mt-0 text-[0.85rem] text-[#e16565]">
-          {error}
-        </p>
+        <Text className="mb-[18px] mt-0 text-[0.85rem] text-[#e16565]">{error}</Text>
       )}
 
       <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
@@ -92,7 +90,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
         <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
-        <h1 className="mb-8 text-center text-[3rem]">Sign In</h1>
+        <Heading level="h1" className="mb-8 text-center text-[3rem]">Sign In</Heading>
         <Suspense>
           <LoginForm />
         </Suspense>
