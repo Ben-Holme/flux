@@ -230,6 +230,7 @@ export default function ChroniclePage() {
   const sheetDragStartYRef = useRef(0);
   const sheetDraggedRef = useRef(false);
   const sheetExpandedRef = useRef(false);
+  const navStackLengthRef = useRef(0);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
@@ -428,6 +429,9 @@ export default function ChroniclePage() {
   useEffect(() => {
     sheetExpandedRef.current = sheetExpanded;
   }, [sheetExpanded]);
+  useEffect(() => {
+    navStackLengthRef.current = navStack.length;
+  }, [navStack]);
   useEffect(() => {
     liveLocsRef.current = liveLocs;
     // revealAt tied directly to radiusWorld: small locations disappear as soon as you
@@ -1130,11 +1134,19 @@ export default function ChroniclePage() {
     const raw = e.clientY - sheetDragStartYRef.current;
     if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
     const isExpanded = sheetExpandedRef.current;
+    const hasNav = navStackLengthRef.current > 0;
+    const isHalf = isExpanded && !hasNav;
     const delta = Math.max(!isExpanded ? -150 : 0, Math.min(200, raw));
     const el = sheetElRef.current;
     if (!el) return;
-    if (isExpanded) el.style.transform = `translateY(${delta}px)`;
-    else el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
+    if (!isExpanded) el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
+    else if (isHalf) el.style.transform = `translateY(calc(50% + ${delta}px))`;
+    else el.style.transform = `translateY(${delta}px)`;
+  }, []);
+
+  const sheetSnapTransform = useCallback((expanded: boolean) => {
+    if (!expanded) return "translateY(calc(100% - 120px))";
+    return navStackLengthRef.current > 0 ? "translateY(0px)" : "translateY(50%)";
   }, []);
 
   const onSheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
@@ -1153,12 +1165,11 @@ export default function ChroniclePage() {
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (newExpanded) el.style.transform = "translateY(0px)";
-      else el.style.transform = "translateY(calc(100% - 120px))";
+      el.style.transform = sheetSnapTransform(newExpanded);
     }
 
     if (newExpanded !== isExpanded) setSheetExpanded(newExpanded);
-  }, []);
+  }, [sheetSnapTransform]);
 
   const onSheetHandlePointerCancel = useCallback(() => {
     if (!sheetDragActiveRef.current) return;
@@ -1168,10 +1179,9 @@ export default function ChroniclePage() {
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (isExpanded) el.style.transform = "translateY(0px)";
-      else el.style.transform = "translateY(calc(100% - 120px))";
+      el.style.transform = sheetSnapTransform(isExpanded);
     }
-  }, []);
+  }, [sheetSnapTransform]);
 
   const getSeasonLabel = (n: number) => {
     const api = apiSeasons[n - 1];
@@ -1186,6 +1196,7 @@ export default function ChroniclePage() {
     setSlideDir("back");
     setNavStack([]);
     setActiveTab("events");
+    setSheetExpanded(true); // show half-state (no nav → sheet sits at 50%)
   }, []);
 
   const popNav = useCallback(() => {
@@ -1346,17 +1357,27 @@ export default function ChroniclePage() {
                 }}
               />
               {/* Label — below icon */}
-              <span
-                style={{
-                  fontSize:
-                    loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
-                  textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
-                  letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
-                }}
-                className="absolute translate-x-[-50%] pt-4 tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
-              >
-                {loc.name}
-              </span>
+              <div className="absolute translate-x-[-50%] pt-4 flex flex-col items-center gap-1">
+                <span
+                  style={{
+                    fontSize:
+                      loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
+                    textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
+                    letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
+                  }}
+                  className="tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+                >
+                  {loc.name}
+                </span>
+                {selectedIdx === i && loc.description && (
+                  <span
+                    className="whitespace-nowrap text-center text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+                    style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", maxWidth: "200px", whiteSpace: "normal", textAlign: "center", lineHeight: 1.4 }}
+                  >
+                    {loc.description}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -1541,7 +1562,7 @@ export default function ChroniclePage() {
                   <option value={0}>All seasons</option>
                   {apiSeasons.map((_, i) => (
                     <option key={i + 1} value={i + 1}>
-                      {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
+                      {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
                     </option>
                   ))}
                 </select>
@@ -1638,7 +1659,7 @@ export default function ChroniclePage() {
           ref={sheetElRef}
           className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
           style={{
-            transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
+            transform: !sheetExpanded ? "translateY(calc(100% - 120px))" : navStack.length > 0 ? "translateY(0px)" : "translateY(50%)",
             transition: "transform 0.3s ease",
           }}
         >
@@ -1693,7 +1714,7 @@ export default function ChroniclePage() {
                     <option value={0}>All seasons</option>
                     {apiSeasons.map((_, i) => (
                       <option key={i + 1} value={i + 1}>
-                        {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
+                        {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
                       </option>
                     ))}
                   </select>
