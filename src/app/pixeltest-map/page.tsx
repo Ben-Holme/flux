@@ -1,937 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type {
+  Item, ItemQuality, Equipment, ContainerData, ShopEntry, Quest, NpcDef, UiMode,
+  CraftStationType, Recipe, Rect, Interactable,
+  SkillName, CharClass, Character, ChronicleEntry, House, HouseCharacter,
+} from "./types";
+import {
+  PALETTE,
+  RECOLOR_ORC_GRUNT, RECOLOR_ORC_SHAMAN, RECOLOR_WOLF, RECOLOR_RAT,
+  RECOLOR_NPC_VENDOR, RECOLOR_NPC_SMITH, RECOLOR_NPC_QUEST,
+  TORSO_FRONT, TORSO_BACK, WALK_LEGS, IDLE_LEGS, IDLE_EYES,
+  EQ_HELM_IRON, EQ_SWORD_IRON, EQ_PICKAXE, EQ_AXE, EQ_SHIELD_WOOD,
+  GIANT_PINE_TREE,
+  TILE_GRASS, MOUNTAIN_ROCK, CAVE_FLOOR, TILE_FLOOR, TILE_WALL, TILE_ROOF, TILE_DIRT, TILE_COBBLE, TILE_WATER,
+  BARREL, BOX, LANTERN, FIRE_1, FIRE_2, BUSH, FLOWER, MUSHROOM, ROCK_VEIN, TREE_STUMP, HERB_PATCH,
+  FORGE_STATION, ALCHEMY_TABLE_STA, LOOM_STA, WOODBENCH_STA,
+  STATION_LABELS, RECIPES,
+  DOOR_CLOSED, DOOR_OPEN, CHEST_CLOSED, CHEST_OPEN, BARREL_OPEN, BOX_OPEN,
+  ITEM_DB, QUESTS, NPC_DEFS,
+  SKILL_CATEGORIES, defaultSkills, CLASS_BONUSES, CLASS_DESCS,
+  FAME_TITLES, SKILL_MILESTONES,
+  TICKS_PER_HOUR, TICKS_PER_DAY, TICKS_PER_SEASON,
+} from "./data";
+import {
+  CHAR_KEY, HOUSE_KEY, CHRONICLE_KEY, MILESTONES_KEY, GAME_TIME_KEY,
+  createItem, getSellPrice,
+  loadCharacter, saveCharacter,
+  loadHouse, saveHouse,
+  addSkillXp, fameTitle,
+  loadChronicle, saveChronicle,
+  loadMilestones, saveMilestones,
+  loadGameTime, saveGameTime,
+  hourPeriod,
+} from "./utils";
 
-// ── Types & Data ─────────────────────────────────────────────────────────────
-
-type ItemType = "weapon" | "armor" | "consumable" | "material";
-
-type ItemQuality = "common" | "uncommon" | "rare";
-
-interface Item {
-  id: string;
-  name: string;
-  type: ItemType;
-  icon: string;
-  qty: number;
-  maxStack: number;
-  slot?: "head" | "chest" | "mainhand" | "offhand";
-  bonuses?: Partial<Record<SkillName, number>>;
-  quality?: ItemQuality;
-}
-
-interface Equipment {
-  head: Item | null;
-  chest: Item | null;
-  mainhand: Item | null;
-  offhand: Item | null;
-}
-
-interface ContainerData {
-  id: string;
-  items: Item[];
-}
-
-interface ShopEntry {
-  itemId: string;
-  price: number;
-}
-
-interface Quest {
-  id: string;
-  title: string;
-  giver: string;
-  description: string;
-  objective: { type: "kill"; target: string; count: number; label: string };
-  reward: { gold: number; itemId?: string; itemQty?: number };
-}
-
-interface NpcDef {
-  id: string;
-  name: string;
-  title: string;
-  x: number;
-  y: number;
-  type: "vendor" | "quest_giver";
-  recolor: Record<string, string>;
-  shop?: ShopEntry[];
-  questId?: string;
-  greeting: string;
-}
-
-type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting" | "narration";
-
-// ── Pixi Game Engine & Data Arrays ──────────────────────────────────────────
-
-const PALETTE: Record<string, string | null> = {
-  "0": null,
-  "1": "#0d0b12",
-  "2": "#16131f",
-  "3": "#2c2640",
-  "4": "#3d3555",
-  "5": "#564870",
-  "6": "#ffd98f",
-  "7": "#c8923a",
-  "8": "#b8442a",
-  "9": "#e8e3d4",
-  "a": "#183020",
-  "b": "#244a30",
-  "c": "#40261a",
-  "d": "#5a3a29",
-  "e": "#2a2d36",
-  "f": "#3e424e",
-  "g": "#2a3b4c",
-  "h": "#1a466b",
-  "i": "#266b96",
-  "j": "#33221a",
-  "k": "#4d3326",
-  "l": "#80705f",
-  "m": "#a69581",
-  "n": "#ffa200",
-  "o": "#ffe600",
-  "p": "#221100",
-  "q": "#3a2100",
-  "r": "#4a7a40",
-  "s": "#e35479",
-  "t": "#1c3a26",
-  "u": "#1e2129",
-  "v": "#2d323d",
-  "w": "#111216",
-  "x": "#181a20",
-};
-
-// Palette recolor maps for enemy variants
-const RECOLOR_ORC_GRUNT: Record<string, string> = {
-  "3": "t", "4": "a", "5": "b", "6": "n", "7": "c", "8": "8", "9": "r",
-};
-const RECOLOR_ORC_SHAMAN: Record<string, string> = {
-  "3": "2", "4": "t", "5": "a", "6": "s", "7": "p", "8": "n", "9": "b",
-};
-const RECOLOR_WOLF: Record<string, string> = {
-  "3": "j", "4": "k", "5": "l", "6": "m", "7": "c", "8": "j", "9": "m",
-};
-const RECOLOR_RAT: Record<string, string> = {
-  "3": "p", "4": "q", "5": "c", "6": "d", "7": "j", "8": "1", "9": "l",
-};
-// NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal
-const RECOLOR_NPC_VENDOR: Record<string, string> = {
-  "3": "q", "4": "c", "5": "d", "6": "n", "7": "c", "8": "8", "9": "m",
-};
-const RECOLOR_NPC_SMITH: Record<string, string> = {
-  "3": "u", "4": "v", "5": "w", "6": "n", "7": "n", "8": "8", "9": "9",
-};
-const RECOLOR_NPC_QUEST: Record<string, string> = {
-  "3": "t", "4": "a", "5": "b", "6": "s", "7": "p", "8": "8", "9": "m",
-};
-
-const TORSO_FRONT: string[] = [
-  "0000011111100000",
-  "0000134444310000",
-  "0000134594310000",
-  "0000133343310000",
-  "0000138118310000",
-  "0000133663310000",
-  "0001133333310000",
-  "0013344444431000",
-  "0134454444543410",
-  "0134455455543410",
-  "0133456666543310",
-  "0133366666633310",
-  "0133336666333310",
-  "0113337667333110",
-  "0016666666666100",
-  "0011333443331100",
-  "0001334443331000",
-  "0001331001331000",
-  "0001331001331000",
-];
-
-const TORSO_BACK: string[] = [
-  "0000011111100000",
-  "0000134444310000",
-  "0000134554310000",
-  "0000133443310000",
-  "0000133443310000",
-  "0000133333310000",
-  "0001133333310000",
-  "0013344444431000",
-  "0134454444543410",
-  "0134455455543410",
-  "0133455555543310",
-  "0133355555533310",
-  "0133335555333310",
-  "0113333553333110",
-  "0016666666666100",
-  "0011333443331100",
-  "0001334443331000",
-  "0001331001331000",
-  "0001331001331000",
-];
-
-const WALK_LEGS: string[][] = [
-  [
-    "0001341001431000",
-    "0001331001331000",
-    "0001331001331000",
-    "0001331001331000",
-    "0013331001333100",
-  ],
-  [
-    "0001310001431000",
-    "0001310001331000",
-    "0001100001331000",
-    "0001000001331000",
-    "0000000001333100",
-  ],
-  [
-    "0001341001431000",
-    "0001331001331000",
-    "0001331001331000",
-    "0001331001331000",
-    "0013331001333100",
-  ],
-  [
-    "0001431001310000",
-    "0001331001310000",
-    "0001331001100000",
-    "0001331001000000",
-    "0013331000000000",
-  ],
-];
-
-const IDLE_LEGS = WALK_LEGS[0];
-const IDLE_EYES = ["0000138118310000", "0000133113310000"];
-
-// Equipment overlay — 16×24, same dimensions as knight. '0' = transparent (base shows through).
-// Renders on top of the base knight sprite at the same anchor/position.
-const EQ_HELM_IRON: string[] = [
-  "0000066666600000",  // gold crown band over the helmet top
-  "0000000fff000000",  // steel-grey dome highlights
-  "0000000f90000000",  // steel dome with glint
-  "000000ffe0000000",  // steel brow ridge
-  "0000000000000000",  // keep base ember eyes
-  "000000f0f0000000",  // steel visor cheekplates
-  "0000000000000000",
-  "0000000000000000", "0000000000000000", "0000000000000000",
-  "0000000000000000", "0000000000000000", "0000000000000000",
-  "0000000000000000", "0000000000000000", "0000000000000000",
-  "0000000000000000", "0000000000000000", "0000000000000000",
-  "0000000000000000", "0000000000000000", "0000000000000000",
-  "0000000000000000", "0000000000000000",
-];
-
-// Sword sprite — 6×15, held tip-down. Anchor (0.5, 0) = pommel end.
-const EQ_SWORD_IRON: string[] = [
-  "011100",  // pommel
-  "016160",  // grip gold wrap
-  "016160",
-  "066660",  // crossguard
-  "0f9f00",  // blade — steel sides, bright centre
-  "0f9f00",
-  "0f9f00",
-  "0f9f00",
-  "0f9f00",
-  "0f9f00",
-  "0f9f00",
-  "0f9f00",
-  "00f900",  // blade narrows toward tip
-  "000f00",
-  "000000",
-];
-
-// Pickaxe sprite — 8×10, head at top, handle down
-const EQ_PICKAXE: string[] = [
-  "0000c110",
-  "000c1760",
-  "00c17660",
-  "0c176600",
-  "07116000",
-  "01100000",
-  "01000000",
-  "01000000",
-  "01000000",
-  "00000000",
-];
-
-// Axe sprite — 7×10
-const EQ_AXE: string[] = [
-  "0006c10",
-  "006cc10",
-  "06ccc10",
-  "06c7610",
-  "06c7610",
-  "006cc10",
-  "001c110",
-  "000110 ",
-  "000100 ",
-  "000000 ",
-];
-
-// Shield sprite — 8×8, anchor (0.5, 0.5) = centre
-const EQ_SHIELD_WOOD: string[] = [
-  "01111110",
-  "1ddddd11",
-  "1dk6kdd1",
-  "1dkkkdd1",
-  "1dk6kdd1",
-  "1dkkkdd1",
-  "1ddddd11",
-  "01111110",
-];
-
-const GIANT_PINE_TREE: string[] = [
-  "000000000000000a000000000000000",
-  "00000000000000aaa00000000000000",
-  "0000000000000abaaa0000000000000",
-  "000000000000aabbbaa000000000000",
-  "00000000000abaabbaaa00000000000",
-  "00000000000aabbaaaaa00000000000",
-  "0000000000abaaabbaaaa0000000000",
-  "000000000aabbaaabaaaaa000000000",
-  "00000000abaaabbaabaaaaa00000000",
-  "0000000aabbaabbbbaaaaaaa0000000",
-  "0000000000aabaabaaaaa0000000000",
-  "000000000aabbaaabaaaaa000000000",
-  "00000000aabbaabbbbaaaaa00000000",
-  "0000000abaaabbaaabaaaaaa0000000",
-  "000000aabbaaabbaaabaaaaaa000000",
-  "00000abaaabbaaabbaabaaaaaa00000",
-  "0000aabbaabbbbaaabbbbaaaaaa0000",
-  "00000000aabbaaabaaaaa0000000000",
-  "0000000abaaabbaabaaaaa000000000",
-  "000000aabbaabbbbaaaaaaa00000000",
-  "00000abaaabbaaabaaaaaaaa0000000",
-  "0000aabbaaabbaaabaaaaaaaa000000",
-  "000abaaabbaaabbaabaaaaaaaa00000",
-  "00aabbaabbbbaaabbbbaaaaaaaa0000",
-  "0abaaabbaaabbaaabbaabaaaaaaa000",
-  "aabbaabbbbaaabbbbaaabbbaaaaaa00",
-  "000000abaaabaabaaaaa00000000000",
-  "00000aabbaabbaabaaaaa0000000000",
-  "0000abaaabbaabaaaaaaaa000000000",
-  "000aabbaaabbaabaaaaaaaa00000000",
-  "00abaaabbaaabbaabaaaaaaa0000000",
-  "0aabbaaabbaaabbaabaaaaaaa000000",
-  "abaaabbaabbbbaaabbbbaaaaaa00000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-  "0000000000000c00000000000000000",
-];
-
-const TILE_GRASS: string[] = [
-  "btbbttbtbttbbbtb",
-  "tbttbtbbbtbttbtb",
-  "bttbbttbtbttbttb",
-  "tbtbttbtbttbbttb",
-  "btbttbbbtbttbtbb",
-  "ttbttbtbttbbttbt",
-  "bbtbttbbbtbttbtb",
-  "tbtbttbtbttbbttb",
-  "btbbttbtbttbbbtb",
-  "tbttbtbbbtbttbtb",
-  "bttbbttbtbttbttb",
-  "tbtbttbtbttbbttb",
-  "btbttbbbtbttbtbb",
-  "ttbttbtbttbbttbt",
-  "bbtbttbbbtbttbtb",
-  "tbtbttbtbttbbttb",
-];
-
-const MOUNTAIN_ROCK: string[] = [
-  "uuuvuuvuuvuvuuvv",
-  "uvuuvuuvvuvuuvuv",
-  "vuuvuvuuvuuvuuvu",
-  "uvuvuuvuuvuvuuvu",
-  "uuvuuvuvuuvuuvvu",
-  "vuuvuvuuvuuvuuvu",
-  "uvuuvuuvvuvuuvuv",
-  "uvvuvuuvuuvuvuuu",
-  "uuuvuuvuuvuvuuvv",
-  "uvuuvuuvvuvuuvuv",
-  "vuuvuvuuvuuvuuvu",
-  "uvuvuuvuuvuvuuvu",
-  "uuvuuvuvuuvuuvvu",
-  "vuuvuvuuvuuvuuvu",
-  "uvuuvuuvvuvuuvuv",
-  "uvvuvuuvuuvuvuuu",
-];
-
-const CAVE_FLOOR: string[] = [
-  "wxwwxxwxwxxwwwxw",
-  "xwwxwxxwwwxxwxwx",
-  "wwxxwwxwxwwxxwwx",
-  "xwxwwxwxwwxxwwxx",
-  "wxwxxwwwxxwxwxxw",
-  "xxwwxwxwwxxwwxwx",
-  "wwxwxxwwwxxwxwxw",
-  "xwxxwwxwxwwxwwwx",
-  "wxwwxxwxwxxwwwxw",
-  "xwwxwxxwwwxxwxwx",
-  "wwxxwwxwxwwxxwwx",
-  "xwxwwxwxwwxxwwxx",
-  "wxwxxwwwxxwxwxxw",
-  "xxwwxwxwwxxwwxwx",
-  "wwxwxxwwwxxwxwxw",
-  "xwxxwwxwxwwxwwwx",
-];
-
-const TILE_FLOOR: string[] = [
-  "dddddddddddddddd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dccccccccccccccd",
-  "dddddddddddddddd",
-];
-
-const TILE_WALL: string[] = [
-  "eeeeeeeeeeeeeeee",
-  "efefefefefefefee",
-  "eeeeeeeeeeeeeeee",
-  "fefefefefefefefe",
-  "eeeeeeeeeeeeeeee",
-  "efefefefefefefee",
-  "eeeeeeeeeeeeeeee",
-  "fefefefefefefefe",
-  "eeeeeeeeeeeeeeee",
-  "efefefefefefefee",
-  "eeeeeeeeeeeeeeee",
-  "fefefefefefefefe",
-  "eeeeeeeeeeeeeeee",
-  "efefefefefefefee",
-  "eeeeeeeeeeeeeeee",
-  "eeeeeeeeeeeeeeee",
-];
-
-const TILE_ROOF: string[] = [
-  "gggggggggggggggg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gffffffffffffffg",
-  "gggggggggggggggg",
-];
-
-const TILE_DIRT: string[] = [
-  "pqqppppqpqpqpppq",
-  "qpqppqppqpqpqpqp",
-  "pqpqpqpqpppqppqq",
-  "qppqpqqpqppqpqpq",
-  "pqppqpqpqpqppqqp",
-  "qpqpqppqpppqppqp",
-  "pqpqpqpqpqqpqpqq",
-  "qppqpqpqppqppqpp",
-  "pqpqpqpqpqpqpqpp",
-  "qpqppqqpqppqpqpq",
-  "pqppqpqpqppqpqpp",
-  "qppqpqpqppqqpqpq",
-  "pqpqpqppqpqppqpp",
-  "qpqppqpqpqpqpqpq",
-  "pqppqpqppqqpqpqp",
-  "qppqpqpqpqppqppq",
-];
-
-const TILE_COBBLE: string[] = [
-  "lmlmlmlmlmlmlmlm",
-  "mllmlmllmlmmlmll",
-  "lmmlmllmlmlmlmlm",
-  "mlmlmmlmllmlmllm",
-  "lmlmllmlmmlmllml",
-  "mllmlmlmlmlmlmlm",
-  "lmlmlmllmlmmlmll",
-  "mlmmlmlmlmllmlml",
-  "lmlmllmlmmlmlmll",
-  "mllmlmlmllmlmlml",
-  "lmlmmlmlmlmmlmll",
-  "mlmlmllmlmllmlml",
-  "lmlmlmlmlmlmlmlm",
-  "mllmlmmlmllmlmll",
-  "lmmlmllmlmlmlmlm",
-  "mlmlmlmlmmlmlmll",
-];
-
-const TILE_WATER: string[] = [
-  "hihihihhihihihih",
-  "ihhihihiihihhihi",
-  "hihihhihihihihhi",
-  "ihihihiihihihihi",
-  "hihihihihihhihih",
-  "ihhihihihihihihi",
-  "hihihhihihihihhi",
-  "ihihihihhihihihi",
-  "hihihihihihihihi",
-  "ihihhihihihihhih",
-  "hihihihihhihihih",
-  "ihihihihihiihihi",
-  "hihhihihihihihhi",
-  "ihihihihihihihih",
-  "hihihihihhihihih",
-  "ihihihhihihihihi",
-];
-
-const BARREL: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "00000eeeee000000",
-  "0000ejkkkje00000",
-  "000eejkkkjee0000",
-  "000ekjjjjjke0000",
-  "000ekjjjjjke0000",
-  "000eejkkkjee0000",
-  "0000ejkkkje00000",
-  "00000eeeee000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const BOX: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "000eeeeeeee00000",
-  "000ejkkkkje00000",
-  "000ekjkkjke00000",
-  "000ekkjjkke00000",
-  "000ekjkkjke00000",
-  "000ejkkkkje00000",
-  "000eeeeeeee00000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const LANTERN: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "000000eee0000000",
-  "000000eoe0000000",
-  "00000eeoee000000",
-  "000000eee0000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "0000000c00000000",
-  "000000ccc0000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const FIRE_1: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000n00000000",
-  "000000on00000000",
-  "000000no0n000000",
-  "000000oonn000000",
-  "00000nnoon000000",
-  "0000eeccccee0000",
-  "000eceeceece0000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const FIRE_2: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000n00000000",
-  "000000nn00000000",
-  "00000noo00000000",
-  "00000nnon0000000",
-  "000000oo0n000000",
-  "000000onn0000000",
-  "0000eeccccee0000",
-  "000eceeceece0000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const BUSH: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "000000rrrr000000",
-  "00000rrrrrr00000",
-  "0000rrrrrrrr0000",
-  "0000rrrrbrrr0000",
-  "0000rrbrrrrr0000",
-  "00000rrrrrr00000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const FLOWER: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000s00000000",
-  "000000s0s0000000",
-  "0000000s00000000",
-  "0000000r00000000",
-  "000000r000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const MUSHROOM: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000077770000000",
-  "0000nnnnn0000000",
-  "000nnnnnnn000000",
-  "000n7n7n7n000000",
-  "000nnnnnnn000000",
-  "0000099900000000",
-  "0000099900000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const ROCK_VEIN: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000uuvvuu000000",
-  "000uvvuuuvv00000",
-  "000uuuiivuuu0000",
-  "00uuvvuiivvuu000",
-  "00uuuuvvuuuu0000",
-  "0000uuuuu0000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const TREE_STUMP: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000cccccc000000",
-  "000cjddddjc00000",
-  "000cjddjdjc00000",
-  "000cjddddjc00000",
-  "000cjjjjjjc00000",
-  "0000kkkkkk000000",
-  "0000kkkkkk000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const HERB_PATCH: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000s00000000",
-  "00000s0s0s000000",
-  "000000s0s0000000",
-  "0000s0rr00s00000",
-  "000s00rrr0r00000",
-  "000s0s0rrrr00000",
-  "0000r00rrr000000",
-  "0000rr0rr0000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const FORGE_STATION: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "00iiiiiiiiiiii00",
-  "00iuuuuuuuuuui00",
-  "00iuuegegeguui00",
-  "00iuueggggeuui00",
-  "00iuuuuuuuuuui00",
-  "00iiiiiiiiiiii00",
-  "0000iiiiiiiii000",
-  "0000iiiiiiiii000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const ALCHEMY_TABLE_STA: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000nnnnnnn00000",
-  "000n0h5h5h0n0000",
-  "000nnhhhhhhn0000",
-  "0000nnnnnnn00000",
-  "000ccccccccccc00",
-  "0000c000000c0000",
-  "0000c000000c0000",
-  "0000d000000d0000",
-  "0000d000000d0000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const LOOM_STA: string[] = [
-  "0000000000000000",
-  "0000dd0000dd0000",
-  "0000dc0000cd0000",
-  "0000dcccccccd000",
-  "0000dc0a0a0cd000",
-  "0000dc6a6a6cd000",
-  "0000dc0a0a0cd000",
-  "0000dc6a6a6cd000",
-  "0000dc0a0a0cd000",
-  "0000dc6a6a6cd000",
-  "0000dcccccccd000",
-  "0000dc0000cd0000",
-  "0000dd0000dd0000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const WOODBENCH_STA: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000iiii0000i000",
-  "0qqqqqqqqqqqqq00",
-  "0ccccccccccccc00",
-  "0c0000000000c000",
-  "0cdddddddddddc00",
-  "0c0000000000dc00",
-  "0dd000000dddd000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-// ── Crafting ──────────────────────────────────────────────────────────────────
-
-type CraftStationType = "forge" | "alchemy" | "loom" | "woodbench";
-
-const STATION_LABELS: Record<CraftStationType, string> = {
-  forge: "Forge",
-  alchemy: "Alchemy Table",
-  loom: "Loom",
-  woodbench: "Woodbench",
-};
-
-interface Recipe {
-  id: string;
-  result: string;
-  resultQty: number;
-  ingredients: Array<{ id: string; qty: number }>;
-  skill: SkillName;
-  minSkill: number;
-  xp: number;
-  station: CraftStationType;
-}
-
-const RECIPES: Recipe[] = [
-  // Forge — Blacksmithing
-  { id: "r_pickaxe",    result: "pickaxe",    resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
-  { id: "r_axe",        result: "axe",        resultQty: 1, ingredients: [{id:"iron_ore",qty:1},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
-  { id: "r_iron_sword", result: "iron_sword", resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"coal",qty:1}],  skill:"Blacksmithing", minSkill:100, xp:20, station:"forge" },
-  { id: "r_iron_helm",  result: "iron_helm",  resultQty: 1, ingredients: [{id:"iron_ore",qty:3}],                    skill:"Blacksmithing", minSkill:200, xp:30, station:"forge" },
-  // Alchemy
-  { id: "r_heal_potion",  result: "heal_potion",  resultQty: 1, ingredients: [{id:"bloodroot",qty:1},{id:"ghost_cap",qty:1}],   skill:"Alchemy", minSkill:50,  xp:12, station:"alchemy" },
-  { id: "r_poison_vial",  result: "poison_vial",  resultQty: 1, ingredients: [{id:"nightshade",qty:1},{id:"rat_pelt",qty:1}],   skill:"Alchemy", minSkill:150, xp:20, station:"alchemy" },
-  // Loom — Tailoring
-  { id: "r_leather_tunic", result: "leather_tunic", resultQty: 1, ingredients: [{id:"wolf_pelt",qty:3}], skill:"Tailoring", minSkill:100, xp:25, station:"loom" },
-  // Woodbench — Woodworking
-  { id: "r_arrow",       result: "arrow",       resultQty: 5, ingredients: [{id:"branch",qty:1}],                            skill:"Woodworking", minSkill:0,   xp:5,  station:"woodbench" },
-  { id: "r_wood_shield", result: "wood_shield", resultQty: 1, ingredients: [{id:"wood_plank",qty:3}],                        skill:"Woodworking", minSkill:50,  xp:15, station:"woodbench" },
-  { id: "r_short_bow",   result: "short_bow",   resultQty: 1, ingredients: [{id:"branch",qty:2},{id:"wolf_pelt",qty:1}],    skill:"Woodworking", minSkill:150, xp:30, station:"woodbench" },
-];
-
-const DOOR_CLOSED: string[] = [
-  "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkoojjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkoojjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
-  "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-];
-
-const DOOR_OPEN: string[] = [
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-  "jjjj000000000000000000000000jjjj",
-];
-
-const CHEST_CLOSED: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "000jjjjjjjjjj000",
-  "000jkkkkkkkkj000",
-  "000jkkkkkkkkj000",
-  "000jjjjjjjjjj000",
-  "000jkkkookkkj000",
-  "000jkkkkkkkkj000",
-  "000jkkkkkkkkj000",
-  "000jjjjjjjjjj000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const CHEST_OPEN: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "000jjjjjjjjjj000",
-  "000jkkkkkkkkj000",
-  "000jkkkkkkkkj000",
-  "000jjjjjjjjjj000",
-  "000jooooooooj000",
-  "000jooooooooj000",
-  "000jooooooooj000",
-  "000jjjjjjjjjj000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const BARREL_OPEN: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "00000eeeee000000",
-  "0000eccccce00000",
-  "000eeccccccee000",
-  "000eccccccce0000",
-  "000eccccccce0000",
-  "000eeccccccee000",
-  "0000eccccce00000",
-  "00000eeeee000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-const BOX_OPEN: string[] = [
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "000eeeeeeee00000",
-  "000ecccccce00000",
-  "000ecccccce00000",
-  "000ecccccce00000",
-  "000ecccccce00000",
-  "000ecccccce00000",
-  "000eeeeeeee00000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-  "0000000000000000",
-];
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Pixi helpers (pixel art + PixiJS) ────────────────────────────────────────
 
 function buildRows(torso: string[], legs: string[], eyeRow?: string): string[] {
   const rows = [...torso];
@@ -993,8 +97,6 @@ function createGlow(PIXI: typeof import("pixi.js"), radius: number, color: numbe
   return g;
 }
 
-interface Rect { x: number, y: number, w: number, h: number, disabled?: boolean }
-interface Interactable { x: number, y: number, radius: number, onInteract: () => void, isInteractive: () => boolean, getPrompt?: () => string }
 interface Monster {
   sprite: import("pixi.js").AnimatedSprite;
   hp: number;
@@ -1026,248 +128,6 @@ interface Monster {
 
 // ── Shared Global State (Pixi -> React) ───────────────────────────────────────
 
-const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
-  gold: { name: "Gold", type: "material", icon: "🪙", maxStack: 999 },
-  bone: { name: "Bone", type: "material", icon: "🦴", maxStack: 99 },
-  apple: { name: "Apple", type: "consumable", icon: "🍎", maxStack: 10 },
-  iron_ore: { name: "Iron Ore", type: "material", icon: "🪨", maxStack: 50 },
-  diamond: { name: "Diamond", type: "material", icon: "💎", maxStack: 10 },
-  iron_sword: { name: "Iron Sword", type: "weapon", icon: "⚔️", maxStack: 1, slot: "mainhand", bonuses: { Melee: 50 }, quality: "common" },
-  wood_shield: { name: "Wooden Shield", type: "armor", icon: "🛡️", maxStack: 1, slot: "offhand", bonuses: { Defense: 20 }, quality: "common" },
-  iron_helm: { name: "Iron Helm", type: "armor", icon: "🪖", maxStack: 1, slot: "head", bonuses: { Defense: 30 }, quality: "common" },
-  wolf_pelt: { name: "Wolf Pelt", type: "material", icon: "🐺", maxStack: 20 },
-  orc_tooth: { name: "Orc Tooth", type: "material", icon: "🦷", maxStack: 30 },
-  runic_shard: { name: "Runic Shard", type: "material", icon: "🔮", maxStack: 5 },
-  rat_pelt: { name: "Rat Pelt", type: "material", icon: "🐀", maxStack: 30 },
-  bloodroot: { name: "Bloodroot", type: "material", icon: "🌿", maxStack: 30 },
-  nightshade: { name: "Nightshade", type: "material", icon: "🍃", maxStack: 20 },
-  wood_plank: { name: "Wood Plank", type: "material", icon: "🪵", maxStack: 50 },
-  branch: { name: "Branch", type: "material", icon: "🌿", maxStack: 40 },
-  coal: { name: "Coal", type: "material", icon: "⬛", maxStack: 50 },
-  stone: { name: "Stone", type: "material", icon: "🪨", maxStack: 99 },
-  red_cap: { name: "Red Cap", type: "material", icon: "🍄", maxStack: 20 },
-  ghost_cap: { name: "Ghost Cap", type: "material", icon: "🍄", maxStack: 10 },
-  pickaxe: { name: "Pickaxe", type: "weapon", icon: "⛏️", maxStack: 1, slot: "mainhand" },
-  axe: { name: "Axe", type: "weapon", icon: "🪓", maxStack: 1, slot: "mainhand", bonuses: { Melee: 20 } },
-  heal_potion: { name: "Healing Potion", type: "consumable", icon: "🧪", maxStack: 5 },
-  poison_vial: { name: "Poison Vial", type: "consumable", icon: "☠️", maxStack: 5 },
-  leather_tunic: { name: "Leather Tunic", type: "armor", icon: "🥼", maxStack: 1, slot: "chest", bonuses: { Defense: 20 }, quality: "common" },
-  short_bow: { name: "Short Bow", type: "weapon", icon: "🏹", maxStack: 1, slot: "mainhand", bonuses: { Archery: 50 }, quality: "common" },
-  arrow: { name: "Arrow", type: "material", icon: "🪃", maxStack: 99 },
-};
-
-function createItem(id: string, qty: number): Item {
-  return { id, ...ITEM_DB[id], qty };
-}
-
-function getSellPrice(itemId: string): number {
-  const SELL: Record<string, number> = {
-    apple: 2, iron_ore: 4, wolf_pelt: 12, rat_pelt: 6, orc_tooth: 10,
-    bone: 2, runic_shard: 20, red_cap: 5, ghost_cap: 10,
-    bloodroot: 6, nightshade: 8, wood_plank: 3, branch: 1, coal: 2, stone: 1,
-    diamond: 40, iron_sword: 35, wood_shield: 25, iron_helm: 20, pickaxe: 18, axe: 18,
-    heal_potion: 15, poison_vial: 20, leather_tunic: 30, short_bow: 40, arrow: 1,
-  };
-  return SELL[itemId] ?? 0;
-}
-
-const QUESTS: Quest[] = [
-  {
-    id: "filed_assessment",
-    title: "The Filed Assessment",
-    giver: "danna",
-    description: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Two months ago, not one back since. The road is thick with the restless dead. Kill five of the skeletons and return to me.",
-    objective: { type: "kill", target: "skeleton", count: 5, label: "Skeletons slain" },
-    reward: { gold: 6 },
-  },
-];
-
-const NPC_DEFS: NpcDef[] = [
-  {
-    id: "mira",
-    name: "Mira",
-    title: "Merchant",
-    x: 870, y: 870,
-    type: "vendor",
-    recolor: RECOLOR_NPC_VENDOR,
-    shop: [
-      { itemId: "apple",      price: 5  },
-      { itemId: "iron_ore",   price: 8  },
-      { itemId: "wood_plank", price: 6  },
-    ],
-    greeting: "Stock is low, but I can cover the basics.",
-  },
-  {
-    id: "bram",
-    name: "Bram",
-    title: "Blacksmith",
-    x: 1130, y: 870,
-    type: "vendor",
-    recolor: RECOLOR_NPC_SMITH,
-    shop: [
-      { itemId: "iron_sword",  price: 80 },
-      { itemId: "wood_shield", price: 60 },
-      { itemId: "iron_helm",   price: 50 },
-      { itemId: "pickaxe",     price: 40 },
-      { itemId: "axe",         price: 40 },
-      { itemId: "arrow",       price: 2  },
-      { itemId: "short_bow",   price: 55 },
-    ],
-    greeting: "You want steel. I have it.",
-  },
-  {
-    id: "danna",
-    name: "Danna",
-    title: "Factor",
-    x: 1000, y: 800,
-    type: "quest_giver",
-    recolor: RECOLOR_NPC_QUEST,
-    questId: "filed_assessment",
-    greeting: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Not one came back.",
-  },
-];
-
-// ── Character & Skills ────────────────────────────────────────────────────────
-
-type SkillName =
-  | "Melee" | "Defense" | "Archery"
-  | "Magery" | "Meditation"
-  | "Taming" | "Huntercraft" | "Herbalism" | "Mining" | "Woodworking"
-  | "Alchemy" | "Blacksmithing" | "Lumberjacking" | "Tailoring" | "ArmsLore"
-  | "Hiding" | "Poisoning" | "Stealth"
-  | "Storyweaving";
-
-const SKILL_CATEGORIES: [string, SkillName[]][] = [
-  ["Combat",   ["Melee", "Defense", "Archery"]],
-  ["Magic",    ["Magery", "Meditation"]],
-  ["Survival", ["Taming", "Huntercraft", "Herbalism", "Mining", "Woodworking"]],
-  ["Crafts",   ["Alchemy", "Blacksmithing", "Lumberjacking", "Tailoring", "ArmsLore"]],
-  ["Stealth",  ["Hiding", "Poisoning", "Stealth"]],
-  ["Roleplay", ["Storyweaving"]],
-];
-
-type CharClass = "Warrior" | "Mage" | "Ranger";
-
-function defaultSkills(): Record<SkillName, number> {
-  return {
-    Melee: 0, Defense: 0, Archery: 0,
-    Magery: 0, Meditation: 0,
-    Taming: 0, Huntercraft: 0, Herbalism: 0, Mining: 0, Woodworking: 0,
-    Alchemy: 0, Blacksmithing: 0, Lumberjacking: 0, Tailoring: 0, ArmsLore: 0,
-    Hiding: 0, Poisoning: 0, Stealth: 0,
-    Storyweaving: 0,
-  };
-}
-
-const CLASS_BONUSES: Record<CharClass, Partial<Record<SkillName, number>>> = {
-  Warrior: { Melee: 150, Defense: 100 },
-  Mage:    { Magery: 150, Meditation: 100 },
-  Ranger:  { Archery: 150, Huntercraft: 100 },
-};
-
-const CLASS_DESCS: Record<CharClass, string> = {
-  Warrior: "Melee 15, Defense 10. Built for close combat.",
-  Mage:    "Magery 15, Meditation 10. Unlocks spells early.",
-  Ranger:  "Archery 15, Huntercraft 10. Tracks and hunts.",
-};
-
-interface Character {
-  name: string;
-  charClass: CharClass;
-  skills: Record<SkillName, number>;
-  fame: number;
-  season: number;
-}
-
-const CHAR_KEY = "unyha_character";
-
-function loadCharacter(): Character | null {
-  try {
-    const raw = localStorage.getItem(CHAR_KEY);
-    if (!raw) return null;
-    const c = JSON.parse(raw) as Character;
-    c.skills = { ...defaultSkills(), ...c.skills };
-    return c;
-  } catch { return null; }
-}
-
-function saveCharacter(char: Character): void {
-  try { localStorage.setItem(CHAR_KEY, JSON.stringify(char)); } catch {}
-}
-
-function addSkillXp(skills: Record<SkillName, number>, skill: SkillName, xp: number): Record<SkillName, number> {
-  return { ...skills, [skill]: Math.min(1000, (skills[skill] ?? 0) + xp) };
-}
-
-const FAME_TITLES: [number, string][] = [
-  [200, "Child of the Void"],
-  [100, "Kin of the Iron Hall"],
-  [50,  "Blade of the Road"],
-  [20,  "Adventurer"],
-  [0,   "Wanderer"],
-];
-
-function fameTitle(fame: number): string {
-  for (const [min, title] of FAME_TITLES) {
-    if (fame >= min) return title;
-  }
-  return "Wanderer";
-}
-
-const CHRONICLE_KEY = "unyha_chronicle";
-const MILESTONES_KEY = "unyha_milestones";
-
-interface ChronicleEntry { text: string; fame: number; ts: number; narrated?: boolean; lost?: boolean; }
-
-function loadChronicle(): ChronicleEntry[] {
-  try { return JSON.parse(localStorage.getItem(CHRONICLE_KEY) ?? "[]"); } catch { return []; }
-}
-function saveChronicle(entries: ChronicleEntry[]): void {
-  try { localStorage.setItem(CHRONICLE_KEY, JSON.stringify(entries.slice(0, 60))); } catch {}
-}
-function loadMilestones(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(MILESTONES_KEY) ?? "[]")); } catch { return new Set(); }
-}
-function saveMilestones(s: Set<string>): void {
-  try { localStorage.setItem(MILESTONES_KEY, JSON.stringify([...s])); } catch {}
-}
-
-const SKILL_MILESTONES: Partial<Record<SkillName, [number, string, number][]>> = {
-  Melee:         [[250, "sharpened their blade to journeyman grade", 10], [500, "earned the mark of the Swordmaster", 20]],
-  Archery:       [[250, "can loose an arrow true at fifty paces", 10]],
-  Magery:        [[250, "spoke their first Words of Power without hesitation", 10]],
-  Herbalism:     [[250, "knows every leaf and root that grows in the forest", 8]],
-  Mining:        [[250, "reads the stone like an open book", 8]],
-  Blacksmithing: [[250, "hammered iron into something worth calling a weapon", 8]],
-  Tailoring:     [[250, "stitched a garment that would not shame a merchant", 8]],
-  Alchemy:       [[250, "brewed their first true draught", 8]],
-};
-
-const GAME_TIME_KEY = "unyha_game_time";
-const TICKS_PER_HOUR = 3600; // 60 fps × 60 real seconds = 1 game hour
-const TICKS_PER_DAY = TICKS_PER_HOUR * 24;
-
-function loadGameTime(): { day: number; tickInDay: number } {
-  try {
-    const raw = localStorage.getItem(GAME_TIME_KEY);
-    if (!raw) return { day: 1, tickInDay: 6 * TICKS_PER_HOUR };
-    return JSON.parse(raw);
-  } catch { return { day: 1, tickInDay: 6 * TICKS_PER_HOUR }; }
-}
-function saveGameTime(day: number, tickInDay: number): void {
-  try { localStorage.setItem(GAME_TIME_KEY, JSON.stringify({ day, tickInDay })); } catch {}
-}
-function hourPeriod(h: number): string {
-  if (h === 5) return "Dawn";
-  if (h <= 8) return "Morning";
-  if (h <= 11) return "Forenoon";
-  if (h <= 13) return "Noon";
-  if (h <= 16) return "Afternoon";
-  if (h <= 18) return "Dusk";
-  return "Night";
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PixelTestMapPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1307,6 +167,24 @@ export default function PixelTestMapPage() {
   const [gameTime, setGameTime] = useState<{ day: number; hour: number }>({ day: 1, hour: 6 });
   const setGameTimeRef = useRef<(day: number, hour: number) => void>(() => {});
 
+  // House system
+  const [house, setHouse] = useState<House | null>(null);
+  const [showHousePanel, setShowHousePanel] = useState(false);
+  const [houseCreationName, setHouseCreationName] = useState("");
+  const [houseCreationColor, setHouseCreationColor] = useState("#b8442a");
+  const showHousePanelRef = useRef(false);
+  const houseRef = useRef<House | null>(null);
+
+  // Permadeath system
+  const [deathScreen, setDeathScreen] = useState<{
+    charName: string; cause: string; day: number; fame: number; topSkill: string; topSkillVal: number;
+  } | null>(null);
+  const [deathButtonVisible, setDeathButtonVisible] = useState(false);
+  const deathScreenRef = useRef(false);
+  const worldContainersRef = useRef<Array<{ x: number; y: number; items: Item[]; isOpened: () => boolean }>>([]);
+  const triggerDeathRef = useRef<(px: number, py: number, killedBy: string) => void>(() => {});
+  const resetPlayerRef = useRef<() => void>(() => {});
+
   // Character system
   const [character, setCharacter] = useState<Character | null>(null);
   const [showCharPanel, setShowCharPanel] = useState(false);
@@ -1324,13 +202,18 @@ export default function PixelTestMapPage() {
   const questProgressRef = useRef<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
   const handleTakeAllRef = useRef<() => void>(() => {});
 
+  useEffect(() => { setHouse(loadHouse()); }, []);
   useEffect(() => { setCharacter(loadCharacter()); }, []);
   useEffect(() => {
     setChronicle(loadChronicle());
     firedMilestonesRef.current = loadMilestones();
   }, []);
-  useEffect(() => { charRef.current = character; charCreationRef.current = character === null; }, [character]);
+  useEffect(() => { houseRef.current = house; }, [house]);
+  // charCreationRef true = show a creation screen (house or character), but NOT the death screen
+  useEffect(() => { charRef.current = character; charCreationRef.current = (house === null || character === null) && !deathScreen; }, [house, character, deathScreen]);
   useEffect(() => { showCharPanelRef.current = showCharPanel; }, [showCharPanel]);
+  useEffect(() => { showHousePanelRef.current = showHousePanel; }, [showHousePanel]);
+  useEffect(() => { deathScreenRef.current = deathScreen !== null; }, [deathScreen]);
   useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
   useEffect(() => {
     equipmentRef.current = equipment;
@@ -1394,16 +277,123 @@ export default function PixelTestMapPage() {
   addItemRef.current = (id, qty) => addItemToInventory(createItem(id, qty));
   setGameTimeRef.current = (day, hour) => setGameTime({ day, hour });
 
+  triggerDeathRef.current = (px, py, killedBy) => {
+    const char = charRef.current;
+    const h = houseRef.current;
+    if (!char) return;
+
+    // find top skill
+    let topSkill = "Melee", topVal = 0;
+    for (const [k, v] of Object.entries(char.skills) as [string, number][]) {
+      if (v > topVal) { topVal = v; topSkill = k; }
+    }
+
+    // redistribute non-heirloom items to nearby containers
+    const nonHeirlooms = inventoryRef.current.filter(i => !i.heirloom);
+    const heirlooms = inventoryRef.current.filter(i => i.heirloom);
+    const available = worldContainersRef.current.filter(c => !c.isOpened());
+    available.sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py));
+    const near = available.filter(c => Math.hypot(c.x - px, c.y - py) <= 800);
+    const targets = (near.length > 0 ? near : available).slice(0, 3);
+    nonHeirlooms.forEach((item, i) => { if (targets[i % targets.length]) targets[i % targets.length].items.push({ ...item }); });
+
+    // register fallen character in house + move heirlooms to vault
+    if (h) {
+      const fallen: HouseCharacter = {
+        name: char.name, charClass: char.charClass, season: char.season,
+        famePeak: char.fame, fate: "fallen", causeOfDeath: killedBy,
+        skillSnapshot: { ...char.skills },
+      };
+      const updatedHouse: House = {
+        ...h,
+        characters: [...h.characters.filter(c => c.fate !== "active"), fallen],
+        heirlooms: [...h.heirlooms, ...heirlooms].slice(0, 6),
+      };
+      saveHouse(updatedHouse);
+      setHouse(updatedHouse);
+    }
+
+    // chronicle entry
+    const savedTime = loadGameTime();
+    addChronicleRef.current(`${char.name} fell to ${killedBy} on Day ${savedTime.day}.`, 0);
+
+    // wipe char storage (character state kept alive until "Begin Next Character")
+    localStorage.removeItem(CHAR_KEY);
+    setInventory([]);
+
+    // show death screen
+    setDeathScreen({
+      charName: char.name, cause: killedBy, day: savedTime.day,
+      fame: char.fame, topSkill, topSkillVal: Math.floor(topVal / 10),
+    });
+    setTimeout(() => setDeathButtonVisible(true), 3000);
+  };
+
+  function handleCreateHouse() {
+    const name = houseCreationName.trim();
+    if (!name) return;
+    const newHouse: House = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name,
+      crestColor: houseCreationColor,
+      founded: 1,
+      fame: 0,
+      characters: [],
+      heirlooms: [],
+      chronicle: [],
+    };
+    saveHouse(newHouse);
+    setHouse(newHouse);
+  }
+
   function handleCreateCharacter() {
     const name = charCreationName.trim();
     if (!name) return;
     const skills = { ...defaultSkills() };
-    for (const [k, v] of Object.entries(CLASS_BONUSES[charCreationClass])) {
-      skills[k as SkillName] = v as number;
+    // inherit 20% of last fallen character's skills (capped at 100 raw)
+    const allChars = houseRef.current?.characters ?? [];
+    const lastFallen = [...allChars].reverse().find(c => c.fate === "fallen");
+    if (lastFallen) {
+      for (const [k, v] of Object.entries(lastFallen.skillSnapshot) as [SkillName, number][]) {
+        skills[k] = Math.min(100, Math.floor(v * 0.2));
+      }
     }
-    const char: Character = { name, charClass: charCreationClass, skills, fame: 0, season: 1 };
+    for (const [k, v] of Object.entries(CLASS_BONUSES[charCreationClass])) {
+      skills[k as SkillName] = Math.max(skills[k as SkillName] ?? 0, v as number);
+    }
+    const houseFame = houseRef.current?.fame ?? 0;
+    const inheritedFame = Math.floor(houseFame * 0.1);
+    const char: Character = { name, charClass: charCreationClass, skills, fame: inheritedFame, season: 1, heirloomBindsUsed: 0 };
+    // Register the new character in the house
+    if (houseRef.current) {
+      const updatedHouse: House = {
+        ...houseRef.current,
+        characters: [
+          ...houseRef.current.characters,
+          {
+            name: char.name,
+            charClass: char.charClass,
+            season: char.season,
+            famePeak: 0,
+            fate: "active",
+            skillSnapshot: { ...char.skills },
+          },
+        ],
+      };
+      saveHouse(updatedHouse);
+      setHouse(updatedHouse);
+    }
     saveCharacter(char);
     setCharacter(char);
+    resetPlayerRef.current();
+  }
+
+  function handleBeginNextCharacter() {
+    localStorage.removeItem(GAME_TIME_KEY);
+    setCharacter(null);
+    setDeathScreen(null);
+    setDeathButtonVisible(false);
+    // resetPlayerRef is called from handleCreateCharacter after new char is created
   }
 
   // Sync ref with state
@@ -1586,9 +576,23 @@ export default function PixelTestMapPage() {
         uiModeRef.current = "closed";
         setUiMode("closed");
         setSplitModal(null);
+        setShowHousePanel(false);
+        showHousePanelRef.current = false;
         setShowCharPanel(prev => {
           const next = !prev;
           showCharPanelRef.current = next;
+          return next;
+        });
+      }
+      if (e.key === "h" || e.key === "H") {
+        uiModeRef.current = "closed";
+        setUiMode("closed");
+        setSplitModal(null);
+        setShowCharPanel(false);
+        showCharPanelRef.current = false;
+        setShowHousePanel(prev => {
+          const next = !prev;
+          showHousePanelRef.current = next;
           return next;
         });
       }
@@ -1601,8 +605,10 @@ export default function PixelTestMapPage() {
       if (e.key === "Escape") {
         uiModeRef.current = "closed";
         showCharPanelRef.current = false;
+        showHousePanelRef.current = false;
         setUiMode("closed");
         setShowCharPanel(false);
+        setShowHousePanel(false);
         setShowChronicle(false);
         setSplitModal(null);
       }
@@ -1926,6 +932,11 @@ export default function PixelTestMapPage() {
       const playerMaxHp = 100;
       let playerInvuln = 0;
       let playerMana = 20;
+      let lastHitBy = "an unknown threat";
+      const MONSTER_DISPLAY_NAMES: Record<string, string> = {
+        skeleton: "a Skeleton", orc_grunt: "an Orc Grunt", orc_shaman: "an Orc Shaman",
+        wolf: "a Wolf", cave_rat: "a Cave Rat",
+      };
       let manaRegenTick = 0;
 
       const grassBg = new PIXI.Graphics();
@@ -2309,6 +1320,7 @@ export default function PixelTestMapPage() {
         let opened = false;
         const myId = `container_${containerIdCounter++}`;
         
+        worldContainersRef.current.push({ x: prop.x, y: prop.y, items: genItems, isOpened: () => opened });
         interactables.push({
           x: prop.x, y: prop.y, radius: 60,
           isInteractive: () => !opened,
@@ -2813,6 +1825,19 @@ export default function PixelTestMapPage() {
         }
       }
 
+      resetPlayerRef.current = () => {
+        knight.x = 1050;
+        knight.y = 1050;
+        knight.scale.x = 1;
+        dashCooldown = 0;
+        facing = "front";
+        playerHp = playerMaxHp;
+        playerMana = 20 + Math.floor(((charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0)) / 20);
+        playerInvuln = 0;
+        lastHitBy = "an unknown threat";
+        setState("idle", true);
+      };
+
       function updateFacing() {
         if (state === "attack" || state === "dash" || state === "dead") return;
 
@@ -2884,7 +1909,6 @@ export default function PixelTestMapPage() {
       const keys: Record<string, boolean> = {};
       let attackConsumed = false;
       let dieConsumed = false;
-      let restartConsumed = false;
       let dashConsumed = false;
       let interactConsumed = false;
       let spellConsumed = false;
@@ -2896,13 +1920,14 @@ export default function PixelTestMapPage() {
       const mouseButtons: Record<number, boolean> = {};
       let mouseAttackConsumed = false;
 
-      // Key-age expiry: every keydown (including repeat) resets the counter for that key.
-      // keyAge: performance.now() of the INITIAL press only — used for last-key-wins direction conflict resolution.
-      // Repeats must NOT update keyAge, or last-key-wins would oscillate every ~33ms when two keys are held.
+      // keyAge: integer counter incremented on each INITIAL press — used for last-key-wins direction
+      // conflict resolution. Using a counter (not performance.now()) guarantees strict ordering even
+      // when two keys are pressed within the same millisecond.
       // Stuck keys are handled exclusively by clearAllInput() on blur/visibilitychange/contextmenu.
       // Do NOT add a tick-based auto-release: the OS only sends repeats for the last pressed key,
       // so a held earlier key appears "stale" and would be incorrectly released after the threshold.
       const keyAge: Record<string, number> = {};
+      let keyAgeCounter = 0;
       let tickCount = 0;
 
       // Normalize single-char keys to lowercase so Shift+d ("D" keydown) and d ("d" keyup)
@@ -2916,11 +1941,10 @@ export default function PixelTestMapPage() {
 
         const key = normKey(e.key);
         if (!keys[key]) {
-          // First press — record initial timestamp for last-key-wins
-          keyAge[key] = performance.now();
+          // First press — record ordering counter for last-key-wins
+          keyAge[key] = ++keyAgeCounter;
           if (key === "j" || key === "z") attackConsumed = false;
           if (key === "k") dieConsumed = false;
-          if (key === "r") restartConsumed = false;
           if (e.key === "Shift") dashConsumed = false;
           if (key === "f") interactConsumed = false;
         }
@@ -3047,7 +2071,7 @@ export default function PixelTestMapPage() {
         }
 
         // ── Custom cursor ────────────────────────────────────────────────────
-        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current;
+        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current;
         cursorGfx.visible = !uiOpen;
         cursorGfx.x = mouseX;
         cursorGfx.y = mouseY;
@@ -3057,24 +2081,11 @@ export default function PixelTestMapPage() {
           drawCursor(curWeapon);
         }
 
-        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current) {
+        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current) {
           // Flush keys so nothing is still "held" when the UI closes
           for (const k of Object.keys(keys)) { keys[k] = false; delete keyAge[k]; }
           for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
           return;
-        }
-
-        // Fallback stuck-key release: if a key has been "held" for 10s with no keyup received,
-        // it was likely stuck (missed keyup). Uses initial-press timestamp so multi-key holds
-        // don't trigger it — the OS stops repeats for non-last keys but keyAge never updates.
-        {
-          const t = performance.now();
-          for (const k of Object.keys(keys)) {
-            if (keys[k] && t - (keyAge[k] ?? t) > 10000) {
-              keys[k] = false;
-              delete keyAge[k];
-            }
-          }
         }
 
         // ── Golden State ─────────────────────────────────────────────────────
@@ -3155,18 +2166,7 @@ export default function PixelTestMapPage() {
         }
 
         if (state === "dead") {
-          if ((keys["r"]) && !restartConsumed) {
-            restartConsumed = true;
-            knight.x = 1050;
-            knight.y = 1050;
-            knight.scale.x = 1;
-            dashCooldown = 0;
-            facing = "front";
-            playerHp = playerMaxHp;
-            playerMana = 20 + Math.floor(((charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0)) / 20);
-            playerInvuln = 0;
-            setState("idle", true);
-          }
+          // permadeath — R key no longer respawns; the death screen handles it
         } else {
           if ((keys["k"]) && !dieConsumed) {
             dieConsumed = true;
@@ -3178,6 +2178,7 @@ export default function PixelTestMapPage() {
               setTimeout(() => setStoryLostMsgRef.current(false), 3000);
             }
             setState("dead");
+            triggerDeathRef.current(knight.x, knight.y, "debug command");
           } else {
             const keyAttack = (keys["j"] || keys["z"]) && !attackConsumed;
             const mouseAttack = mouseButtons[0] && !mouseAttackConsumed;
@@ -3430,6 +2431,7 @@ export default function PixelTestMapPage() {
                 const dmgTaken = Math.max(1, Math.round(m.damage * (1 - defReduction)));
                 playerHp -= dmgTaken;
                 playerInvuln = 45;
+                lastHitBy = MONSTER_DISPLAY_NAMES[m.monsterType] ?? `a ${m.monsterType}`;
                 gainSkillRef.current("Defense", 3);
                 spawnFloatingText(`-${dmgTaken}`, knight.x, knight.y - 40, 0xff0000);
 
@@ -3443,6 +2445,7 @@ export default function PixelTestMapPage() {
                     setTimeout(() => setStoryLostMsgRef.current(false), 3000);
                   }
                   setState("dead");
+                  triggerDeathRef.current(knight.x, knight.y, lastHitBy);
                 }
               }
             } else {
@@ -3670,12 +2673,69 @@ export default function PixelTestMapPage() {
           Unyha — Pixel World
         </p>
         <p className="font-mono text-[9px] tracking-[0.2em] text-white/20 uppercase">
-          WASD move · LMB / J attack · Shift dash · Q firebolt · E heal · F interact · I inventory · C character · L chronicle
+          WASD move · LMB / J attack · Shift dash · Q firebolt · E heal · F interact · I inventory · C character · H house · L chronicle
         </p>
       </div>
 
+      {/* ── House Creation Modal ─────────────────────────────────────────────── */}
+      {house === null && (
+        <div className="absolute inset-0 z-[2000001] flex items-center justify-center bg-[#08060a]">
+          <div className="w-[460px] bg-[#16131f] border-[4px] border-[#3d3555] p-8 flex flex-col gap-6 font-mono">
+            <div>
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-2" style={{ textShadow: "0 0 12px #ffd98f" }}>
+                Unyha · Legacy
+              </p>
+              <h1 className="text-[#e8e3d4] text-2xl uppercase tracking-widest">Found Your House</h1>
+              <p className="text-[#564870] text-[10px] mt-2 leading-relaxed">
+                Your House endures across all characters and seasons. Its fame shapes the world.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[#a69581] text-[10px] uppercase tracking-widest">House Name</label>
+              <input
+                type="text"
+                value={houseCreationName}
+                onChange={e => setHouseCreationName(e.target.value)}
+                maxLength={24}
+                placeholder="e.g. House Greymantle"
+                autoFocus
+                className="bg-[#0d0b12] border-2 border-[#3d3555] text-[#e8e3d4] px-3 py-2 text-sm focus:outline-none focus:border-[#ffd98f]"
+                onKeyDown={e => { if (e.key === "Enter") handleCreateHouse(); }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[#a69581] text-[10px] uppercase tracking-widest">Crest Colour</label>
+              <div className="flex gap-3">
+                {(["#b8442a", "#2a7ab8", "#2ab84a", "#8b2ab8", "#b8892a", "#2ab8b8"] as const).map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setHouseCreationColor(color)}
+                    className="w-9 h-9 border-2 transition-all"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: houseCreationColor === color ? "#ffd98f" : "#3d3555",
+                      boxShadow: houseCreationColor === color ? `0 0 8px ${color}` : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleCreateHouse}
+              disabled={!houseCreationName.trim()}
+              className="border-2 border-[#ffd98f] text-[#ffd98f] py-3 uppercase tracking-widest text-sm hover:bg-[#ffd98f] hover:text-[#0d0b12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Establish House
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Character Creation Modal ──────────────────────────────────────────── */}
-      {character === null && (
+      {house !== null && character === null && (
         <div className="absolute inset-0 z-[2000000] flex items-center justify-center bg-[#08060a]">
           <div className="w-[460px] bg-[#16131f] border-[4px] border-[#3d3555] p-8 flex flex-col gap-6 font-mono">
             <div>
@@ -3775,6 +2835,141 @@ export default function PixelTestMapPage() {
             >
               Close (C)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── House Panel ──────────────────────────────────────────────────────── */}
+      {showHousePanel && house && (
+        <div className="absolute inset-0 z-[1000000] flex items-end justify-start p-8 pointer-events-none">
+          <div className="w-[360px] max-h-[80vh] overflow-y-auto bg-[#16131f]/95 border-[4px] border-[#3d3555] p-6 pointer-events-auto font-mono" style={{ backdropFilter: "blur(4px)" }}>
+            {/* Header */}
+            <div className="mb-4 border-b border-[#3d3555] pb-4">
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.4em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f" }}>
+                House Legacy
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-[#3d3555] shrink-0" style={{ backgroundColor: house.crestColor, boxShadow: `0 0 6px ${house.crestColor}` }} />
+                <span className="text-[#e8e3d4] text-xl uppercase tracking-widest">{house.name}</span>
+              </div>
+              <p className="text-[#564870] text-[10px] mt-1">House Fame: <span className="text-[#ffd98f]">{house.fame}</span></p>
+            </div>
+
+            {/* Active character */}
+            {character && (
+              <div className="mb-4">
+                <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">Current Champion</p>
+                <div className="flex items-center justify-between border border-[#3d3555] px-3 py-2">
+                  <div>
+                    <span className="text-[#e8e3d4] text-sm">{character.name}</span>
+                    <span className="text-[#564870] text-[9px] ml-2 uppercase">{character.charClass}</span>
+                  </div>
+                  <span className="text-[9px] text-[#6dbd6d] border border-[#6dbd6d]/40 px-2 py-0.5">Active</span>
+                </div>
+              </div>
+            )}
+
+            {/* Past characters */}
+            {house.characters.filter(c => c.fate !== "active").length > 0 && (
+              <div className="mb-4">
+                <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">House Lineage</p>
+                <div className="flex flex-col gap-1.5">
+                  {house.characters.filter(c => c.fate !== "active").map((hc, i) => (
+                    <div key={i} className="flex items-center justify-between border border-[#3d3555]/50 px-3 py-1.5">
+                      <div>
+                        <span className="text-[#a69581] text-[11px]">{hc.name}</span>
+                        <span className="text-[#564870] text-[9px] ml-2 uppercase">{hc.charClass}</span>
+                      </div>
+                      <span className={`text-[9px] border px-2 py-0.5 ${
+                        hc.fate === "fallen"
+                          ? "text-[#e16565] border-[#e16565]/40"
+                          : "text-[#a69581] border-[#3d3555]"
+                      }`}>
+                        {hc.fate === "fallen" ? "Fallen" : "Retired"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Heirloom vault */}
+            <div className="mb-4">
+              <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">Heirloom Vault</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const item = house.heirlooms[i];
+                  return (
+                    <div key={i} className="aspect-square border border-[#3d3555]/50 flex items-center justify-center bg-[#0d0b12]" style={item ? { borderColor: "#ffd98f", boxShadow: "inset 0 0 6px rgba(255,217,143,0.15)" } : {}}>
+                      {item ? (
+                        <span className="text-lg" title={item.name}>{item.icon}</span>
+                      ) : (
+                        <span className="text-[#3d3555] text-[9px]">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {house.heirlooms.length === 0 && (
+                <p className="text-[#3d3555] text-[9px] mt-1.5">No heirlooms yet. Bind items in inventory.</p>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowHousePanel(false)}
+              className="w-full border border-[#3d3555] text-[#564870] py-1.5 text-[10px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]"
+            >
+              Close (H)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Death Screen ─────────────────────────────────────────────────────── */}
+      {deathScreen && (
+        <div className="absolute inset-0 z-[3000000] flex flex-col items-center justify-center bg-[#08060a]/97 font-mono">
+          <div className="w-[480px] flex flex-col items-center gap-6 text-center">
+            <div>
+              <p className="text-[#e16565] text-[9px] tracking-[0.6em] uppercase mb-3" style={{ textShadow: "0 0 20px rgba(225,101,101,0.8)" }}>
+                — Fallen —
+              </p>
+              <p className="text-[#e8e3d4] text-2xl uppercase tracking-widest">{deathScreen.charName}</p>
+              {house && (
+                <p className="text-[#564870] text-[10px] mt-1 uppercase tracking-widest">of {house.name}</p>
+              )}
+            </div>
+
+            <div className="w-full border border-[#3d3555]/60 p-5 flex flex-col gap-2">
+              <div className="flex justify-between">
+                <span className="text-[#564870] text-[10px] uppercase tracking-widest">Slain by</span>
+                <span className="text-[#e16565] text-[10px]">{deathScreen.cause}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#564870] text-[10px] uppercase tracking-widest">Day</span>
+                <span className="text-[#a69581] text-[10px]">{deathScreen.day}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#564870] text-[10px] uppercase tracking-widest">Fame earned</span>
+                <span className="text-[#ffd98f] text-[10px]">{deathScreen.fame}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#564870] text-[10px] uppercase tracking-widest">Peak skill</span>
+                <span className="text-[#a69581] text-[10px]">{deathScreen.topSkill} {deathScreen.topSkillVal}</span>
+              </div>
+            </div>
+
+            {deathButtonVisible ? (
+              <button
+                onClick={handleBeginNextCharacter}
+                className="border-2 border-[#ffd98f] text-[#ffd98f] px-8 py-3 uppercase tracking-widest text-sm hover:bg-[#ffd98f] hover:text-[#0d0b12] transition-colors"
+              >
+                Begin Next Character
+              </button>
+            ) : (
+              <p className="text-[#3d3555] text-[9px] uppercase tracking-[0.4em] animate-pulse">
+                House {house?.name ?? ""} mourns...
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -1,0 +1,1010 @@
+import type {
+  CraftStationType, SkillName, CharClass, Quest, NpcDef, Recipe, Item, ChronicleEntry,
+} from "./types";
+
+// ── Palette ───────────────────────────────────────────────────────────────────
+
+export const PALETTE: Record<string, string | null> = {
+  "0": null,
+  "1": "#0d0b12",
+  "2": "#16131f",
+  "3": "#2c2640",
+  "4": "#3d3555",
+  "5": "#564870",
+  "6": "#ffd98f",
+  "7": "#c8923a",
+  "8": "#b8442a",
+  "9": "#e8e3d4",
+  "a": "#183020",
+  "b": "#244a30",
+  "c": "#40261a",
+  "d": "#5a3a29",
+  "e": "#2a2d36",
+  "f": "#3e424e",
+  "g": "#2a3b4c",
+  "h": "#1a466b",
+  "i": "#266b96",
+  "j": "#33221a",
+  "k": "#4d3326",
+  "l": "#80705f",
+  "m": "#a69581",
+  "n": "#ffa200",
+  "o": "#ffe600",
+  "p": "#221100",
+  "q": "#3a2100",
+  "r": "#4a7a40",
+  "s": "#e35479",
+  "t": "#1c3a26",
+  "u": "#1e2129",
+  "v": "#2d323d",
+  "w": "#111216",
+  "x": "#181a20",
+};
+
+// Palette recolor maps for enemy/NPC variants
+export const RECOLOR_ORC_GRUNT: Record<string, string> = {
+  "3": "t", "4": "a", "5": "b", "6": "n", "7": "c", "8": "8", "9": "r",
+};
+export const RECOLOR_ORC_SHAMAN: Record<string, string> = {
+  "3": "2", "4": "t", "5": "a", "6": "s", "7": "p", "8": "n", "9": "b",
+};
+export const RECOLOR_WOLF: Record<string, string> = {
+  "3": "j", "4": "k", "5": "l", "6": "m", "7": "c", "8": "j", "9": "m",
+};
+export const RECOLOR_RAT: Record<string, string> = {
+  "3": "p", "4": "q", "5": "c", "6": "d", "7": "j", "8": "1", "9": "l",
+};
+// NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal
+export const RECOLOR_NPC_VENDOR: Record<string, string> = {
+  "3": "q", "4": "c", "5": "d", "6": "n", "7": "c", "8": "8", "9": "m",
+};
+export const RECOLOR_NPC_SMITH: Record<string, string> = {
+  "3": "u", "4": "v", "5": "w", "6": "n", "7": "n", "8": "8", "9": "9",
+};
+export const RECOLOR_NPC_QUEST: Record<string, string> = {
+  "3": "t", "4": "a", "5": "b", "6": "s", "7": "p", "8": "8", "9": "m",
+};
+
+// ── Character sprite data ─────────────────────────────────────────────────────
+
+export const TORSO_FRONT: string[] = [
+  "0000011111100000",
+  "0000134444310000",
+  "0000134594310000",
+  "0000133343310000",
+  "0000138118310000",
+  "0000133663310000",
+  "0001133333310000",
+  "0013344444431000",
+  "0134454444543410",
+  "0134455455543410",
+  "0133456666543310",
+  "0133366666633310",
+  "0133336666333310",
+  "0113337667333110",
+  "0016666666666100",
+  "0011333443331100",
+  "0001334443331000",
+  "0001331001331000",
+  "0001331001331000",
+];
+
+export const TORSO_BACK: string[] = [
+  "0000011111100000",
+  "0000134444310000",
+  "0000134554310000",
+  "0000133443310000",
+  "0000133443310000",
+  "0000133333310000",
+  "0001133333310000",
+  "0013344444431000",
+  "0134454444543410",
+  "0134455455543410",
+  "0133455555543310",
+  "0133355555533310",
+  "0133335555333310",
+  "0113333553333110",
+  "0016666666666100",
+  "0011333443331100",
+  "0001334443331000",
+  "0001331001331000",
+  "0001331001331000",
+];
+
+export const WALK_LEGS: string[][] = [
+  [
+    "0001341001431000",
+    "0001331001331000",
+    "0001331001331000",
+    "0001331001331000",
+    "0013331001333100",
+  ],
+  [
+    "0001310001431000",
+    "0001310001331000",
+    "0001100001331000",
+    "0001000001331000",
+    "0000000001333100",
+  ],
+  [
+    "0001341001431000",
+    "0001331001331000",
+    "0001331001331000",
+    "0001331001331000",
+    "0013331001333100",
+  ],
+  [
+    "0001431001310000",
+    "0001331001310000",
+    "0001331001100000",
+    "0001331001000000",
+    "0013331000000000",
+  ],
+];
+
+export const IDLE_LEGS = WALK_LEGS[0];
+export const IDLE_EYES = ["0000138118310000", "0000133113310000"];
+
+// Equipment overlays — 16×24, '0' = transparent
+export const EQ_HELM_IRON: string[] = [
+  "0000066666600000",
+  "0000000fff000000",
+  "0000000f90000000",
+  "000000ffe0000000",
+  "0000000000000000",
+  "000000f0f0000000",
+  "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000", "0000000000000000",
+  "0000000000000000", "0000000000000000",
+];
+
+export const EQ_SWORD_IRON: string[] = [
+  "011100",
+  "016160",
+  "016160",
+  "066660",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "0f9f00",
+  "00f900",
+  "000f00",
+  "000000",
+];
+
+export const EQ_PICKAXE: string[] = [
+  "0000c110",
+  "000c1760",
+  "00c17660",
+  "0c176600",
+  "07116000",
+  "01100000",
+  "01000000",
+  "01000000",
+  "01000000",
+  "00000000",
+];
+
+export const EQ_AXE: string[] = [
+  "0006c10",
+  "006cc10",
+  "06ccc10",
+  "06c7610",
+  "06c7610",
+  "006cc10",
+  "001c110",
+  "000110 ",
+  "000100 ",
+  "000000 ",
+];
+
+export const EQ_SHIELD_WOOD: string[] = [
+  "01111110",
+  "1ddddd11",
+  "1dk6kdd1",
+  "1dkkkdd1",
+  "1dk6kdd1",
+  "1dkkkdd1",
+  "1ddddd11",
+  "01111110",
+];
+
+// ── World sprites ─────────────────────────────────────────────────────────────
+
+export const GIANT_PINE_TREE: string[] = [
+  "000000000000000a000000000000000",
+  "00000000000000aaa00000000000000",
+  "0000000000000abaaa0000000000000",
+  "000000000000aabbbaa000000000000",
+  "00000000000abaabbaaa00000000000",
+  "00000000000aabbaaaaa00000000000",
+  "0000000000abaaabbaaaa0000000000",
+  "000000000aabbaaabaaaaa000000000",
+  "00000000abaaabbaabaaaaa00000000",
+  "0000000aabbaabbbbaaaaaaa0000000",
+  "0000000000aabaabaaaaa0000000000",
+  "000000000aabbaaabaaaaa000000000",
+  "00000000aabbaabbbbaaaaa00000000",
+  "0000000abaaabbaaabaaaaaa0000000",
+  "000000aabbaaabbaaabaaaaaa000000",
+  "00000abaaabbaaabbaabaaaaaa00000",
+  "0000aabbaabbbbaaabbbbaaaaaa0000",
+  "00000000aabbaaabaaaaa0000000000",
+  "0000000abaaabbaabaaaaa000000000",
+  "000000aabbaabbbbaaaaaaa00000000",
+  "00000abaaabbaaabaaaaaaaa0000000",
+  "0000aabbaaabbaaabaaaaaaaa000000",
+  "000abaaabbaaabbaabaaaaaaaa00000",
+  "00aabbaabbbbaaabbbbaaaaaaaa0000",
+  "0abaaabbaaabbaaabbaabaaaaaaa000",
+  "aabbaabbbbaaabbbbaaabbbaaaaaa00",
+  "000000abaaabaabaaaaa00000000000",
+  "00000aabbaabbaabaaaaa0000000000",
+  "0000abaaabbaabaaaaaaaa000000000",
+  "000aabbaaabbaabaaaaaaaa00000000",
+  "00abaaabbaaabbaabaaaaaaa0000000",
+  "0aabbaaabbaaabbaabaaaaaaa000000",
+  "abaaabbaabbbbaaabbbbaaaaaa00000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+  "0000000000000c00000000000000000",
+];
+
+export const TILE_GRASS: string[] = [
+  "btbbttbtbttbbbtb",
+  "tbttbtbbbtbttbtb",
+  "bttbbttbtbttbttb",
+  "tbtbttbtbttbbttb",
+  "btbttbbbtbttbtbb",
+  "ttbttbtbttbbttbt",
+  "bbtbttbbbtbttbtb",
+  "tbtbttbtbttbbttb",
+  "btbbttbtbttbbbtb",
+  "tbttbtbbbtbttbtb",
+  "bttbbttbtbttbttb",
+  "tbtbttbtbttbbttb",
+  "btbttbbbtbttbtbb",
+  "ttbttbtbttbbttbt",
+  "bbtbttbbbtbttbtb",
+  "tbtbttbtbttbbttb",
+];
+
+export const MOUNTAIN_ROCK: string[] = [
+  "uuuvuuvuuvuvuuvv",
+  "uvuuvuuvvuvuuvuv",
+  "vuuvuvuuvuuvuuvu",
+  "uvuvuuvuuvuvuuvu",
+  "uuvuuvuvuuvuuvvu",
+  "vuuvuvuuvuuvuuvu",
+  "uvuuvuuvvuvuuvuv",
+  "uvvuvuuvuuvuvuuu",
+  "uuuvuuvuuvuvuuvv",
+  "uvuuvuuvvuvuuvuv",
+  "vuuvuvuuvuuvuuvu",
+  "uvuvuuvuuvuvuuvu",
+  "uuvuuvuvuuvuuvvu",
+  "vuuvuvuuvuuvuuvu",
+  "uvuuvuuvvuvuuvuv",
+  "uvvuvuuvuuvuvuuu",
+];
+
+export const CAVE_FLOOR: string[] = [
+  "wxwwxxwxwxxwwwxw",
+  "xwwxwxxwwwxxwxwx",
+  "wwxxwwxwxwwxxwwx",
+  "xwxwwxwxwwxxwwxx",
+  "wxwxxwwwxxwxwxxw",
+  "xxwwxwxwwxxwwxwx",
+  "wwxwxxwwwxxwxwxw",
+  "xwxxwwxwxwwxwwwx",
+  "wxwwxxwxwxxwwwxw",
+  "xwwxwxxwwwxxwxwx",
+  "wwxxwwxwxwwxxwwx",
+  "xwxwwxwxwwxxwwxx",
+  "wxwxxwwwxxwxwxxw",
+  "xxwwxwxwwxxwwxwx",
+  "wwxwxxwwwxxwxwxw",
+  "xwxxwwxwxwwxwwwx",
+];
+
+export const TILE_FLOOR: string[] = [
+  "dddddddddddddddd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dccccccccccccccd",
+  "dddddddddddddddd",
+];
+
+export const TILE_WALL: string[] = [
+  "eeeeeeeeeeeeeeee",
+  "efefefefefefefee",
+  "eeeeeeeeeeeeeeee",
+  "fefefefefefefefe",
+  "eeeeeeeeeeeeeeee",
+  "efefefefefefefee",
+  "eeeeeeeeeeeeeeee",
+  "fefefefefefefefe",
+  "eeeeeeeeeeeeeeee",
+  "efefefefefefefee",
+  "eeeeeeeeeeeeeeee",
+  "fefefefefefefefe",
+  "eeeeeeeeeeeeeeee",
+  "efefefefefefefee",
+  "eeeeeeeeeeeeeeee",
+  "eeeeeeeeeeeeeeee",
+];
+
+export const TILE_ROOF: string[] = [
+  "gggggggggggggggg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gffffffffffffffg",
+  "gggggggggggggggg",
+];
+
+export const TILE_DIRT: string[] = [
+  "pqqppppqpqpqpppq",
+  "qpqppqppqpqpqpqp",
+  "pqpqpqpqpppqppqq",
+  "qppqpqqpqppqpqpq",
+  "pqppqpqpqpqppqqp",
+  "qpqpqppqpppqppqp",
+  "pqpqpqpqpqqpqpqq",
+  "qppqpqpqppqppqpp",
+  "pqpqpqpqpqpqpqpp",
+  "qpqppqqpqppqpqpq",
+  "pqppqpqpqppqpqpp",
+  "qppqpqpqppqqpqpq",
+  "pqpqpqppqpqppqpp",
+  "qpqppqpqpqpqpqpq",
+  "pqppqpqppqqpqpqp",
+  "qppqpqpqpqppqppq",
+];
+
+export const TILE_COBBLE: string[] = [
+  "lmlmlmlmlmlmlmlm",
+  "mllmlmllmlmmlmll",
+  "lmmlmllmlmlmlmlm",
+  "mlmlmmlmllmlmllm",
+  "lmlmllmlmmlmllml",
+  "mllmlmlmlmlmlmlm",
+  "lmlmlmllmlmmlmll",
+  "mlmmlmlmlmllmlml",
+  "lmlmllmlmmlmlmll",
+  "mllmlmlmllmlmlml",
+  "lmlmmlmlmlmmlmll",
+  "mlmlmllmlmllmlml",
+  "lmlmlmlmlmlmlmlm",
+  "mllmlmmlmllmlmll",
+  "lmmlmllmlmlmlmlm",
+  "mlmlmlmlmmlmlmll",
+];
+
+export const TILE_WATER: string[] = [
+  "hihihihhihihihih",
+  "ihhihihiihihhihi",
+  "hihihhihihihihhi",
+  "ihihihiihihihihi",
+  "hihihihihihhihih",
+  "ihhihihihihihihi",
+  "hihihhihihihihhi",
+  "ihihihihhihihihi",
+  "hihihihihihihihi",
+  "ihihhihihihihhih",
+  "hihihihihhihihih",
+  "ihihihihihiihihi",
+  "hihhihihihihihhi",
+  "ihihihihihihihih",
+  "hihihihihhihihih",
+  "ihihihhihihihihi",
+];
+
+export const BARREL: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "00000eeeee000000",
+  "0000ejkkkje00000",
+  "000eejkkkjee0000",
+  "000ekjjjjjke0000",
+  "000ekjjjjjke0000",
+  "000eejkkkjee0000",
+  "0000ejkkkje00000",
+  "00000eeeee000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const BOX: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "000eeeeeeee00000",
+  "000ejkkkkje00000",
+  "000ekjkkjke00000",
+  "000ekkjjkke00000",
+  "000ekjkkjke00000",
+  "000ejkkkkje00000",
+  "000eeeeeeee00000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const LANTERN: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "000000eee0000000",
+  "000000eoe0000000",
+  "00000eeoee000000",
+  "000000eee0000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "0000000c00000000",
+  "000000ccc0000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const FIRE_1: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000n00000000",
+  "000000on00000000",
+  "000000no0n000000",
+  "000000oonn000000",
+  "00000nnoon000000",
+  "0000eeccccee0000",
+  "000eceeceece0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const FIRE_2: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000n00000000",
+  "000000nn00000000",
+  "00000noo00000000",
+  "00000nnon0000000",
+  "000000oo0n000000",
+  "000000onn0000000",
+  "0000eeccccee0000",
+  "000eceeceece0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const BUSH: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "000000rrrr000000",
+  "00000rrrrrr00000",
+  "0000rrrrrrrr0000",
+  "0000rrrrbrrr0000",
+  "0000rrbrrrrr0000",
+  "00000rrrrrr00000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const FLOWER: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000s00000000",
+  "000000s0s0000000",
+  "0000000s00000000",
+  "0000000r00000000",
+  "000000r000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const MUSHROOM: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000077770000000",
+  "0000nnnnn0000000",
+  "000nnnnnnn000000",
+  "000n7n7n7n000000",
+  "000nnnnnnn000000",
+  "0000099900000000",
+  "0000099900000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const ROCK_VEIN: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000uuvvuu000000",
+  "000uvvuuuvv00000",
+  "000uuuiivuuu0000",
+  "00uuvvuiivvuu000",
+  "00uuuuvvuuuu0000",
+  "0000uuuuu0000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const TREE_STUMP: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000cccccc000000",
+  "000cjddddjc00000",
+  "000cjddjdjc00000",
+  "000cjddddjc00000",
+  "000cjjjjjjc00000",
+  "0000kkkkkk000000",
+  "0000kkkkkk000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const HERB_PATCH: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000s00000000",
+  "00000s0s0s000000",
+  "000000s0s0000000",
+  "0000s0rr00s00000",
+  "000s00rrr0r00000",
+  "000s0s0rrrr00000",
+  "0000r00rrr000000",
+  "0000rr0rr0000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const FORGE_STATION: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "00iiiiiiiiiiii00",
+  "00iuuuuuuuuuui00",
+  "00iuuegegeguui00",
+  "00iuueggggeuui00",
+  "00iuuuuuuuuuui00",
+  "00iiiiiiiiiiii00",
+  "0000iiiiiiiii000",
+  "0000iiiiiiiii000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const ALCHEMY_TABLE_STA: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000nnnnnnn00000",
+  "000n0h5h5h0n0000",
+  "000nnhhhhhhn0000",
+  "0000nnnnnnn00000",
+  "000ccccccccccc00",
+  "0000c000000c0000",
+  "0000c000000c0000",
+  "0000d000000d0000",
+  "0000d000000d0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const LOOM_STA: string[] = [
+  "0000000000000000",
+  "0000dd0000dd0000",
+  "0000dc0000cd0000",
+  "0000dcccccccd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dc0a0a0cd000",
+  "0000dc6a6a6cd000",
+  "0000dcccccccd000",
+  "0000dc0000cd0000",
+  "0000dd0000dd0000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const WOODBENCH_STA: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000iiii0000i000",
+  "0qqqqqqqqqqqqq00",
+  "0ccccccccccccc00",
+  "0c0000000000c000",
+  "0cdddddddddddc00",
+  "0c0000000000dc00",
+  "0dd000000dddd000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+// ── Crafting stations ─────────────────────────────────────────────────────────
+
+export const STATION_LABELS: Record<CraftStationType, string> = {
+  forge: "Forge",
+  alchemy: "Alchemy Table",
+  loom: "Loom",
+  woodbench: "Woodbench",
+};
+
+export const RECIPES: Recipe[] = [
+  // Forge — Blacksmithing
+  { id: "r_pickaxe",    result: "pickaxe",    resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
+  { id: "r_axe",        result: "axe",        resultQty: 1, ingredients: [{id:"iron_ore",qty:1},{id:"branch",qty:1}], skill:"Blacksmithing", minSkill:50,  xp:15, station:"forge" },
+  { id: "r_iron_sword", result: "iron_sword", resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"coal",qty:1}],  skill:"Blacksmithing", minSkill:100, xp:20, station:"forge" },
+  { id: "r_iron_helm",  result: "iron_helm",  resultQty: 1, ingredients: [{id:"iron_ore",qty:3}],                    skill:"Blacksmithing", minSkill:200, xp:30, station:"forge" },
+  // Alchemy
+  { id: "r_heal_potion",  result: "heal_potion",  resultQty: 1, ingredients: [{id:"bloodroot",qty:1},{id:"ghost_cap",qty:1}],   skill:"Alchemy", minSkill:50,  xp:12, station:"alchemy" },
+  { id: "r_poison_vial",  result: "poison_vial",  resultQty: 1, ingredients: [{id:"nightshade",qty:1},{id:"rat_pelt",qty:1}],   skill:"Alchemy", minSkill:150, xp:20, station:"alchemy" },
+  // Loom — Tailoring
+  { id: "r_leather_tunic", result: "leather_tunic", resultQty: 1, ingredients: [{id:"wolf_pelt",qty:3}], skill:"Tailoring", minSkill:100, xp:25, station:"loom" },
+  // Woodbench — Woodworking
+  { id: "r_arrow",       result: "arrow",       resultQty: 5, ingredients: [{id:"branch",qty:1}],                            skill:"Woodworking", minSkill:0,   xp:5,  station:"woodbench" },
+  { id: "r_wood_shield", result: "wood_shield", resultQty: 1, ingredients: [{id:"wood_plank",qty:3}],                        skill:"Woodworking", minSkill:50,  xp:15, station:"woodbench" },
+  { id: "r_short_bow",   result: "short_bow",   resultQty: 1, ingredients: [{id:"branch",qty:2},{id:"wolf_pelt",qty:1}],    skill:"Woodworking", minSkill:150, xp:30, station:"woodbench" },
+];
+
+// ── Container sprites ─────────────────────────────────────────────────────────
+
+export const DOOR_CLOSED: string[] = [
+  "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkoojjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkoojjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jkkkkkkkkkkkkkkjjkkkkkkkkkkkkkkj",
+  "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+];
+
+export const DOOR_OPEN: string[] = [
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+  "jjjj000000000000000000000000jjjj",
+];
+
+export const CHEST_CLOSED: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "000jjjjjjjjjj000",
+  "000jkkkkkkkkj000",
+  "000jkkkkkkkkj000",
+  "000jjjjjjjjjj000",
+  "000jkkkookkkj000",
+  "000jkkkkkkkkj000",
+  "000jkkkkkkkkj000",
+  "000jjjjjjjjjj000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const CHEST_OPEN: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "000jjjjjjjjjj000",
+  "000jkkkkkkkkj000",
+  "000jkkkkkkkkj000",
+  "000jjjjjjjjjj000",
+  "000jooooooooj000",
+  "000jooooooooj000",
+  "000jooooooooj000",
+  "000jjjjjjjjjj000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const BARREL_OPEN: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "00000eeeee000000",
+  "0000eccccce00000",
+  "000eeccccccee000",
+  "000eccccccce0000",
+  "000eccccccce0000",
+  "000eeccccccee000",
+  "0000eccccce00000",
+  "00000eeeee000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+export const BOX_OPEN: string[] = [
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "000eeeeeeee00000",
+  "000ecccccce00000",
+  "000ecccccce00000",
+  "000ecccccce00000",
+  "000ecccccce00000",
+  "000ecccccce00000",
+  "000eeeeeeee00000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+  "0000000000000000",
+];
+
+// ── Item database ─────────────────────────────────────────────────────────────
+
+export const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
+  gold: { name: "Gold", type: "material", icon: "🪙", maxStack: 999 },
+  bone: { name: "Bone", type: "material", icon: "🦴", maxStack: 99 },
+  apple: { name: "Apple", type: "consumable", icon: "🍎", maxStack: 10 },
+  iron_ore: { name: "Iron Ore", type: "material", icon: "🪨", maxStack: 50 },
+  diamond: { name: "Diamond", type: "material", icon: "💎", maxStack: 10 },
+  iron_sword: { name: "Iron Sword", type: "weapon", icon: "⚔️", maxStack: 1, slot: "mainhand", bonuses: { Melee: 50 }, quality: "common" },
+  wood_shield: { name: "Wooden Shield", type: "armor", icon: "🛡️", maxStack: 1, slot: "offhand", bonuses: { Defense: 20 }, quality: "common" },
+  iron_helm: { name: "Iron Helm", type: "armor", icon: "🪖", maxStack: 1, slot: "head", bonuses: { Defense: 30 }, quality: "common" },
+  wolf_pelt: { name: "Wolf Pelt", type: "material", icon: "🐺", maxStack: 20 },
+  orc_tooth: { name: "Orc Tooth", type: "material", icon: "🦷", maxStack: 30 },
+  runic_shard: { name: "Runic Shard", type: "material", icon: "🔮", maxStack: 5 },
+  rat_pelt: { name: "Rat Pelt", type: "material", icon: "🐀", maxStack: 30 },
+  bloodroot: { name: "Bloodroot", type: "material", icon: "🌿", maxStack: 30 },
+  nightshade: { name: "Nightshade", type: "material", icon: "🍃", maxStack: 20 },
+  wood_plank: { name: "Wood Plank", type: "material", icon: "🪵", maxStack: 50 },
+  branch: { name: "Branch", type: "material", icon: "🌿", maxStack: 40 },
+  coal: { name: "Coal", type: "material", icon: "⬛", maxStack: 50 },
+  stone: { name: "Stone", type: "material", icon: "🪨", maxStack: 99 },
+  red_cap: { name: "Red Cap", type: "material", icon: "🍄", maxStack: 20 },
+  ghost_cap: { name: "Ghost Cap", type: "material", icon: "🍄", maxStack: 10 },
+  pickaxe: { name: "Pickaxe", type: "weapon", icon: "⛏️", maxStack: 1, slot: "mainhand" },
+  axe: { name: "Axe", type: "weapon", icon: "🪓", maxStack: 1, slot: "mainhand", bonuses: { Melee: 20 } },
+  heal_potion: { name: "Healing Potion", type: "consumable", icon: "🧪", maxStack: 5 },
+  poison_vial: { name: "Poison Vial", type: "consumable", icon: "☠️", maxStack: 5 },
+  leather_tunic: { name: "Leather Tunic", type: "armor", icon: "🥼", maxStack: 1, slot: "chest", bonuses: { Defense: 20 }, quality: "common" },
+  short_bow: { name: "Short Bow", type: "weapon", icon: "🏹", maxStack: 1, slot: "mainhand", bonuses: { Archery: 50 }, quality: "common" },
+  arrow: { name: "Arrow", type: "material", icon: "🪃", maxStack: 99 },
+};
+
+// ── Quests & NPCs ─────────────────────────────────────────────────────────────
+
+export const QUESTS: Quest[] = [
+  {
+    id: "filed_assessment",
+    title: "The Filed Assessment",
+    giver: "danna",
+    description: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Two months ago, not one back since. The road is thick with the restless dead. Kill five of the skeletons and return to me.",
+    objective: { type: "kill", target: "skeleton", count: 5, label: "Skeletons slain" },
+    reward: { gold: 6 },
+  },
+];
+
+export const NPC_DEFS: NpcDef[] = [
+  {
+    id: "mira",
+    name: "Mira",
+    title: "Merchant",
+    x: 870, y: 870,
+    type: "vendor",
+    recolor: RECOLOR_NPC_VENDOR,
+    shop: [
+      { itemId: "apple",      price: 5  },
+      { itemId: "iron_ore",   price: 8  },
+      { itemId: "wood_plank", price: 6  },
+    ],
+    greeting: "Stock is low, but I can cover the basics.",
+  },
+  {
+    id: "bram",
+    name: "Bram",
+    title: "Blacksmith",
+    x: 1130, y: 870,
+    type: "vendor",
+    recolor: RECOLOR_NPC_SMITH,
+    shop: [
+      { itemId: "iron_sword",  price: 80 },
+      { itemId: "wood_shield", price: 60 },
+      { itemId: "iron_helm",   price: 50 },
+      { itemId: "pickaxe",     price: 40 },
+      { itemId: "axe",         price: 40 },
+      { itemId: "arrow",       price: 2  },
+      { itemId: "short_bow",   price: 55 },
+    ],
+    greeting: "You want steel. I have it.",
+  },
+  {
+    id: "danna",
+    name: "Danna",
+    title: "Factor",
+    x: 1000, y: 800,
+    type: "quest_giver",
+    recolor: RECOLOR_NPC_QUEST,
+    questId: "filed_assessment",
+    greeting: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Not one came back.",
+  },
+];
+
+// ── Character data ────────────────────────────────────────────────────────────
+
+export const SKILL_CATEGORIES: [string, SkillName[]][] = [
+  ["Combat",   ["Melee", "Defense", "Archery"]],
+  ["Magic",    ["Magery", "Meditation"]],
+  ["Survival", ["Taming", "Huntercraft", "Herbalism", "Mining", "Woodworking"]],
+  ["Crafts",   ["Alchemy", "Blacksmithing", "Lumberjacking", "Tailoring", "ArmsLore"]],
+  ["Stealth",  ["Hiding", "Poisoning", "Stealth"]],
+  ["Roleplay", ["Storyweaving"]],
+];
+
+export function defaultSkills(): Record<SkillName, number> {
+  return {
+    Melee: 0, Defense: 0, Archery: 0,
+    Magery: 0, Meditation: 0,
+    Taming: 0, Huntercraft: 0, Herbalism: 0, Mining: 0, Woodworking: 0,
+    Alchemy: 0, Blacksmithing: 0, Lumberjacking: 0, Tailoring: 0, ArmsLore: 0,
+    Hiding: 0, Poisoning: 0, Stealth: 0,
+    Storyweaving: 0,
+  };
+}
+
+export const CLASS_BONUSES: Record<CharClass, Partial<Record<SkillName, number>>> = {
+  Warrior: { Melee: 150, Defense: 100 },
+  Mage:    { Magery: 150, Meditation: 100 },
+  Ranger:  { Archery: 150, Huntercraft: 100 },
+};
+
+export const CLASS_DESCS: Record<CharClass, string> = {
+  Warrior: "Melee 15, Defense 10. Built for close combat.",
+  Mage:    "Magery 15, Meditation 10. Unlocks spells early.",
+  Ranger:  "Archery 15, Huntercraft 10. Tracks and hunts.",
+};
+
+export const FAME_TITLES: [number, string][] = [
+  [200, "Child of the Void"],
+  [100, "Kin of the Iron Hall"],
+  [50,  "Blade of the Road"],
+  [20,  "Adventurer"],
+  [0,   "Wanderer"],
+];
+
+export const SKILL_MILESTONES: Partial<Record<SkillName, [number, string, number][]>> = {
+  Melee:         [[250, "sharpened their blade to journeyman grade", 10], [500, "earned the mark of the Swordmaster", 20]],
+  Archery:       [[250, "can loose an arrow true at fifty paces", 10]],
+  Magery:        [[250, "spoke their first Words of Power without hesitation", 10]],
+  Herbalism:     [[250, "knows every leaf and root that grows in the forest", 8]],
+  Mining:        [[250, "reads the stone like an open book", 8]],
+  Blacksmithing: [[250, "hammered iron into something worth calling a weapon", 8]],
+  Tailoring:     [[250, "stitched a garment that would not shame a merchant", 8]],
+  Alchemy:       [[250, "brewed their first true draught", 8]],
+};
+
+// ── Time constants ────────────────────────────────────────────────────────────
+
+export const TICKS_PER_HOUR = 3600; // 60 fps × 60 real seconds = 1 game hour
+export const TICKS_PER_DAY = TICKS_PER_HOUR * 24;
+export const TICKS_PER_SEASON = TICKS_PER_DAY * 7;
