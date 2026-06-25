@@ -9,7 +9,8 @@ import type {
 import {
   PALETTE,
   RECOLOR_ORC_GRUNT, RECOLOR_ORC_SHAMAN, RECOLOR_WOLF, RECOLOR_RAT,
-  RECOLOR_NPC_VENDOR, RECOLOR_NPC_SMITH, RECOLOR_NPC_QUEST,
+  RECOLOR_NPC_VENDOR, RECOLOR_NPC_SMITH, RECOLOR_NPC_QUEST, RECOLOR_VOID_WARDEN,
+  RECOLOR_ANCIENT_SKELETON, RECOLOR_ALPHA_WOLF,
   TORSO_FRONT, TORSO_BACK, WALK_LEGS, IDLE_LEGS, IDLE_EYES,
   EQ_HELM_IRON, EQ_SWORD_IRON, EQ_PICKAXE, EQ_AXE, EQ_SHIELD_WOOD,
   GIANT_PINE_TREE,
@@ -117,6 +118,8 @@ interface Monster {
   deathFrames: import("pixi.js").Texture[];
   // Per-enemy stats
   monsterType: string;
+  displayName?: string;
+  isElite?: boolean;
   speed: number;
   detectRadius: number;
   damage: number;
@@ -150,6 +153,8 @@ export default function PixelTestMapPage() {
   const [lootTarget, setLootTarget] = useState<ContainerData | null>(null);
   const [splitModal, setSplitModal] = useState<{ itemIndex: number, max: number } | null>(null);
   const [splitQty, setSplitQty] = useState<number>(1);
+  const [bindConfirmIndex, setBindConfirmIndex] = useState<number | null>(null);
+  const [tomeConfirmIndex, setTomeConfirmIndex] = useState<number | null>(null);
   const [activeNpcId, setActiveNpcId] = useState<string | null>(null);
   const [shopTab, setShopTab] = useState<"buy" | "sell">("buy");
   const [questProgress, setQuestProgress] = useState<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
@@ -160,7 +165,7 @@ export default function PixelTestMapPage() {
   const [storyLostMsg, setStoryLostMsg] = useState(false);
   const goldenStateRef = useRef(false);
   const resetGoldenStateRef = useRef<() => void>(() => {});
-  const addChronicleRef = useRef<(text: string, fame: number) => void>(() => {});
+  const addChronicleRef = useRef<(text: string, fame: number, type?: ChronicleEntry["type"], tags?: string[]) => void>(() => {});
   const markChronicleAsLostRef = useRef<() => void>(() => {});
   const setStoryLostMsgRef = useRef<(v: boolean) => void>(() => {});
   const firedMilestonesRef = useRef<Set<string>>(new Set());
@@ -174,6 +179,20 @@ export default function PixelTestMapPage() {
   const [houseCreationColor, setHouseCreationColor] = useState("#b8442a");
   const showHousePanelRef = useRef(false);
   const houseRef = useRef<House | null>(null);
+
+  // Season system
+  const [voidWardenDefeated, setVoidWardenDefeated] = useState(false);
+  const [seasonEndScreen, setSeasonEndScreen] = useState<{
+    charName: string; season: number;
+    bronze: boolean; silver: boolean; gold: boolean;
+    fameBefore: number; fameBonus: number;
+    chronicleSnippet: ChronicleEntry[];
+  } | null>(null);
+  const [seasonEndButtonVisible, setSeasonEndButtonVisible] = useState(false);
+  const seasonEndScreenRef = useRef(false);
+  const voidWardenDefeatedRef = useRef(false);
+  const triggerSeasonEndRef = useRef<() => void>(() => {});
+  const seasonEndFiredRef = useRef(false);
 
   // Permadeath system
   const [deathScreen, setDeathScreen] = useState<{
@@ -214,6 +233,8 @@ export default function PixelTestMapPage() {
   useEffect(() => { showCharPanelRef.current = showCharPanel; }, [showCharPanel]);
   useEffect(() => { showHousePanelRef.current = showHousePanel; }, [showHousePanel]);
   useEffect(() => { deathScreenRef.current = deathScreen !== null; }, [deathScreen]);
+  useEffect(() => { seasonEndScreenRef.current = seasonEndScreen !== null; }, [seasonEndScreen]);
+  useEffect(() => { voidWardenDefeatedRef.current = voidWardenDefeated; }, [voidWardenDefeated]);
   useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
   useEffect(() => {
     equipmentRef.current = equipment;
@@ -257,8 +278,8 @@ export default function PixelTestMapPage() {
       return updated;
     });
   };
-  addChronicleRef.current = (text, fame) => {
-    const entry: ChronicleEntry = { text, fame, ts: Date.now() };
+  addChronicleRef.current = (text, fame, type?, tags?) => {
+    const entry: ChronicleEntry = { text, fame, ts: Date.now(), ...(type && { type }), ...(tags && { tags }) };
     setChronicle(prev => {
       const next = [entry, ...prev].slice(0, 60);
       saveChronicle(next);
@@ -297,25 +318,30 @@ export default function PixelTestMapPage() {
     const targets = (near.length > 0 ? near : available).slice(0, 3);
     nonHeirlooms.forEach((item, i) => { if (targets[i % targets.length]) targets[i % targets.length].items.push({ ...item }); });
 
-    // register fallen character in house + move heirlooms to vault
+    // chronicle entry
+    const savedTime = loadGameTime();
+    addChronicleRef.current(`${char.name} fell to ${killedBy} on Day ${savedTime.day}.`, 0, "death", [killedBy]);
+
+    // register fallen character in house + move heirlooms to vault + house chronicle
     if (h) {
       const fallen: HouseCharacter = {
         name: char.name, charClass: char.charClass, season: char.season,
         famePeak: char.fame, fate: "fallen", causeOfDeath: killedBy,
         skillSnapshot: { ...char.skills },
       };
+      const houseEntry: ChronicleEntry = {
+        text: `${h.name} mourns ${char.name}, who fell to ${killedBy} on Season ${char.season}, Day ${savedTime.day}.`,
+        fame: 0, ts: Date.now(), type: "death",
+      };
       const updatedHouse: House = {
         ...h,
         characters: [...h.characters.filter(c => c.fate !== "active"), fallen],
         heirlooms: [...h.heirlooms, ...heirlooms].slice(0, 6),
+        chronicle: [houseEntry, ...(h.chronicle ?? [])].slice(0, 30),
       };
       saveHouse(updatedHouse);
       setHouse(updatedHouse);
     }
-
-    // chronicle entry
-    const savedTime = loadGameTime();
-    addChronicleRef.current(`${char.name} fell to ${killedBy} on Day ${savedTime.day}.`, 0);
 
     // wipe char storage (character state kept alive until "Begin Next Character")
     localStorage.removeItem(CHAR_KEY);
@@ -327,6 +353,53 @@ export default function PixelTestMapPage() {
       fame: char.fame, topSkill, topSkillVal: Math.floor(topVal / 10),
     });
     setTimeout(() => setDeathButtonVisible(true), 3000);
+  };
+
+  triggerSeasonEndRef.current = () => {
+    if (seasonEndFiredRef.current) return;
+    seasonEndFiredRef.current = true;
+    const char = charRef.current;
+    const h = houseRef.current;
+    if (!char) return;
+    const savedTime = loadGameTime();
+    const bronze = savedTime.day >= 3;
+    const silver = char.fame >= 50;
+    const gold = voidWardenDefeatedRef.current;
+    const fameBefore = h?.fame ?? 0;
+    const fameBonus = (bronze ? 20 : 0) + (silver ? 40 : 0) + (gold ? 100 : 0);
+    // register retired character + award house fame
+    if (h) {
+      const retired: HouseCharacter = {
+        name: char.name, charClass: char.charClass, season: char.season,
+        famePeak: char.fame, fate: "retired", skillSnapshot: { ...char.skills },
+      };
+      const updatedHouse: House = {
+        ...h,
+        fame: h.fame + fameBonus,
+        characters: [...h.characters.filter(c => c.fate !== "active"), retired],
+      };
+      saveHouse(updatedHouse);
+      setHouse(updatedHouse);
+    }
+    addChronicleRef.current(`Season ${char.season} ended. ${char.name} retired.`, 0, "milestone");
+    // house-level chronicle
+    if (h) {
+      const houseEntry: ChronicleEntry = {
+        text: `Season ${char.season} of ${h.name} came to a close. ${char.name} retired${gold ? " having slain the Void Warden" : ""}.`,
+        fame: 0, ts: Date.now(), type: "milestone",
+      };
+      setHouse(prev => prev ? { ...prev, chronicle: [houseEntry, ...(prev.chronicle ?? [])].slice(0, 30) } : prev);
+    }
+    localStorage.removeItem(CHAR_KEY);
+    localStorage.removeItem(GAME_TIME_KEY);
+    setInventory([]);
+    setSeasonEndScreen({
+      charName: char.name, season: char.season,
+      bronze, silver, gold,
+      fameBefore, fameBonus,
+      chronicleSnippet: chronicle.slice(0, 5),
+    });
+    setTimeout(() => setSeasonEndButtonVisible(true), 2000);
   };
 
   function handleCreateHouse() {
@@ -363,7 +436,9 @@ export default function PixelTestMapPage() {
     }
     const houseFame = houseRef.current?.fame ?? 0;
     const inheritedFame = Math.floor(houseFame * 0.1);
-    const char: Character = { name, charClass: charCreationClass, skills, fame: inheritedFame, season: 1, heirloomBindsUsed: 0 };
+    const season = (houseRef.current?.characters.length ?? 0) + 1;
+    const char: Character = { name, charClass: charCreationClass, skills, fame: inheritedFame, season, heirloomBindsUsed: 0 };
+    seasonEndFiredRef.current = false;
     // Register the new character in the house
     if (houseRef.current) {
       const updatedHouse: House = {
@@ -385,6 +460,29 @@ export default function PixelTestMapPage() {
     }
     saveCharacter(char);
     setCharacter(char);
+    // house chronicle entry for new character
+    if (houseRef.current) {
+      const entry: ChronicleEntry = {
+        text: `${char.name} the ${char.charClass} joins ${houseRef.current.name}, beginning Season ${season}.`,
+        fame: 0, ts: Date.now(), type: "discovery",
+      };
+      const withEntry = { ...houseRef.current, chronicle: [entry, ...(houseRef.current.chronicle ?? [])].slice(0, 30) };
+      saveHouse(withEntry);
+      setHouse(withEntry);
+    }
+    // auto-claim heirlooms from house vault into starting inventory
+    const vault = houseRef.current?.heirlooms ?? [];
+    if (vault.length > 0) {
+      setInventory([createItem("apple", 3), createItem("iron_sword", 1), ...vault.map(it => ({ ...it }))]);
+      // clear vault
+      if (houseRef.current) {
+        const cleared = { ...houseRef.current, heirlooms: [] };
+        saveHouse(cleared);
+        setHouse(cleared);
+      }
+    } else {
+      setInventory([createItem("apple", 3), createItem("iron_sword", 1)]);
+    }
     resetPlayerRef.current();
   }
 
@@ -394,6 +492,14 @@ export default function PixelTestMapPage() {
     setDeathScreen(null);
     setDeathButtonVisible(false);
     // resetPlayerRef is called from handleCreateCharacter after new char is created
+  }
+
+  function handleBeginNextSeason() {
+    seasonEndFiredRef.current = false;
+    setVoidWardenDefeated(false);
+    setCharacter(null);
+    setSeasonEndScreen(null);
+    setSeasonEndButtonVisible(false);
   }
 
   // Sync ref with state
@@ -466,6 +572,43 @@ export default function PixelTestMapPage() {
   };
   handleTakeAllRef.current = handleTakeAll;
 
+  const handleBindHeirloom = (invIndex: number) => {
+    const item = inventory[invIndex];
+    if (!item || item.heirloom) return;
+    const char = character;
+    if (!char) return;
+    if (char.heirloomBindsUsed >= 2) return;
+    if (char.fame < 20) return;
+    setInventory(prev => prev.map((it, i) => i === invIndex ? { ...it, heirloom: true } : it));
+    setCharacter(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, fame: prev.fame - 20, heirloomBindsUsed: prev.heirloomBindsUsed + 1 };
+      saveCharacter(updated);
+      return updated;
+    });
+    addChronicleRef.current(`${char.name} bound the ${item.name} as a House heirloom.`, 5);
+    setBindConfirmIndex(null);
+  };
+
+  const handleUseTome = (invIndex: number) => {
+    const char = character;
+    if (!char) return;
+    setInventory(prev => {
+      const next = [...prev];
+      const item = next[invIndex];
+      if (!item || item.id !== "elder_tome") return prev;
+      if (item.qty <= 1) next.splice(invIndex, 1);
+      else next[invIndex] = { ...item, qty: item.qty - 1 };
+      return next;
+    });
+    // Find lowest non-maxed skill and grant 50 XP
+    const skills = char.skills;
+    const lowestSkill = (Object.keys(skills) as SkillName[]).reduce((a, b) => skills[a] <= skills[b] ? a : b);
+    gainSkillRef.current(lowestSkill, 50);
+    addChronicleRef.current(`${char.name} studied an Elder Tome and deepened their ${lowestSkill}.`, 10, "discovery");
+    setTomeConfirmIndex(null);
+  };
+
   function applyToInventory(inv: Item[], newItem: Item): Item[] {
     const next = [...inv];
     if (newItem.maxStack > 1) {
@@ -516,12 +659,16 @@ export default function PixelTestMapPage() {
     const next = { ...questProgressRef.current, [questId]: { status: "done" as const, progress: quest.objective.count } };
     questProgressRef.current = next;
     setQuestProgress(next);
-    setInventory(prev => applyToInventory(prev, createItem("gold", quest.reward.gold)));
+    if (quest.reward.gold > 0) setInventory(prev => applyToInventory(prev, createItem("gold", quest.reward.gold)));
     if (quest.reward.itemId) setInventory(prev => applyToInventory(prev, createItem(quest.reward.itemId!, quest.reward.itemQty ?? 1)));
+    const isAutoQuest = quest.giver === "unyha_tree";
     addChronicleRef.current(
-      `${charRef.current?.name ?? "They"} completed "${quest.title}". Danna counted out the coin without a word.`,
-      10
+      isAutoQuest
+        ? `${charRef.current?.name ?? "They"} fulfilled the chronicle's call: "${quest.title}".`
+        : `${charRef.current?.name ?? "They"} completed "${quest.title}". Danna counted out the coin without a word.`,
+      isAutoQuest ? 20 : 10, "quest", [questId]
     );
+    gainFameRef.current(isAutoQuest ? 20 : 0);
   }
 
   function handleCraft(recipeId: string) {
@@ -556,7 +703,7 @@ export default function PixelTestMapPage() {
       firedMilestonesRef.current.add(craftKey);
       saveMilestones(firedMilestonesRef.current);
       const itemName = ITEM_DB[recipe.result]?.name ?? recipe.result;
-      addChronicleRef.current(`${charRef.current?.name ?? "They"} crafted their first ${itemName}.`, 8);
+      addChronicleRef.current(`${charRef.current?.name ?? "They"} crafted their first ${itemName}.`, 8, "craft", [recipe.result, recipe.station]);
     }
   }
 
@@ -751,6 +898,26 @@ export default function PixelTestMapPage() {
       const npcSmithTex  = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_SMITH)));
       const npcQuestTex  = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_QUEST)));
 
+      // Void Warden textures (boss — purple void recolor, 2× scale)
+      const vwIdleFront  = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_VOID_WARDEN)));
+      const vwIdleBack   = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_VOID_WARDEN)]);
+      const vwWalkFront  = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_VOID_WARDEN)));
+      const vwWalkBack   = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_BACK, l), RECOLOR_VOID_WARDEN)));
+      const vwDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_VOID_WARDEN)));
+
+      // Elite variant textures
+      const ancSkelIdleFront = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_ANCIENT_SKELETON)));
+      const ancSkelIdleBack  = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_ANCIENT_SKELETON)]);
+      const ancSkelWalkFront = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_ANCIENT_SKELETON)));
+      const ancSkelWalkBack  = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_BACK, l), RECOLOR_ANCIENT_SKELETON)));
+      const ancSkelDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_ANCIENT_SKELETON)));
+
+      const alphaWolfIdleFront = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_ALPHA_WOLF)));
+      const alphaWolfIdleBack  = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_ALPHA_WOLF)]);
+      const alphaWolfWalkFront = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_ALPHA_WOLF)));
+      const alphaWolfWalkBack  = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_BACK, l), RECOLOR_ALPHA_WOLF)));
+      const alphaWolfDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_ALPHA_WOLF)));
+
       // Enemy configs
       interface MonsterConfig {
         idleFront: import("pixi.js").Texture[];
@@ -759,6 +926,8 @@ export default function PixelTestMapPage() {
         walkBack: import("pixi.js").Texture[];
         deathFrames: import("pixi.js").Texture[];
         monsterType: string;
+        displayName?: string;
+        isElite?: boolean;
         hp: number;
         speed: number;
         detectRadius: number;
@@ -805,6 +974,30 @@ export default function PixelTestMapPage() {
         hp: 20, speed: 1.6, detectRadius: 200, damage: 10,
         dropId: "rat_pelt", dropQty: 1, skillOnKill: "Huntercraft", fameOnKill: 2,
         scale: 0.55,
+      };
+      const VOID_WARDEN_CFG: MonsterConfig = {
+        idleFront: vwIdleFront, idleBack: vwIdleBack,
+        walkFront: vwWalkFront, walkBack: vwWalkBack, deathFrames: vwDeathFrames,
+        monsterType: "void_warden",
+        hp: 400, speed: 0.6, detectRadius: 700, damage: 25,
+        dropId: "void_shard", dropQty: 1, skillOnKill: "Melee", fameOnKill: 100,
+        scale: 2.0,
+      };
+      const ANCIENT_SKELETON_CFG: MonsterConfig = {
+        idleFront: ancSkelIdleFront, idleBack: ancSkelIdleBack,
+        walkFront: ancSkelWalkFront, walkBack: ancSkelWalkBack, deathFrames: ancSkelDeathFrames,
+        monsterType: "skeleton", displayName: "Ancient Skeleton", isElite: true,
+        hp: 100, speed: 1.1, detectRadius: 400, damage: 30,
+        dropId: "bone_crown", dropQty: 1, skillOnKill: "Melee", fameOnKill: 15,
+        scale: 1.25,
+      };
+      const ALPHA_WOLF_CFG: MonsterConfig = {
+        idleFront: alphaWolfIdleFront, idleBack: alphaWolfIdleBack,
+        walkFront: alphaWolfWalkFront, walkBack: alphaWolfWalkBack, deathFrames: alphaWolfDeathFrames,
+        monsterType: "wolf", displayName: "Alpha Wolf", isElite: true,
+        hp: 70, speed: 1.6, detectRadius: 380, damage: 25,
+        dropId: "alpha_pelt", dropQty: 1, skillOnKill: "Huntercraft", fameOnKill: 20,
+        scale: 1.35,
       };
 
       const pineTextures = await makeTextures([GIANT_PINE_TREE]);
@@ -935,8 +1128,15 @@ export default function PixelTestMapPage() {
       let lastHitBy = "an unknown threat";
       const MONSTER_DISPLAY_NAMES: Record<string, string> = {
         skeleton: "a Skeleton", orc_grunt: "an Orc Grunt", orc_shaman: "an Orc Shaman",
-        wolf: "a Wolf", cave_rat: "a Cave Rat",
+        wolf: "a Wolf", cave_rat: "a Cave Rat", void_warden: "the Void Warden",
       };
+      // Boss state
+      let voidWarden: Monster | null = null;
+      let voidWardenPhase = 1;
+      let voidWardenProjCooldown = 0;
+      let voidWardenAoeCooldown = 0;
+      let voidWardenSpawned = false;
+      let voidWardenAoeGfx: import("pixi.js").Graphics | null = null;
       let manaRegenTick = 0;
 
       const grassBg = new PIXI.Graphics();
@@ -980,6 +1180,7 @@ export default function PixelTestMapPage() {
         damage: number;
         color: number;
         hitSkill: SkillName;
+        isEnemy?: boolean;
       }
       const projectiles: Projectile[] = [];
 
@@ -1020,19 +1221,33 @@ export default function PixelTestMapPage() {
         gainSkillRef.current(killSkill, 10);
         if (m.skillOnKill && m.skillOnKill !== killSkill) gainSkillRef.current(m.skillOnKill, 15);
         gainFameRef.current(m.fameOnKill ?? 3);
-        const killKey = `kill:${m.monsterType}:first`;
-        if (!firedMilestonesRef.current.has(killKey)) {
-          firedMilestonesRef.current.add(killKey);
-          saveMilestones(firedMilestonesRef.current);
-          const killTemplates: Partial<Record<string, [string, number]>> = {
-            skeleton:   [`${charRef.current?.name ?? "They"} felled their first skeleton in the mine.`, 5],
-            orc_grunt:  [`${charRef.current?.name ?? "They"} drove a blade through their first orc.`, 5],
-            orc_shaman: [`${charRef.current?.name ?? "They"} silenced the shaman's runes.`, 20],
-            wolf:       [`${charRef.current?.name ?? "They"} brought down their first wolf.`, 5],
-            cave_rat:   [`${charRef.current?.name ?? "They"} cleared a rat from the mine.`, 2],
-          };
-          const tmpl = killTemplates[m.monsterType];
-          if (tmpl) addChronicleRef.current(tmpl[0], tmpl[1]);
+        // Elite-specific first-kill milestone
+        if (m.isElite) {
+          const eliteKey = `kill:${m.displayName ?? m.monsterType}:elite:first`;
+          if (!firedMilestonesRef.current.has(eliteKey)) {
+            firedMilestonesRef.current.add(eliteKey);
+            saveMilestones(firedMilestonesRef.current);
+            addChronicleRef.current(
+              `${charRef.current?.name ?? "They"} slew the ${m.displayName ?? m.monsterType} — a fearsome thing, older than common memory.`,
+              m.fameOnKill ?? 15, "kill", [m.monsterType, "elite"]
+            );
+          }
+        } else {
+          const killKey = `kill:${m.monsterType}:first`;
+          if (!firedMilestonesRef.current.has(killKey)) {
+            firedMilestonesRef.current.add(killKey);
+            saveMilestones(firedMilestonesRef.current);
+            const killTemplates: Partial<Record<string, [string, number]>> = {
+              skeleton:     [`${charRef.current?.name ?? "They"} felled their first skeleton in the mine.`, 5],
+              orc_grunt:    [`${charRef.current?.name ?? "They"} drove a blade through their first orc.`, 5],
+              orc_shaman:   [`${charRef.current?.name ?? "They"} silenced the shaman's runes.`, 20],
+              wolf:         [`${charRef.current?.name ?? "They"} brought down their first wolf.`, 5],
+              cave_rat:     [`${charRef.current?.name ?? "They"} cleared a rat from the mine.`, 2],
+              void_warden:  [`${charRef.current?.name ?? "They"} shattered the Void Warden, earning glory for their House.`, 100],
+            };
+            const tmpl = killTemplates[m.monsterType];
+            if (tmpl) addChronicleRef.current(tmpl[0], tmpl[1], "kill", [m.monsterType]);
+          }
         }
         if (m.dropId) {
           addItemRef.current(m.dropId, m.dropQty ?? 1);
@@ -1050,6 +1265,12 @@ export default function PixelTestMapPage() {
           qChanged = true;
         }
         if (qChanged) { questProgressRef.current = nextQMap; setQuestProgress(nextQMap); }
+        // Void Warden kill = gold season objective
+        if (m.monsterType === "void_warden") {
+          setVoidWardenDefeated(true);
+          voidWardenDefeatedRef.current = true;
+          spawnFloatingText("⚡ GOLD OBJECTIVE!", m.sprite.x, m.sprite.y - 100, 0xffd98f);
+        }
       }
 
       function castArrow(fromX: number, fromY: number, toX: number, toY: number) {
@@ -1104,7 +1325,7 @@ export default function PixelTestMapPage() {
           state: "idle", vx: 0, vy: 0, knockback: 0, hitFlash: 0, facing: "front",
           idleFront: cfg.idleFront, idleBack: cfg.idleBack,
           walkFront: cfg.walkFront, walkBack: cfg.walkBack, deathFrames: cfg.deathFrames,
-          monsterType: cfg.monsterType,
+          monsterType: cfg.monsterType, displayName: cfg.displayName, isElite: cfg.isElite,
           speed: cfg.speed, detectRadius: cfg.detectRadius, damage: cfg.damage,
           dropId: cfg.dropId, dropQty: cfg.dropQty,
           skillOnKill: cfg.skillOnKill, fameOnKill: cfg.fameOnKill,
@@ -1529,7 +1750,7 @@ export default function PixelTestMapPage() {
       for (let i = 0; i < 20; i++) {
         const sx = 1800 + Math.random() * 1200;
         const sy = 1200 + Math.random() * 1500;
-        spawnMonster(SKELETON_CFG, sx, sy);
+        spawnMonster(Math.random() < 0.05 ? ANCIENT_SKELETON_CFG : SKELETON_CFG, sx, sy);
       }
       spawnMonster(SKELETON_CFG, 3100, 1100);
       spawnMonster(SKELETON_CFG, 3200, 1200);
@@ -1545,13 +1766,13 @@ export default function PixelTestMapPage() {
       for (let i = 0; i < 8; i++) {
         const wx = 100 + Math.random() * 500;
         const wy = 100 + Math.random() * 500;
-        spawnMonster(WOLF_CFG, wx, wy);
+        spawnMonster(Math.random() < 0.05 ? ALPHA_WOLF_CFG : WOLF_CFG, wx, wy);
       }
       // Extra wolves in east forest
       for (let i = 0; i < 5; i++) {
         const wx = 1600 + Math.random() * 400;
         const wy = 2000 + Math.random() * 600;
-        spawnMonster(WOLF_CFG, wx, wy);
+        spawnMonster(Math.random() < 0.05 ? ALPHA_WOLF_CFG : WOLF_CFG, wx, wy);
       }
 
       // Orc Camp — east of the mine (x:3500-3950, y:1800-2600)
@@ -1681,7 +1902,7 @@ export default function PixelTestMapPage() {
 
       // ── Zone A: Eastern Badlands (x:5000-9000, y:1500-5000) ──────────────────
       for (let i = 0; i < 15; i++) {
-        spawnMonster(SKELETON_CFG, 5000 + Math.random() * 4000, 1500 + Math.random() * 3500);
+        spawnMonster(Math.random() < 0.08 ? ANCIENT_SKELETON_CFG : SKELETON_CFG, 5000 + Math.random() * 4000, 1500 + Math.random() * 3500);
       }
       placeHarvestNode(rockVeinTex, 5800, 2200, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 2], ["stone", 2]], 240_000);
       placeHarvestNode(rockVeinTex, 7200, 3100, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 1], ["coal", 2]], 240_000);
@@ -1690,7 +1911,7 @@ export default function PixelTestMapPage() {
 
       // ── Zone B: Deep Forest (x:1500-6000, y:5000-10000) ─────────────────────
       for (let i = 0; i < 12; i++) {
-        spawnMonster(WOLF_CFG, 1500 + Math.random() * 4500, 5000 + Math.random() * 5000);
+        spawnMonster(Math.random() < 0.08 ? ALPHA_WOLF_CFG : WOLF_CFG, 1500 + Math.random() * 4500, 5000 + Math.random() * 5000);
       }
       placeHarvestNode(herbTex,  2100, 5800,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 1]], 120_000);
       placeHarvestNode(herbTex,  3600, 6400,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 2]], 120_000);
@@ -1702,6 +1923,7 @@ export default function PixelTestMapPage() {
       placeHarvestNode(mushTex,  4100, 7500,  "Forage", null, "Herbalism", 6,  [["mushroom", 3]], 90_000);
       placeHarvestNode(mushTex,  3300, 9000,  "Forage", null, "Herbalism", 6,  [["mushroom", 2]], 90_000);
       placeHarvestNode(mushTex,  5200, 5600,  "Forage", null, "Herbalism", 6,  [["mushroom", 2]], 90_000);
+      placeHarvestNode(herbTex,  3800, 8200, "Study Ancient Text", null, "Storyweaving", 0, [["elder_tome", 1]], 600_000, true);
 
       // ── Zone C: Forsaken Fort (x:9000-13000, y:7000-12000) ──────────────────
       for (let i = 0; i < 10; i++) {
@@ -2063,6 +2285,16 @@ export default function PixelTestMapPage() {
           lastGameHour = gameHour;
           setGameTimeRef.current(gameDay, gameHour);
         }
+        // Season end at day 8
+        if (gameDay >= 8 && !deathScreenRef.current) {
+          triggerSeasonEndRef.current();
+        }
+        // Void Warden spawns on Day 5
+        if (gameDay >= 5 && !voidWardenSpawned) {
+          voidWardenSpawned = true;
+          spawnMonster(VOID_WARDEN_CFG, 11000, 9200);
+          voidWarden = monsters[monsters.length - 1];
+        }
         // Persist every real minute
         saveTimerTick++;
         if (saveTimerTick >= 3600) {
@@ -2071,7 +2303,7 @@ export default function PixelTestMapPage() {
         }
 
         // ── Custom cursor ────────────────────────────────────────────────────
-        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current;
+        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current || seasonEndScreenRef.current;
         cursorGfx.visible = !uiOpen;
         cursorGfx.x = mouseX;
         cursorGfx.y = mouseY;
@@ -2081,7 +2313,7 @@ export default function PixelTestMapPage() {
           drawCursor(curWeapon);
         }
 
-        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current) {
+        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current || seasonEndScreenRef.current) {
           // Flush keys so nothing is still "held" when the UI closes
           for (const k of Object.keys(keys)) { keys[k] = false; delete keyAge[k]; }
           for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
@@ -2488,6 +2720,60 @@ export default function PixelTestMapPage() {
         manaText.text = `${Math.floor(playerMana)}/${playerMaxMana}`;
 
         // Projectile updates
+        // ── Void Warden boss phases ───────────────────────────────────────────
+        if (voidWarden && voidWarden.state !== "dead" && state !== "dead") {
+          const hpPct = voidWarden.hp / voidWarden.maxHp;
+          const newPhase = hpPct > 0.7 ? 1 : hpPct > 0.4 ? 2 : 3;
+          if (newPhase !== voidWardenPhase) {
+            voidWardenPhase = newPhase;
+            spawnFloatingText(
+              newPhase === 2 ? "⚡ Void Surge!" : "💀 Enraged!",
+              voidWarden.sprite.x, voidWarden.sprite.y - 80, 0xb870f0
+            );
+          }
+          // Phase 2+: fire void bolts at player every 120 ticks
+          if (voidWardenPhase >= 2) {
+            voidWardenProjCooldown--;
+            if (voidWardenProjCooldown <= 0) {
+              voidWardenProjCooldown = 120;
+              const dx = knight.x - voidWarden.sprite.x;
+              const dy = knight.y - voidWarden.sprite.y;
+              const len = Math.hypot(dx, dy) || 1;
+              const gfx = new PIXI.Graphics();
+              gfx.circle(0, 0, 9).fill({ color: 0x3D1F6B });
+              gfx.circle(0, 0, 5).fill({ color: 0x7B2FBE });
+              gfx.circle(0, 0, 2).fill({ color: 0xE0AAFF });
+              gfx.x = voidWarden.sprite.x; gfx.y = voidWarden.sprite.y - 40;
+              gfx.zIndex = 15000;
+              worldContainer.addChild(gfx);
+              projectiles.push({ gfx, x: gfx.x, y: gfx.y, vx: (dx / len) * 7, vy: (dy / len) * 7, life: 80, damage: 20, color: 0xb870f0, hitSkill: "Defense", isEnemy: true });
+            }
+          }
+          // Phase 3: AoE pulse every 90 ticks
+          if (voidWardenPhase >= 3) {
+            voidWardenAoeCooldown--;
+            if (voidWardenAoeCooldown <= 0) {
+              voidWardenAoeCooldown = 90;
+              if (!voidWardenAoeGfx) {
+                voidWardenAoeGfx = new PIXI.Graphics();
+                voidWardenAoeGfx.zIndex = 14000;
+                worldContainer.addChild(voidWardenAoeGfx);
+              }
+              voidWardenAoeGfx.clear();
+              voidWardenAoeGfx.circle(voidWarden.sprite.x, voidWarden.sprite.y - 40, 160).fill({ color: 0x3D1F6B, alpha: 0.4 });
+              setTimeout(() => { if (voidWardenAoeGfx) voidWardenAoeGfx.clear(); }, 600);
+              if (playerInvuln === 0 && Math.hypot(knight.x - voidWarden.sprite.x, knight.y - voidWarden.sprite.y) < 160) {
+                const dmgTaken = 30;
+                playerHp -= dmgTaken;
+                playerInvuln = 45;
+                lastHitBy = "the Void Warden";
+                spawnFloatingText(`-${dmgTaken} Void`, knight.x, knight.y - 40, 0xb870f0);
+                if (playerHp <= 0) { setState("dead"); triggerDeathRef.current(knight.x, knight.y, lastHitBy); }
+              }
+            }
+          }
+        }
+
         for (let pi = projectiles.length - 1; pi >= 0; pi--) {
           const p = projectiles[pi];
           p.x += p.vx; p.y += p.vy;
@@ -2495,16 +2781,30 @@ export default function PixelTestMapPage() {
           p.gfx.x = p.x; p.gfx.y = p.y;
           p.gfx.alpha = Math.min(1, p.life / 8);
           let hit = false;
-          for (const m of monsters) {
-            if (m.state === "dead") continue;
-            if (Math.hypot(m.sprite.x - p.x, m.sprite.y - p.y) < 22) {
-              m.hp -= p.damage;
-              m.hitFlash = 6;
-              spawnFloatingText(`-${p.damage}`, m.sprite.x, m.sprite.y - 50, p.color);
-              gainSkillRef.current(p.hitSkill, 8);
-              if (m.hp <= 0) handleMonsterKill(m, p.hitSkill);
+          if (p.isEnemy) {
+            // enemy projectile — check against player
+            if (state !== "dead" && playerInvuln === 0 && Math.hypot(knight.x - p.x, knight.y - p.y) < 20) {
+              const defReduction = Math.min(0.5, ((charRef.current?.skills.Defense ?? 0) + (equipBonusRef.current.Defense ?? 0)) / 2000);
+              const dmgTaken = Math.max(1, Math.round(p.damage * (1 - defReduction)));
+              playerHp -= dmgTaken;
+              playerInvuln = 45;
+              lastHitBy = "the Void Warden";
+              spawnFloatingText(`-${dmgTaken}`, knight.x, knight.y - 40, 0xff0000);
+              if (playerHp <= 0) { setState("dead"); triggerDeathRef.current(knight.x, knight.y, lastHitBy); }
               hit = true;
-              break;
+            }
+          } else {
+            for (const m of monsters) {
+              if (m.state === "dead") continue;
+              if (Math.hypot(m.sprite.x - p.x, m.sprite.y - p.y) < 22) {
+                m.hp -= p.damage;
+                m.hitFlash = 6;
+                spawnFloatingText(`-${p.damage}`, m.sprite.x, m.sprite.y - 50, p.color);
+                gainSkillRef.current(p.hitSkill, 8);
+                if (m.hp <= 0) handleMonsterKill(m, p.hitSkill);
+                hit = true;
+                break;
+              }
             }
           }
           if (hit || p.life <= 0) {
@@ -2625,21 +2925,25 @@ export default function PixelTestMapPage() {
     rare: "#e16565",
   };
 
-  const ItemCell = ({ item, onClick }: { item?: Item | null, onClick?: () => void }) => {
-    const borderColor = item?.quality ? QUALITY_BORDER[item.quality] : item ? "#3d3555" : "#16131f";
+  const ItemCell = ({ item, onClick, onContextMenu }: { item?: Item | null, onClick?: () => void, onContextMenu?: (e: React.MouseEvent) => void }) => {
+    const borderColor = item?.heirloom ? "#ffd98f" : item?.quality ? QUALITY_BORDER[item.quality] : item ? "#3d3555" : "#16131f";
     const bonusLines = item?.bonuses
       ? Object.entries(item.bonuses).map(([sk, v]) => `+${(v as number) / 10} ${sk}`).join(", ")
       : null;
     return (
       <div
         onClick={onClick}
+        onContextMenu={onContextMenu}
         title={bonusLines ? `${item!.name}\n${bonusLines}` : item?.name}
         className={`w-12 h-12 border-4 ${item ? "bg-[#16131f] cursor-pointer hover:opacity-80" : "bg-[#0d0b12]"} flex items-center justify-center relative select-none`}
-        style={{ borderColor }}
+        style={{ borderColor, boxShadow: item?.heirloom ? "inset 0 0 8px rgba(255,217,143,0.25)" : undefined }}
       >
         {item && (
           <>
             <span className="text-2xl drop-shadow-md">{item.icon}</span>
+            {item.heirloom && (
+              <span className="absolute top-[-4px] right-[-4px] text-[9px] leading-none">⭐</span>
+            )}
             {item.qty > 1 && (
               <span className="absolute bottom-[-6px] right-[-2px] text-[10px] font-bold text-white shadow-black drop-shadow-md">
                 x{item.qty}
@@ -2663,7 +2967,7 @@ export default function PixelTestMapPage() {
           </p>
           <p className="text-[#e8e3d4] text-[12px] uppercase">{character.name}</p>
           <p className="text-[#564870] text-[9px]">{character.charClass} · Fame {character.fame}</p>
-          <p className="text-[#564870] text-[9px]">Day {gameTime.day} · {hourPeriod(gameTime.hour)}</p>
+          <p className="text-[#564870] text-[9px]">Season {character.season}, Day {gameTime.day} · {hourPeriod(gameTime.hour)}</p>
         </div>
       )}
 
@@ -2915,12 +3219,54 @@ export default function PixelTestMapPage() {
               )}
             </div>
 
-            <button
-              onClick={() => setShowHousePanel(false)}
-              className="w-full border border-[#3d3555] text-[#564870] py-1.5 text-[10px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]"
-            >
-              Close (H)
-            </button>
+            {/* House Chronicle */}
+            {house.chronicle.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">House Chronicle</p>
+                <div className="flex flex-col gap-1">
+                  {house.chronicle.slice(-5).reverse().map((entry, i) => (
+                    <div key={i} className="border-l-2 border-[#3d3555] pl-2 py-0.5">
+                      <p className="text-[#a69581] text-[9px] leading-relaxed">{entry.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Season objectives */}
+            {character && (
+              <div className="mb-4">
+                <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">Season {character.season} Objectives</p>
+                {([
+                  ["bronze", `Survive to Day 3`, gameTime.day >= 3, "+20 House Fame"],
+                  ["silver", `Reach 50 Fame`, character.fame >= 50, "+40 House Fame"],
+                  ["gold", `Defeat the Void Warden`, voidWardenDefeated, "+100 House Fame"],
+                ] as const).map(([tier, label, done, reward]) => (
+                  <div key={tier} className="flex items-center justify-between py-1 border-b border-[#3d3555]/30 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] ${done ? "text-[#6dbd6d]" : "text-[#3d3555]"}`}>{done ? "✓" : "○"}</span>
+                      <span className={`text-[10px] ${done ? "text-[#a69581]" : "text-[#564870]"}`}>{label}</span>
+                    </div>
+                    <span className="text-[9px] text-[#ffd98f]/60">{reward}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { setShowHousePanel(false); triggerSeasonEndRef.current(); }}
+                className="w-full border border-[#a69581] text-[#a69581] py-1.5 text-[10px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]"
+              >
+                Retire (end season)
+              </button>
+              <button
+                onClick={() => setShowHousePanel(false)}
+                className="w-full border border-[#3d3555] text-[#564870] py-1.5 text-[10px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]"
+              >
+                Close (H)
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2974,6 +3320,68 @@ export default function PixelTestMapPage() {
         </div>
       )}
 
+      {/* ── Season End Screen ───────────────────────────────────────────────── */}
+      {seasonEndScreen && (
+        <div className="absolute inset-0 z-[3000001] flex flex-col items-center justify-center bg-[#08060a]/97 font-mono overflow-y-auto py-8">
+          <div className="w-[500px] flex flex-col items-center gap-5 text-center">
+            <div>
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.6em] uppercase mb-2" style={{ textShadow: "0 0 16px #ffd98f" }}>
+                — Season {seasonEndScreen.season} Complete —
+              </p>
+              <p className="text-[#e8e3d4] text-2xl uppercase tracking-widest">{seasonEndScreen.charName}</p>
+              {house && <p className="text-[#564870] text-[10px] mt-1 uppercase tracking-widest">of {house.name}</p>}
+            </div>
+
+            {/* Objectives */}
+            <div className="w-full border border-[#3d3555]/60 p-4 flex flex-col gap-2">
+              <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-1">Season Objectives</p>
+              {([
+                ["🥉 Bronze", "Survived to Day 3", seasonEndScreen.bronze, 20],
+                ["🥈 Silver", "Reached 50 Fame",   seasonEndScreen.silver, 40],
+                ["🥇 Gold",   "Void Warden Slain",  seasonEndScreen.gold,  100],
+              ] as const).map(([medal, label, done, bonus]) => (
+                <div key={medal} className={`flex items-center justify-between text-[10px] ${done ? "text-[#e8e3d4]" : "text-[#3d3555]"}`}>
+                  <span>{medal} {label}</span>
+                  <span className={done ? "text-[#ffd98f]" : "text-[#3d3555]"}>{done ? `+${bonus} House Fame` : "—"}</span>
+                </div>
+              ))}
+              <div className="border-t border-[#3d3555]/40 pt-2 mt-1 flex justify-between text-[10px]">
+                <span className="text-[#a69581]">House Fame</span>
+                <span className="text-[#ffd98f]">
+                  {seasonEndScreen.fameBefore} → {seasonEndScreen.fameBefore + seasonEndScreen.fameBonus}
+                  {seasonEndScreen.fameBonus > 0 && <span className="text-[#6dbd6d] ml-1">(+{seasonEndScreen.fameBonus})</span>}
+                </span>
+              </div>
+            </div>
+
+            {/* Chronicle snippet */}
+            {seasonEndScreen.chronicleSnippet.length > 0 && (
+              <div className="w-full border border-[#3d3555]/40 p-4">
+                <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">Chronicle</p>
+                <div className="flex flex-col gap-1.5">
+                  {seasonEndScreen.chronicleSnippet.map((e, i) => (
+                    <p key={i} className="text-[#a69581] text-[9px] text-left leading-relaxed">{e.text}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {seasonEndButtonVisible ? (
+              <button
+                onClick={handleBeginNextSeason}
+                className="border-2 border-[#ffd98f] text-[#ffd98f] px-8 py-3 uppercase tracking-widest text-sm hover:bg-[#ffd98f] hover:text-[#0d0b12] transition-colors"
+              >
+                Begin Season {seasonEndScreen.season + 1}
+              </button>
+            ) : (
+              <p className="text-[#3d3555] text-[9px] uppercase tracking-[0.4em] animate-pulse">
+                Tallying house fame...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Story Lost Overlay ───────────────────────────────────────────────── */}
       {storyLostMsg && (
         <div className="pointer-events-none absolute inset-0 z-[2000000] flex items-center justify-center">
@@ -2989,64 +3397,102 @@ export default function PixelTestMapPage() {
       )}
 
       {/* ── Narration Overlay ────────────────────────────────────────────────── */}
-      {uiMode === "narration" && (
-        <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/85 backdrop-blur-sm">
-          <div className="w-[560px] max-h-[80vh] bg-[#1a1520] border-[3px] border-[#ffd98f] rounded-lg shadow-2xl flex flex-col overflow-hidden"
-            style={{ boxShadow: "0 0 40px rgba(255, 217, 143, 0.2), inset 0 0 40px rgba(0,0,0,0.5)" }}>
-            <div className="p-8 pb-4 text-center border-b border-[#2a2035]">
-              <p className="text-[#ffd98f] text-[10px] uppercase tracking-[0.4em] mb-2">◇ The Unyha Tree</p>
-              <h2 className="font-heading text-[#e8e3d4] text-2xl uppercase tracking-widest">
-                Narrate your deeds
-              </h2>
-              <p className="text-[#564870] text-xs mt-2">
-                These deeds will become part of the world&apos;s history.
-              </p>
-            </div>
+      {uiMode === "narration" && (() => {
+        const AUTO_QUEST_IDS = ["auto_bone_road", "auto_pack_hunter", "auto_void_seeker"];
+        const skelKills = chronicle.filter(e => e.type === "kill" && e.tags?.includes("skeleton")).length;
+        const wolfKills = chronicle.filter(e => e.type === "kill" && e.tags?.includes("wolf")).length;
+        const hasNarrated = chronicle.some(e => e.narrated);
+        const autoQuestTriggers: Record<string, boolean> = {
+          auto_bone_road: skelKills >= 3 && !questProgress["auto_bone_road"],
+          auto_pack_hunter: wolfKills >= 3 && !questProgress["auto_pack_hunter"],
+          auto_void_seeker: hasNarrated && !questProgress["auto_void_seeker"],
+        };
+        const suggestedQuests = AUTO_QUEST_IDS.filter(id => autoQuestTriggers[id]).map(id => QUESTS.find(q => q.id === id)!).filter(Boolean);
+        const readyAutoQuests = AUTO_QUEST_IDS.map(id => QUESTS.find(q => q.id === id)!).filter(q => q && questProgress[q.id]?.status === "ready");
+        return (
+          <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/85 backdrop-blur-sm">
+            <div className="w-[560px] max-h-[85vh] bg-[#1a1520] border-[3px] border-[#ffd98f] rounded-lg shadow-2xl flex flex-col overflow-hidden"
+              style={{ boxShadow: "0 0 40px rgba(255, 217, 143, 0.2), inset 0 0 40px rgba(0,0,0,0.5)" }}>
+              <div className="p-6 pb-4 text-center border-b border-[#2a2035]">
+                <p className="text-[#ffd98f] text-[10px] uppercase tracking-[0.4em] mb-2">◇ The Unyha Tree</p>
+                <h2 className="font-heading text-[#e8e3d4] text-2xl uppercase tracking-widest">Autochronicle</h2>
+                <p className="text-[#564870] text-xs mt-1">The tree has read your deeds and speaks back.</p>
+              </div>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-3">
-              {chronicle.filter(e => !e.narrated && !e.lost).length === 0 ? (
-                <p className="text-[#564870] text-sm text-center italic py-4">No unnarrated deeds.</p>
-              ) : (
-                chronicle.filter(e => !e.narrated && !e.lost).map((entry, i) => (
-                  <div key={i} className="border-l-2 border-[#ffd98f] pl-4 py-2">
-                    <p className="text-[#e8e3d4] text-sm italic">{entry.text}</p>
-                    <p className="text-[#ffd98f] text-[10px] mt-1">+{entry.fame} fame</p>
+              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+                {/* Collect ready auto quests */}
+                {readyAutoQuests.length > 0 && (
+                  <div>
+                    <p className="text-[#6dbd6d] text-[9px] uppercase tracking-widest mb-2">Chronicles fulfilled</p>
+                    {readyAutoQuests.map(quest => (
+                      <div key={quest.id} className="border border-[#6dbd6d]/40 p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-[#e8e3d4] text-sm">{quest.title}</p>
+                          <p className="text-[#6dbd6d] text-[9px] mt-0.5">{quest.reward.gold > 0 ? `${quest.reward.gold} gold` : ""}{quest.reward.itemId ? ` · ${ITEM_DB[quest.reward.itemId]?.name}` : ""}</p>
+                        </div>
+                        <button onClick={() => handleCompleteQuest(quest.id)} className="border border-[#6dbd6d] text-[#6dbd6d] px-3 py-1 text-[10px] uppercase hover:bg-[#6dbd6d] hover:text-[#0d0b12]">Collect</button>
+                      </div>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
+                )}
 
-            <div className="p-6 pt-4 border-t border-[#2a2035] flex gap-3">
-              <button
-                onClick={() => {
-                  const name = charRef.current?.name ?? "The wanderer";
-                  setChronicle(prev => {
-                    const next = prev.map(e => (!e.narrated && !e.lost) ? { ...e, narrated: true } : e);
-                    saveChronicle(next);
-                    return next;
-                  });
-                  addChronicleRef.current(
-                    `${name} narrated their deeds at the Unyha Tree. Their story is now part of the world.`,
-                    25
-                  );
-                  resetGoldenStateRef.current();
-                  setUiMode("closed");
-                  uiModeRef.current = "closed";
-                }}
-                className="flex-1 bg-[#ffd98f] text-[#1a1520] font-heading uppercase tracking-widest text-sm py-3 hover:bg-[#ffe8b3] transition-colors"
-              >
-                Inscribe your story
-              </button>
-              <button
-                onClick={() => { setUiMode("closed"); uiModeRef.current = "closed"; }}
-                className="px-6 border border-[#3d3555] text-[#564870] uppercase tracking-widest text-xs hover:border-[#ffd98f] hover:text-[#ffd98f] transition-colors"
-              >
-                Leave
-              </button>
+                {/* New autochronicle quest suggestions */}
+                {suggestedQuests.length > 0 && (
+                  <div>
+                    <p className="text-[#ffd98f] text-[9px] uppercase tracking-widest mb-2">The tree speaks</p>
+                    {suggestedQuests.map(quest => (
+                      <div key={quest.id} className="border-l-2 border-[#ffd98f] pl-4 py-2 pr-2 flex flex-col gap-2">
+                        <p className="text-[#e8e3d4] text-sm italic leading-relaxed">{quest.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#564870] text-[9px]">{quest.objective.label} · {quest.objective.count}</span>
+                          <button onClick={() => handleAcceptQuest(quest.id)} className="border border-[#ffd98f] text-[#ffd98f] px-3 py-1 text-[9px] uppercase hover:bg-[#ffd98f] hover:text-[#0d0b12]">Accept</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Unnarrated deeds */}
+                {chronicle.filter(e => !e.narrated && !e.lost).length > 0 && (
+                  <div>
+                    <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-2">Unnarrated deeds</p>
+                    {chronicle.filter(e => !e.narrated && !e.lost).map((entry, i) => (
+                      <div key={i} className="border-l-2 border-[#3d3555] pl-4 py-1.5">
+                        <p className="text-[#a69581] text-xs italic">{entry.text}</p>
+                        {entry.fame > 0 && <p className="text-[#ffd98f] text-[9px] mt-0.5">+{entry.fame} fame</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {suggestedQuests.length === 0 && readyAutoQuests.length === 0 && chronicle.filter(e => !e.narrated && !e.lost).length === 0 && (
+                  <p className="text-[#564870] text-sm text-center italic py-4">The tree is silent. Go and do.</p>
+                )}
+              </div>
+
+              <div className="p-5 pt-4 border-t border-[#2a2035] flex gap-3">
+                <button
+                  onClick={() => {
+                    const name = charRef.current?.name ?? "The wanderer";
+                    setChronicle(prev => { const next = prev.map(e => (!e.narrated && !e.lost) ? { ...e, narrated: true } : e); saveChronicle(next); return next; });
+                    addChronicleRef.current(`${name} narrated their deeds at the Unyha Tree. Their story is now part of the world.`, 25, "milestone");
+                    resetGoldenStateRef.current();
+                    setUiMode("closed"); uiModeRef.current = "closed";
+                  }}
+                  disabled={chronicle.filter(e => !e.narrated && !e.lost).length === 0}
+                  className="flex-1 bg-[#ffd98f] text-[#1a1520] font-heading uppercase tracking-widest text-sm py-3 hover:bg-[#ffe8b3] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Inscribe your story
+                </button>
+                <button onClick={() => { setUiMode("closed"); uiModeRef.current = "closed"; }}
+                  className="px-6 border border-[#3d3555] text-[#564870] uppercase tracking-widest text-xs hover:border-[#ffd98f] hover:text-[#ffd98f] transition-colors">
+                  Leave
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Inventory Overlay ─────────────────────────────────────────────────── */}
       {uiMode === "inventory" && (
@@ -3075,21 +3521,90 @@ export default function PixelTestMapPage() {
 
             {/* Right: Backpack */}
             <div className="flex-1 p-6 flex flex-col">
-              <h2 className="text-[#ffd98f] text-lg uppercase tracking-widest mb-6">Backpack</h2>
+              <h2 className="text-[#ffd98f] text-lg uppercase tracking-widest mb-4">Backpack</h2>
               <div className="grid grid-cols-4 gap-3">
                 {Array.from({ length: 16 }).map((_, i) => (
-                  <ItemCell 
-                    key={`inv-${i}`} 
-                    item={inventory[i]} 
-                    onClick={() => inventory[i]?.slot ? handleEquip(i) : undefined} 
+                  <ItemCell
+                    key={`inv-${i}`}
+                    item={inventory[i]}
+                    onClick={() => inventory[i]?.slot ? handleEquip(i) : undefined}
+                    onContextMenu={e => { e.preventDefault(); if (inventory[i]) { if (inventory[i]!.id === "elder_tome") { setTomeConfirmIndex(i); } else { setBindConfirmIndex(i); } } }}
                   />
                 ))}
               </div>
-              <p className="mt-auto text-[10px] text-white/50 text-center uppercase tracking-wider">Click item to equip</p>
+              <p className="mt-auto text-[10px] text-white/50 text-center uppercase tracking-wider">
+                LMB equip · RMB bind heirloom
+              </p>
             </div>
+
+            {/* Elder Tome Use Confirm */}
+            {tomeConfirmIndex !== null && inventory[tomeConfirmIndex] && (
+              <div className="absolute inset-0 z-[10] flex items-center justify-center bg-black/60">
+                <div className="w-[280px] bg-[#16131f] border-4 border-[#a69581] p-5 font-mono flex flex-col gap-3">
+                  <p className="text-[#a69581] text-[9px] tracking-[0.4em] uppercase">Elder Tome</p>
+                  <div className="flex items-center gap-3 border border-[#3d3555] p-3">
+                    <span className="text-2xl">📖</span>
+                    <p className="text-[#e8e3d4] text-sm leading-relaxed">Study the tome to deepen your least-developed skill by 50 points.</p>
+                  </div>
+                  <button onClick={() => handleUseTome(tomeConfirmIndex!)}
+                    className="border-2 border-[#a69581] text-[#a69581] py-2 text-[10px] uppercase tracking-widest hover:bg-[#a69581] hover:text-[#0d0b12] transition-colors">
+                    Study
+                  </button>
+                  <button onClick={() => setTomeConfirmIndex(null)} className="border border-[#3d3555] text-[#564870] py-1.5 text-[9px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bind Heirloom Confirm */}
+            {bindConfirmIndex !== null && inventory[bindConfirmIndex] && (() => {
+              const item = inventory[bindConfirmIndex]!;
+              const bindsLeft = 2 - (character?.heirloomBindsUsed ?? 0);
+              const canAfford = (character?.fame ?? 0) >= 20;
+              return (
+                <div className="absolute inset-0 z-[10] flex items-center justify-center bg-black/60">
+                  <div className="w-[280px] bg-[#16131f] border-4 border-[#ffd98f] p-5 font-mono flex flex-col gap-3">
+                    <p className="text-[#ffd98f] text-[9px] tracking-[0.4em] uppercase">Bind as Heirloom</p>
+                    <div className="flex items-center gap-3 border border-[#3d3555] p-3">
+                      <span className="text-2xl">{item.icon}</span>
+                      <div>
+                        <p className="text-[#e8e3d4] text-sm">{item.name}</p>
+                        {item.heirloom && <p className="text-[#ffd98f] text-[9px]">Already bound</p>}
+                      </div>
+                    </div>
+                    {item.heirloom ? (
+                      <p className="text-[#564870] text-[10px]">This item is already bound to your House.</p>
+                    ) : (
+                      <>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-[#a69581]">Cost</span>
+                          <span className={canAfford ? "text-[#ffd98f]" : "text-[#e16565]"}>20 fame</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-[#a69581]">Binds remaining</span>
+                          <span className={bindsLeft > 0 ? "text-[#6dbd6d]" : "text-[#e16565]"}>{bindsLeft} / 2</span>
+                        </div>
+                        <p className="text-[#564870] text-[9px] leading-relaxed">Survives death and moves to the House vault.</p>
+                        <button
+                          disabled={bindsLeft <= 0 || !canAfford}
+                          onClick={() => handleBindHeirloom(bindConfirmIndex)}
+                          className="border-2 border-[#ffd98f] text-[#ffd98f] py-2 text-[10px] uppercase tracking-widest hover:bg-[#ffd98f] hover:text-[#0d0b12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Bind ⭐
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setBindConfirmIndex(null)} className="border border-[#3d3555] text-[#564870] py-1.5 text-[9px] uppercase tracking-widest hover:border-[#ffd98f] hover:text-[#ffd98f]">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
             
             {/* Close Button */}
-            <button onClick={() => setUiMode("closed")} className="absolute -top-4 -right-4 w-10 h-10 bg-[#b8442a] border-4 border-[#16131f] text-white font-bold hover:bg-[#ff0000]">X</button>
+            <button onClick={() => { setUiMode("closed"); setBindConfirmIndex(null); setTomeConfirmIndex(null); }} className="absolute -top-4 -right-4 w-10 h-10 bg-[#b8442a] border-4 border-[#16131f] text-white font-bold hover:bg-[#ff0000]">X</button>
           </div>
         </div>
       )}
@@ -3237,19 +3752,40 @@ export default function PixelTestMapPage() {
       {uiMode === "dialogue" && activeNpcId && (() => {
         const npc = NPC_DEFS.find(n => n.id === activeNpcId);
         if (!npc) return null;
-        const quest = npc.questId ? QUESTS.find(q => q.id === npc.questId) : undefined;
+        const quest = npc.questIds?.length
+          ? (npc.questIds.map(id => QUESTS.find(q => q.id === id)).find(q => q && questProgress[q.id]?.status !== "done") ?? undefined)
+          : undefined;
         const qp = quest ? questProgress[quest.id] : undefined;
 
         let dialogueText = npc.greeting;
         // Chronicle-aware greetings
-        if (npc.id === "danna" && !quest) {
-          const isRenowned = (charRef.current?.fame ?? 0) >= 50;
-          const killedShaman = chronicle.some(e => e.text.includes("shaman"));
-          if (isRenowned) dialogueText = "Word travels fast. They say you glow like a coin left too long in the sun.";
-          else if (killedShaman) dialogueText = "Killed the shaman, did you? That's more than most manage.";
+        const allDannaQuestsDone = (npc.questIds ?? []).every(id => questProgress[id]?.status === "done");
+        if (npc.id === "danna" && (!quest || allDannaQuestsDone)) {
+          const fame = charRef.current?.fame ?? 0;
+          const killedShaman = chronicle.some(e => e.tags?.includes("orc_shaman"));
+          const killedWarden = chronicle.some(e => e.tags?.includes("void_warden"));
+          const questDone = Object.values(questProgress).some(q => q.status === "done");
+          if (killedWarden) dialogueText = `The Void Warden... dead? I'll be honest — I didn't think you'd manage it. ${fameTitle(fame)}.`;
+          else if (killedShaman) dialogueText = "Killed the shaman, did you? That's more than most manage. The fort's quieter for it.";
+          else if (questDone) dialogueText = "You're reliable. That's rare currency here.";
+          else if (fame >= 50) dialogueText = "Word travels fast. They say you glow like a coin left too long in the sun.";
           else if (chronicle.length > 3) dialogueText = "I've heard your name mentioned. Not in the way you'd dislike.";
         } else if (npc.id === "mira") {
-          if ((charRef.current?.fame ?? 0) >= 20) dialogueText = "You're getting a name for yourself. Good for business.";
+          const prevChars = house?.characters.filter(c => c.fate !== "active") ?? [];
+          const fame = charRef.current?.fame ?? 0;
+          if (prevChars.length > 0) {
+            const prev = prevChars[prevChars.length - 1];
+            dialogueText = `Another of ${house?.name ?? "your House"}? ${prev.name} came through here too. ${prev.fate === "fallen" ? "They didn't last." : "They retired well."} Are you made of sterner stuff?`;
+          } else if (fame >= 20) {
+            dialogueText = "You're getting a name for yourself. Good for business.";
+          }
+        } else if (npc.id === "bram") {
+          const craftEntry = chronicle.find(e => e.type === "craft" && e.tags?.length);
+          const craftedItemId = craftEntry?.tags?.[0];
+          const craftedName = craftedItemId ? ITEM_DB[craftedItemId]?.name : null;
+          if (craftedName) {
+            dialogueText = `Heard you made a ${craftedName}. ${craftedItemId?.includes("sword") || craftedItemId?.includes("axe") ? "Solid work. Most amateurs leave the edge uneven." : "Not bad for a first pass."}`;
+          }
         }
         let showAccept = false;
         let showComplete = false;

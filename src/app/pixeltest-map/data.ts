@@ -39,6 +39,12 @@ export const PALETTE: Record<string, string | null> = {
   "v": "#2d323d",
   "w": "#111216",
   "x": "#181a20",
+  // Void / purple palette (Void Warden boss)
+  "A": "#200E3A",
+  "B": "#3D1F6B",
+  "C": "#7B2FBE",
+  "D": "#B870F0",
+  "E": "#E0AAFF",
 };
 
 // Palette recolor maps for enemy/NPC variants
@@ -53,6 +59,15 @@ export const RECOLOR_WOLF: Record<string, string> = {
 };
 export const RECOLOR_RAT: Record<string, string> = {
   "3": "p", "4": "q", "5": "c", "6": "d", "7": "j", "8": "1", "9": "l",
+};
+export const RECOLOR_VOID_WARDEN: Record<string, string> = {
+  "3": "C", "4": "B", "5": "D", "6": "A", "7": "A", "8": "B", "9": "A",
+};
+export const RECOLOR_ANCIENT_SKELETON: Record<string, string> = {
+  "3": "e", "4": "l", "5": "m", "6": "o", "7": "f", "8": "8", "9": "9",
+};
+export const RECOLOR_ALPHA_WOLF: Record<string, string> = {
+  "3": "1", "4": "p", "5": "q", "6": "n", "7": "p", "8": "1", "9": "j",
 };
 // NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal
 export const RECOLOR_NPC_VENDOR: Record<string, string> = {
@@ -890,6 +905,13 @@ export const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
   leather_tunic: { name: "Leather Tunic", type: "armor", icon: "🥼", maxStack: 1, slot: "chest", bonuses: { Defense: 20 }, quality: "common" },
   short_bow: { name: "Short Bow", type: "weapon", icon: "🏹", maxStack: 1, slot: "mainhand", bonuses: { Archery: 50 }, quality: "common" },
   arrow: { name: "Arrow", type: "material", icon: "🪃", maxStack: 99 },
+  void_key: { name: "Void Key", type: "material", icon: "🗝️", maxStack: 1 },
+  void_shard: { name: "Void Shard", type: "material", icon: "💜", maxStack: 3, quality: "rare", heirloom: true },
+  bone_amulet: { name: "Bone Amulet", type: "armor", icon: "📿", maxStack: 1, slot: "offhand", bonuses: { Defense: 200 }, quality: "uncommon" },
+  wolf_cloak: { name: "Wolf Cloak", type: "armor", icon: "🐺", maxStack: 1, slot: "chest", bonuses: { Defense: 200, Huntercraft: 150 }, quality: "uncommon" },
+  bone_crown: { name: "Bone Crown", type: "armor", icon: "👑", maxStack: 1, slot: "head", bonuses: { Defense: 300 }, quality: "rare" },
+  alpha_pelt: { name: "Alpha Pelt", type: "material", icon: "🐾", maxStack: 5 },
+  elder_tome: { name: "Elder Tome", type: "consumable", icon: "📖", maxStack: 1 },
 };
 
 // ── Quests & NPCs ─────────────────────────────────────────────────────────────
@@ -902,6 +924,64 @@ export const QUESTS: Quest[] = [
     description: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Two months ago, not one back since. The road is thick with the restless dead. Kill five of the skeletons and return to me.",
     objective: { type: "kill", target: "skeleton", count: 5, label: "Skeletons slain" },
     reward: { gold: 6 },
+  },
+  // ── Autochronicle quests (revealed by the Unyha Tree based on chronicle patterns) ──
+  {
+    id: "auto_bone_road",
+    title: "The Bone Road",
+    giver: "unyha_tree",
+    description: "The tree has read your chronicle. The dead walk the stone roads in numbers. Your deeds have called this path into being — clear ten more of their kind.",
+    objective: { type: "kill", target: "skeleton", count: 10, label: "Skeletons slain" },
+    reward: { gold: 15, itemId: "bone", itemQty: 5 },
+  },
+  {
+    id: "auto_pack_hunter",
+    title: "The Pack Hunter",
+    giver: "unyha_tree",
+    description: "You have hunted wolves. The tree remembers. An Alpha has been watching you. It must be put down before its pack grows bold.",
+    objective: { type: "kill", target: "wolf", count: 8, label: "Wolves slain" },
+    reward: { gold: 25, itemId: "wolf_pelt", itemQty: 3 },
+  },
+  {
+    id: "auto_void_seeker",
+    title: "The Void Seeker",
+    giver: "unyha_tree",
+    description: "Your deeds have drawn the attention of something ancient. The Void Warden stirs in the Forsaken Fort. Face it, and your House's name will echo beyond this age.",
+    objective: { type: "kill", target: "void_warden", count: 1, label: "Void Warden slain" },
+    reward: { gold: 0, itemId: "void_shard", itemQty: 1 },
+  },
+  // ── NPC quests (Danna, Mira) ──────────────────────────────────────────────────
+  {
+    id: "wolf_culling",
+    title: "Wolf Culling",
+    giver: "danna",
+    description: "The farmers north of the village have stopped bringing grain. Wolves out of the deep forest, bold as you please. Eight, that's all I'm asking. Clear enough of them and the survivors will scatter.",
+    objective: { type: "kill", target: "wolf", count: 8, label: "Wolves slain" },
+    reward: { gold: 25, itemId: "wolf_cloak", itemQty: 1 },
+  },
+  {
+    id: "shamans_silence",
+    title: "Shaman's Silence",
+    giver: "danna",
+    description: "Four orc shamans hold the Forsaken Fort. They're the ones keeping the grunts disciplined. Kill the shamans, the rest fall apart. There's a key among them — one you'll want.",
+    objective: { type: "kill", target: "orc_shaman", count: 4, label: "Shamans slain" },
+    reward: { gold: 40, itemId: "void_key", itemQty: 1 },
+  },
+  {
+    id: "ancient_bone_road",
+    title: "The Bone Road",
+    giver: "danna",
+    description: "Ten skeletons. There's an old caravan road in the Badlands, and the dead have claimed it entirely. Clear it — I want to reopen the eastern trade route before the season's out.",
+    objective: { type: "kill", target: "skeleton", count: 10, label: "Skeletons slain" },
+    reward: { gold: 15, itemId: "bone_amulet", itemQty: 1 },
+  },
+  {
+    id: "pest_control",
+    title: "Pest Control",
+    giver: "mira",
+    description: "Cave rats have gotten into my storage — chewed through two crates of dried fish. Ten of them. Down in the mine or wherever they nest. I'll give you something in return.",
+    objective: { type: "kill", target: "cave_rat", count: 10, label: "Cave rats slain" },
+    reward: { gold: 20 },
   },
 ];
 
@@ -918,6 +998,7 @@ export const NPC_DEFS: NpcDef[] = [
       { itemId: "iron_ore",   price: 8  },
       { itemId: "wood_plank", price: 6  },
     ],
+    questIds: ["pest_control"],
     greeting: "Stock is low, but I can cover the basics.",
   },
   {
@@ -945,7 +1026,7 @@ export const NPC_DEFS: NpcDef[] = [
     x: 1000, y: 800,
     type: "quest_giver",
     recolor: RECOLOR_NPC_QUEST,
-    questId: "filed_assessment",
+    questIds: ["filed_assessment", "wolf_culling", "shamans_silence", "ancient_bone_road"],
     greeting: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Not one came back.",
   },
 ];

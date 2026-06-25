@@ -50,7 +50,7 @@ export interface NpcDef {
   type: "vendor" | "quest_giver";
   recolor: Record<string, string>;
   shop?: ShopEntry[];
-  questId?: string;
+  questIds?: string[];
   greeting: string;
 }
 
