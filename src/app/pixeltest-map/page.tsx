@@ -59,7 +59,7 @@ interface NpcDef {
   greeting: string;
 }
 
-type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting";
+type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting" | "narration";
 
 // ── Pixi Game Engine & Data Arrays ──────────────────────────────────────────
 
@@ -1217,7 +1217,7 @@ function fameTitle(fame: number): string {
 const CHRONICLE_KEY = "unyha_chronicle";
 const MILESTONES_KEY = "unyha_milestones";
 
-interface ChronicleEntry { text: string; fame: number; ts: number; }
+interface ChronicleEntry { text: string; fame: number; ts: number; narrated?: boolean; lost?: boolean; }
 
 function loadChronicle(): ChronicleEntry[] {
   try { return JSON.parse(localStorage.getItem(CHRONICLE_KEY) ?? "[]"); } catch { return []; }
@@ -1297,7 +1297,12 @@ export default function PixelTestMapPage() {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [chronicle, setChronicle] = useState<ChronicleEntry[]>([]);
   const [showChronicle, setShowChronicle] = useState(false);
+  const [storyLostMsg, setStoryLostMsg] = useState(false);
+  const goldenStateRef = useRef(false);
+  const resetGoldenStateRef = useRef<() => void>(() => {});
   const addChronicleRef = useRef<(text: string, fame: number) => void>(() => {});
+  const markChronicleAsLostRef = useRef<() => void>(() => {});
+  const setStoryLostMsgRef = useRef<(v: boolean) => void>(() => {});
   const firedMilestonesRef = useRef<Set<string>>(new Set());
   const [gameTime, setGameTime] = useState<{ day: number; hour: number }>({ day: 1, hour: 6 });
   const setGameTimeRef = useRef<(day: number, hour: number) => void>(() => {});
@@ -1378,6 +1383,14 @@ export default function PixelTestMapPage() {
     });
     if (fame > 0) gainFameRef.current(fame);
   };
+  markChronicleAsLostRef.current = () => {
+    setChronicle(prev => {
+      const next = prev.map(e => e.narrated ? e : { ...e, lost: true });
+      saveChronicle(next);
+      return next;
+    });
+  };
+  setStoryLostMsgRef.current = setStoryLostMsg;
   addItemRef.current = (id, qty) => addItemToInventory(createItem(id, qty));
   setGameTimeRef.current = (day, hour) => setGameTime({ day, hour });
 
@@ -1515,6 +1528,10 @@ export default function PixelTestMapPage() {
     setQuestProgress(next);
     setInventory(prev => applyToInventory(prev, createItem("gold", quest.reward.gold)));
     if (quest.reward.itemId) setInventory(prev => applyToInventory(prev, createItem(quest.reward.itemId!, quest.reward.itemQty ?? 1)));
+    addChronicleRef.current(
+      `${charRef.current?.name ?? "They"} completed "${quest.title}". Danna counted out the coin without a word.`,
+      10
+    );
   }
 
   function handleCraft(recipeId: string) {
@@ -1871,6 +1888,40 @@ export default function PixelTestMapPage() {
       manaText.position.set(24, 48);
       uiContainer.addChild(manaText);
 
+      // Golden State HUD indicator
+      const goldenHudText = new PIXI.Text({
+        text: "◇ Renowned — reach the Unyha Tree",
+        style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f },
+      });
+      goldenHudText.position.set(20, 66);
+      goldenHudText.alpha = 0;
+      uiContainer.addChild(goldenHudText);
+
+      // Screen vignette for Golden State
+      const goldenVignette = new PIXI.Graphics();
+      goldenVignette.zIndex = 80000;
+      goldenVignette.alpha = 0;
+      app.stage.addChild(goldenVignette);
+      function drawGoldenVignette() {
+        goldenVignette.clear();
+        const w = app!.screen.width;
+        const h = app!.screen.height;
+        const t = 12;
+        goldenVignette.rect(0, 0, w, t).fill({ color: 0xffd98f });
+        goldenVignette.rect(0, h - t, w, t).fill({ color: 0xffd98f });
+        goldenVignette.rect(0, t, t, h - t * 2).fill({ color: 0xffd98f });
+        goldenVignette.rect(w - t, t, t, h - t * 2).fill({ color: 0xffd98f });
+      }
+      drawGoldenVignette();
+
+      // Aura ring around knight (drawn in world space)
+      const goldenAura = new PIXI.Graphics();
+      goldenAura.zIndex = 1;
+      worldContainer.addChild(goldenAura);
+
+      let localGoldenState = false;
+      resetGoldenStateRef.current = () => { localGoldenState = false; goldenStateRef.current = false; };
+
       let playerHp = 100;
       const playerMaxHp = 100;
       let playerInvuln = 0;
@@ -1878,7 +1929,7 @@ export default function PixelTestMapPage() {
       let manaRegenTick = 0;
 
       const grassBg = new PIXI.Graphics();
-      grassBg.rect(0, 0, 4000, 4000).fill({ texture: grassTex });
+      grassBg.rect(0, 0, 16000, 16000).fill({ texture: grassTex });
       grassBg.zIndex = -10000;
       worldContainer.addChild(grassBg);
 
@@ -2616,6 +2667,80 @@ export default function PixelTestMapPage() {
       placeHarvestNode(rockVeinTex, 3400, 1050, "Mine", "pickaxe", "Mining", 12, [["coal", 2]], 240_000);
       placeHarvestNode(rockVeinTex, 3650, 950,  "Mine", "pickaxe", "Mining", 15, [["iron_ore", 2], ["coal", 1]], 240_000);
 
+      // ── Zone A: Eastern Badlands (x:5000-9000, y:1500-5000) ──────────────────
+      for (let i = 0; i < 15; i++) {
+        spawnMonster(SKELETON_CFG, 5000 + Math.random() * 4000, 1500 + Math.random() * 3500);
+      }
+      placeHarvestNode(rockVeinTex, 5800, 2200, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 2], ["stone", 2]], 240_000);
+      placeHarvestNode(rockVeinTex, 7200, 3100, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 1], ["coal", 2]], 240_000);
+      placeHarvestNode(rockVeinTex, 6500, 4400, "Mine", "pickaxe", "Mining", 14, [["stone", 3], ["coal", 1]], 240_000);
+      placeHarvestNode(rockVeinTex, 8300, 2700, "Mine", "pickaxe", "Mining", 16, [["iron_ore", 3]], 300_000);
+
+      // ── Zone B: Deep Forest (x:1500-6000, y:5000-10000) ─────────────────────
+      for (let i = 0; i < 12; i++) {
+        spawnMonster(WOLF_CFG, 1500 + Math.random() * 4500, 5000 + Math.random() * 5000);
+      }
+      placeHarvestNode(herbTex,  2100, 5800,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 1]], 120_000);
+      placeHarvestNode(herbTex,  3600, 6400,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 2]], 120_000);
+      placeHarvestNode(herbTex,  1800, 7900,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 1]], 120_000);
+      placeHarvestNode(herbTex,  4800, 8700,  "Harvest Herb", null, "Herbalism", 10, [["bloodroot", 2]], 120_000);
+      placeHarvestNode(herbTex,  2900, 9300,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 1]], 120_000);
+      placeHarvestNode(herbTex,  5500, 7200,  "Harvest Herb", null, "Herbalism", 8,  [["bloodroot", 1]], 120_000);
+      placeHarvestNode(mushTex,  2600, 6100,  "Forage", null, "Herbalism", 6,  [["mushroom", 2]], 90_000);
+      placeHarvestNode(mushTex,  4100, 7500,  "Forage", null, "Herbalism", 6,  [["mushroom", 3]], 90_000);
+      placeHarvestNode(mushTex,  3300, 9000,  "Forage", null, "Herbalism", 6,  [["mushroom", 2]], 90_000);
+      placeHarvestNode(mushTex,  5200, 5600,  "Forage", null, "Herbalism", 6,  [["mushroom", 2]], 90_000);
+
+      // ── Zone C: Forsaken Fort (x:9000-13000, y:7000-12000) ──────────────────
+      for (let i = 0; i < 10; i++) {
+        spawnMonster(ORC_GRUNT_CFG, 9000 + Math.random() * 4000, 7000 + Math.random() * 5000);
+      }
+      spawnMonster(ORC_SHAMAN_CFG, 10500, 9200);
+      spawnMonster(ORC_SHAMAN_CFG, 11800, 8600);
+
+      // ── Unyha Tree ─────────────────────────────────────────────────────────────
+      const UNYHA_TREE_X = 250;
+      const UNYHA_TREE_Y = 350;
+
+      // Large gold-tinted pine as the sacred tree
+      const unyhTreeSprite = new PIXI.Sprite(pineTextures[0]);
+      unyhTreeSprite.anchor.set(0.5, 1);
+      unyhTreeSprite.x = UNYHA_TREE_X;
+      unyhTreeSprite.y = UNYHA_TREE_Y;
+      unyhTreeSprite.scale.set(2.5);
+      unyhTreeSprite.tint = 0xffd98f;
+      unyhTreeSprite.zIndex = UNYHA_TREE_Y;
+      worldContainer.addChild(unyhTreeSprite);
+      walls.push({ x: UNYHA_TREE_X - 18, y: UNYHA_TREE_Y - 50, w: 36, h: 50 });
+
+      // Pulsing ring (updated in ticker)
+      const treeRing = new PIXI.Graphics();
+      treeRing.x = UNYHA_TREE_X;
+      treeRing.y = UNYHA_TREE_Y - 30;
+      treeRing.zIndex = UNYHA_TREE_Y - 1;
+      worldContainer.addChild(treeRing);
+
+      // Name label
+      const treeLabel = new PIXI.Text({
+        text: "Unyha Tree",
+        style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 3 } },
+      });
+      treeLabel.anchor.set(0.5, 1);
+      treeLabel.x = UNYHA_TREE_X;
+      treeLabel.y = UNYHA_TREE_Y - 85;
+      treeLabel.zIndex = UNYHA_TREE_Y + 1;
+      worldContainer.addChild(treeLabel);
+
+      interactables.push({
+        x: UNYHA_TREE_X, y: UNYHA_TREE_Y, radius: 90,
+        isInteractive: () => true,
+        getPrompt: () => localGoldenState ? "[F] Narrate your deeds" : "[F] Unyha Tree",
+        onInteract: () => {
+          uiModeRef.current = "narration";
+          setUiMode("narration");
+        },
+      });
+
       // ── State machine ─────────────────────────────────────────────────────────
       type State = "idle" | "walk" | "attack" | "dash" | "dead";
       let state: State = "idle";
@@ -2633,10 +2758,10 @@ export default function PixelTestMapPage() {
       const ghosts: Ghost[] = [];
 
       function resolveMotion(): State {
-        const left = keys["ArrowLeft"] || keys["a"] || keys["A"];
-        const right = keys["ArrowRight"] || keys["d"] || keys["D"];
-        const up = keys["ArrowUp"] || keys["w"] || keys["W"];
-        const down = keys["ArrowDown"] || keys["s"] || keys["S"];
+        const left = keys["ArrowLeft"] || keys["a"];
+        const right = keys["ArrowRight"] || keys["d"];
+        const up = keys["ArrowUp"] || keys["w"];
+        const down = keys["ArrowDown"] || keys["s"];
         return left || right || up || down ? "walk" : "idle";
       }
 
@@ -2691,10 +2816,10 @@ export default function PixelTestMapPage() {
       function updateFacing() {
         if (state === "attack" || state === "dash" || state === "dead") return;
 
-        const left = keys["ArrowLeft"] || keys["a"] || keys["A"];
-        const right = keys["ArrowRight"] || keys["d"] || keys["D"];
-        const up = keys["ArrowUp"] || keys["w"] || keys["W"];
-        const down = keys["ArrowDown"] || keys["s"] || keys["S"];
+        const left = keys["ArrowLeft"] || keys["a"];
+        const right = keys["ArrowRight"] || keys["d"];
+        const up = keys["ArrowUp"] || keys["w"];
+        const down = keys["ArrowDown"] || keys["s"];
 
         // Mouse aim offset from knight (screen centre = knight position)
         const mDx = mouseX - app!.screen.width / 2;
@@ -2772,30 +2897,39 @@ export default function PixelTestMapPage() {
       let mouseAttackConsumed = false;
 
       // Key-age expiry: every keydown (including repeat) resets the counter for that key.
-      // If a movement key hasn't fired a keydown in >90 ticks (~1.5s at 60fps), auto-release it.
-      // Held keys produce keydown repeats every ~2 frames, so 90 ticks is very conservative.
+      // keyAge: performance.now() of the INITIAL press only — used for last-key-wins direction conflict resolution.
+      // Repeats must NOT update keyAge, or last-key-wins would oscillate every ~33ms when two keys are held.
+      // Stuck keys are handled exclusively by clearAllInput() on blur/visibilitychange/contextmenu.
+      // Do NOT add a tick-based auto-release: the OS only sends repeats for the last pressed key,
+      // so a held earlier key appears "stale" and would be incorrectly released after the threshold.
       const keyAge: Record<string, number> = {};
       let tickCount = 0;
+
+      // Normalize single-char keys to lowercase so Shift+d ("D" keydown) and d ("d" keyup)
+      // always map to the same slot — prevents stuck keys when Shift is held with movement keys.
+      const normKey = (k: string) => k.length === 1 ? k.toLowerCase() : k;
 
       const onDown = (e: KeyboardEvent) => {
         // Prevent default only if we are playing
         if (uiModeRef.current === "closed" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key))
           e.preventDefault();
 
-        if (!keys[e.key]) {
-          if (e.key === "j" || e.key === "J" || e.key === "z" || e.key === "Z")
-            attackConsumed = false;
-          if (e.key === "k" || e.key === "K") dieConsumed = false;
-          if (e.key === "r" || e.key === "R") restartConsumed = false;
+        const key = normKey(e.key);
+        if (!keys[key]) {
+          // First press — record initial timestamp for last-key-wins
+          keyAge[key] = performance.now();
+          if (key === "j" || key === "z") attackConsumed = false;
+          if (key === "k") dieConsumed = false;
+          if (key === "r") restartConsumed = false;
           if (e.key === "Shift") dashConsumed = false;
-          if (e.key === "f" || e.key === "F") interactConsumed = false;
+          if (key === "f") interactConsumed = false;
         }
-        keys[e.key] = true;
-        keyAge[e.key] = tickCount; // refresh age on every keydown (including repeat)
+        keys[key] = true;
       };
       const onUp = (e: KeyboardEvent) => {
-        keys[e.key] = false;
-        delete keyAge[e.key];
+        const key = normKey(e.key);
+        keys[key] = false;
+        delete keyAge[key];
       };
       const onMouseMove = (e: MouseEvent) => {
         mouseX = e.clientX;
@@ -2811,7 +2945,7 @@ export default function PixelTestMapPage() {
       };
       // Clear all held inputs — called on any focus-loss event
       const clearAllInput = () => {
-        for (const k of Object.keys(keys)) keys[k] = false;
+        for (const k of Object.keys(keys)) { keys[k] = false; delete keyAge[k]; }
         for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
         attackConsumed = false;
         mouseAttackConsumed = false;
@@ -2925,24 +3059,85 @@ export default function PixelTestMapPage() {
 
         if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current) {
           // Flush keys so nothing is still "held" when the UI closes
-          for (const k of Object.keys(keys)) keys[k] = false;
+          for (const k of Object.keys(keys)) { keys[k] = false; delete keyAge[k]; }
           for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
           return;
         }
 
-        // Auto-release any key that hasn't received a keydown event in 90 ticks (~1.5s).
-        // Held keys generate repeat keydown events every ~2 ticks, so this only fires on stuck keys.
-        for (const k of Object.keys(keys)) {
-          if (keys[k] && tickCount - (keyAge[k] ?? 0) > 90) {
-            keys[k] = false;
-            delete keyAge[k];
+        // Fallback stuck-key release: if a key has been "held" for 10s with no keyup received,
+        // it was likely stuck (missed keyup). Uses initial-press timestamp so multi-key holds
+        // don't trigger it — the OS stops repeats for non-last keys but keyAge never updates.
+        {
+          const t = performance.now();
+          for (const k of Object.keys(keys)) {
+            if (keys[k] && t - (keyAge[k] ?? t) > 10000) {
+              keys[k] = false;
+              delete keyAge[k];
+            }
           }
         }
 
-        const left = keys["ArrowLeft"] || keys["a"] || keys["A"];
-        const right = keys["ArrowRight"] || keys["d"] || keys["D"];
-        const up = keys["ArrowUp"] || keys["w"] || keys["W"];
-        const down = keys["ArrowDown"] || keys["s"] || keys["S"];
+        // ── Golden State ─────────────────────────────────────────────────────
+        if (!localGoldenState && (charRef.current?.fame ?? 0) >= 50) {
+          localGoldenState = true;
+          goldenStateRef.current = true;
+          spawnFloatingText("You are Renowned", knight.x, knight.y - 100, 0xffd98f);
+        }
+        if (localGoldenState) {
+          const pulse = 0.25 + 0.25 * Math.sin(tickCount * 0.06);
+          goldenAura.clear();
+          goldenAura.circle(0, 0, 32).stroke({ color: 0xffd98f, width: 2, alpha: pulse });
+          goldenAura.x = knight.x;
+          goldenAura.y = knight.y - 15;
+          const vpAlpha = 0.4 + 0.15 * Math.sin(tickCount * 0.04);
+          goldenVignette.alpha = vpAlpha;
+          goldenHudText.alpha = 1;
+          const treePulse = 0.3 + 0.3 * Math.sin(tickCount * 0.04);
+          treeRing.clear();
+          treeRing.circle(0, 0, 45).stroke({ color: 0xffd98f, width: 2, alpha: treePulse });
+        } else {
+          goldenAura.clear();
+          goldenVignette.alpha = 0;
+          goldenHudText.alpha = 0;
+          treeRing.clear();
+          treeRing.circle(0, 0, 35).stroke({ color: 0xffd98f, width: 1, alpha: 0.2 });
+        }
+
+        // ── Zone discovery ───────────────────────────────────────────────────
+        {
+          const name = charRef.current?.name ?? "They";
+          const kx = knight.x, ky = knight.y;
+          const zoneChecks: [string, () => boolean, string, number][] = [
+            ["zone:mine:first",         () => kx > 3100,                        `${name} descended into the mine for the first time.`, 3],
+            ["zone:orc_camp:first",     () => kx > 3400 && ky > 1800,           `${name} walked into the orc camp and lived to tell it.`, 8],
+            ["zone:unyha_tree:first",   () => Math.hypot(kx - UNYHA_TREE_X, ky - UNYHA_TREE_Y) < 200, `${name} found the Unyha Tree deep in the north.`, 5],
+            ["zone:badlands:first",     () => kx > 5000,                        `${name} pushed east into the Badlands. The bones here are older.`, 5],
+            ["zone:deep_forest:first",  () => ky > 5000,                        `${name} ventured south into the deep forest. Something watches from the canopy.`, 5],
+            ["zone:forsaken_fort:first",() => kx > 9000 && ky > 7000,           `${name} found the Forsaken Fort — and the orcs within.`, 12],
+          ];
+          for (const [key, check, text, fame] of zoneChecks) {
+            if (!firedMilestonesRef.current.has(key) && check()) {
+              firedMilestonesRef.current.add(key);
+              saveMilestones(firedMilestonesRef.current);
+              addChronicleRef.current(text, fame);
+            }
+          }
+        }
+
+        // Last-key-wins: when opposing direction keys are both held, the more recently pressed one wins.
+        // This prevents the character from stopping during rapid direction switches.
+        const leftOn  = !!(keys["ArrowLeft"]  || keys["a"]);
+        const rightOn = !!(keys["ArrowRight"] || keys["d"]);
+        const upOn    = !!(keys["ArrowUp"]    || keys["w"]);
+        const downOn  = !!(keys["ArrowDown"]  || keys["s"]);
+        const leftAge  = Math.max(keyAge["ArrowLeft"]  ?? 0, keyAge["a"] ?? 0);
+        const rightAge = Math.max(keyAge["ArrowRight"] ?? 0, keyAge["d"] ?? 0);
+        const upAge    = Math.max(keyAge["ArrowUp"]    ?? 0, keyAge["w"] ?? 0);
+        const downAge  = Math.max(keyAge["ArrowDown"]  ?? 0, keyAge["s"] ?? 0);
+        const left  = leftOn  && !(rightOn && rightAge > leftAge);
+        const right = rightOn && !(leftOn  && leftAge  > rightAge);
+        const up    = upOn    && !(downOn  && downAge  > upAge);
+        const down  = downOn  && !(upOn    && upAge    > downAge);
 
         for (let i = ghosts.length - 1; i >= 0; i--) {
           ghosts[i].life--;
@@ -2960,7 +3155,7 @@ export default function PixelTestMapPage() {
         }
 
         if (state === "dead") {
-          if ((keys["r"] || keys["R"]) && !restartConsumed) {
+          if ((keys["r"]) && !restartConsumed) {
             restartConsumed = true;
             knight.x = 1050;
             knight.y = 1050;
@@ -2973,11 +3168,18 @@ export default function PixelTestMapPage() {
             setState("idle", true);
           }
         } else {
-          if ((keys["k"] || keys["K"]) && !dieConsumed) {
+          if ((keys["k"]) && !dieConsumed) {
             dieConsumed = true;
+            if (localGoldenState) {
+              localGoldenState = false;
+              goldenStateRef.current = false;
+              markChronicleAsLostRef.current();
+              setStoryLostMsgRef.current(true);
+              setTimeout(() => setStoryLostMsgRef.current(false), 3000);
+            }
             setState("dead");
           } else {
-            const keyAttack = (keys["j"] || keys["J"] || keys["z"] || keys["Z"]) && !attackConsumed;
+            const keyAttack = (keys["j"] || keys["z"]) && !attackConsumed;
             const mouseAttack = mouseButtons[0] && !mouseAttackConsumed;
             const wantAttack = keyAttack || mouseAttack;
             if (wantAttack && (state === "idle" || state === "walk")) {
@@ -2985,10 +3187,10 @@ export default function PixelTestMapPage() {
               mouseAttackConsumed = true;
               setState("attack", true);
             }
-            if (!keys["j"] && !keys["J"] && !keys["z"] && !keys["Z"]) attackConsumed = false;
+            if (!keys["j"] && !keys["z"]) attackConsumed = false;
 
             // Spell casting
-            if (!spellConsumed && (keys["q"] || keys["Q"]) && (state === "idle" || state === "walk")) {
+            if (!spellConsumed && (keys["q"]) && (state === "idle" || state === "walk")) {
               if (playerMana >= 8) {
                 spellConsumed = true;
                 const wx = knight.x + (mouseX - app!.screen.width / 2);
@@ -2997,16 +3199,16 @@ export default function PixelTestMapPage() {
                 spawnFloatingText("Firebolt", knight.x, knight.y - 65, 0xe16565);
               }
             }
-            if (!keys["q"] && !keys["Q"]) spellConsumed = false;
+            if (!keys["q"]) spellConsumed = false;
 
-            if (!healConsumed && (keys["e"] || keys["E"]) && (state === "idle" || state === "walk")) {
+            if (!healConsumed && (keys["e"]) && (state === "idle" || state === "walk")) {
               const effectiveMagery = (charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0);
               if (playerMana >= 12 && effectiveMagery >= 100) {
                 healConsumed = true;
                 castHealSelf();
               }
             }
-            if (!keys["e"] && !keys["E"]) healConsumed = false;
+            if (!keys["e"]) healConsumed = false;
 
             if (state === "attack" && knight.currentFrame === 2 && slashTimer === 0) {
               const isBow = equipmentRef.current.mainhand?.id === "short_bow";
@@ -3100,8 +3302,8 @@ export default function PixelTestMapPage() {
             if (state === "dash") {
               dashTimer--;
               tryMoveEntity(knight, dashDirX, dashDirY, 6);
-              knight.x = Math.max(40, Math.min(3960, knight.x));
-              knight.y = Math.max(40, Math.min(3960, knight.y));
+              knight.x = Math.max(40, Math.min(15960, knight.x));
+              knight.y = Math.max(40, Math.min(15960, knight.y));
 
               if (dashTimer % 2 === 0) {
                 const tex = knight.textures[knight.currentFrame];
@@ -3134,8 +3336,8 @@ export default function PixelTestMapPage() {
                 tryMoveEntity(knight, dx / len, dy / len, 2);
               }
 
-              knight.x = Math.max(40, Math.min(3960, knight.x));
-              knight.y = Math.max(40, Math.min(3960, knight.y));
+              knight.x = Math.max(40, Math.min(15960, knight.x));
+              knight.y = Math.max(40, Math.min(15960, knight.y));
             }
           }
         }
@@ -3165,14 +3367,14 @@ export default function PixelTestMapPage() {
           promptText.y = closest.y - 50;
           promptText.visible = true;
           
-          if ((keys["f"] || keys["F"]) && !interactConsumed && state !== "dead") {
+          if ((keys["f"]) && !interactConsumed && state !== "dead") {
             interactConsumed = true;
             closest.onInteract();
           }
         } else {
           promptText.visible = false;
         }
-        if (!keys["f"] && !keys["F"]) interactConsumed = false;
+        if (!keys["f"]) interactConsumed = false;
 
         // Monster AI & Updates
         for (const m of monsters) {
@@ -3180,6 +3382,15 @@ export default function PixelTestMapPage() {
              m.sprite.zIndex = m.sprite.y - 100;
              continue;
           }
+
+          const distToPlayer = Math.hypot(knight.x - m.sprite.x, knight.y - m.sprite.y);
+          if (distToPlayer > 2000 && m.knockback === 0 && m.hitFlash === 0) {
+            m.sprite.visible = false;
+            m.hpBar.visible = false;
+            continue;
+          }
+          m.sprite.visible = true;
+          m.hpBar.visible = true;
 
           if (m.hitFlash > 0) {
             m.hitFlash--;
@@ -3194,7 +3405,7 @@ export default function PixelTestMapPage() {
             m.knockback--;
             tryMoveEntity(m.sprite, m.vx, m.vy, 4);
           } else {
-            const dist = Math.hypot(knight.x - m.sprite.x, knight.y - m.sprite.y);
+            const dist = distToPlayer;
             if (dist < m.detectRadius && state !== "dead") {
               m.state = "chase";
               m.vx = (knight.x - m.sprite.x) / dist;
@@ -3224,6 +3435,13 @@ export default function PixelTestMapPage() {
 
                 if (playerHp <= 0) {
                   dieConsumed = true;
+                  if (localGoldenState) {
+                    localGoldenState = false;
+                    goldenStateRef.current = false;
+                    markChronicleAsLostRef.current();
+                    setStoryLostMsgRef.current(true);
+                    setTimeout(() => setStoryLostMsgRef.current(false), 3000);
+                  }
                   setState("dead");
                 }
               }
@@ -3244,7 +3462,7 @@ export default function PixelTestMapPage() {
           knight.tint = playerInvuln % 10 < 5 ? 0xff0000 : 0xffffff;
         } else {
           knight.alpha = 1;
-          knight.tint = 0xffffff;
+          knight.tint = localGoldenState ? 0xffd98f : 0xffffff;
         }
         
         healthBar.width = Math.max(0, (playerHp / playerMaxHp) * 200);
@@ -3561,6 +3779,80 @@ export default function PixelTestMapPage() {
         </div>
       )}
 
+      {/* ── Story Lost Overlay ───────────────────────────────────────────────── */}
+      {storyLostMsg && (
+        <div className="pointer-events-none absolute inset-0 z-[2000000] flex items-center justify-center">
+          <div className="text-center">
+            <p className="font-heading text-[#e16565] text-4xl uppercase tracking-[0.3em] drop-shadow-[0_0_20px_rgba(225,101,101,0.8)]">
+              Your story is lost.
+            </p>
+            <p className="text-[#a06060] text-sm mt-3 uppercase tracking-widest">
+              You fell before reaching the Unyha Tree.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Narration Overlay ────────────────────────────────────────────────── */}
+      {uiMode === "narration" && (
+        <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/85 backdrop-blur-sm">
+          <div className="w-[560px] max-h-[80vh] bg-[#1a1520] border-[3px] border-[#ffd98f] rounded-lg shadow-2xl flex flex-col overflow-hidden"
+            style={{ boxShadow: "0 0 40px rgba(255, 217, 143, 0.2), inset 0 0 40px rgba(0,0,0,0.5)" }}>
+            <div className="p-8 pb-4 text-center border-b border-[#2a2035]">
+              <p className="text-[#ffd98f] text-[10px] uppercase tracking-[0.4em] mb-2">◇ The Unyha Tree</p>
+              <h2 className="font-heading text-[#e8e3d4] text-2xl uppercase tracking-widest">
+                Narrate your deeds
+              </h2>
+              <p className="text-[#564870] text-xs mt-2">
+                These deeds will become part of the world&apos;s history.
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-3">
+              {chronicle.filter(e => !e.narrated && !e.lost).length === 0 ? (
+                <p className="text-[#564870] text-sm text-center italic py-4">No unnarrated deeds.</p>
+              ) : (
+                chronicle.filter(e => !e.narrated && !e.lost).map((entry, i) => (
+                  <div key={i} className="border-l-2 border-[#ffd98f] pl-4 py-2">
+                    <p className="text-[#e8e3d4] text-sm italic">{entry.text}</p>
+                    <p className="text-[#ffd98f] text-[10px] mt-1">+{entry.fame} fame</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-6 pt-4 border-t border-[#2a2035] flex gap-3">
+              <button
+                onClick={() => {
+                  const name = charRef.current?.name ?? "The wanderer";
+                  setChronicle(prev => {
+                    const next = prev.map(e => (!e.narrated && !e.lost) ? { ...e, narrated: true } : e);
+                    saveChronicle(next);
+                    return next;
+                  });
+                  addChronicleRef.current(
+                    `${name} narrated their deeds at the Unyha Tree. Their story is now part of the world.`,
+                    25
+                  );
+                  resetGoldenStateRef.current();
+                  setUiMode("closed");
+                  uiModeRef.current = "closed";
+                }}
+                className="flex-1 bg-[#ffd98f] text-[#1a1520] font-heading uppercase tracking-widest text-sm py-3 hover:bg-[#ffe8b3] transition-colors"
+              >
+                Inscribe your story
+              </button>
+              <button
+                onClick={() => { setUiMode("closed"); uiModeRef.current = "closed"; }}
+                className="px-6 border border-[#3d3555] text-[#564870] uppercase tracking-widest text-xs hover:border-[#ffd98f] hover:text-[#ffd98f] transition-colors"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Inventory Overlay ─────────────────────────────────────────────────── */}
       {uiMode === "inventory" && (
         <div className="absolute inset-0 z-[1000000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -3754,6 +4046,16 @@ export default function PixelTestMapPage() {
         const qp = quest ? questProgress[quest.id] : undefined;
 
         let dialogueText = npc.greeting;
+        // Chronicle-aware greetings
+        if (npc.id === "danna" && !quest) {
+          const isRenowned = (charRef.current?.fame ?? 0) >= 50;
+          const killedShaman = chronicle.some(e => e.text.includes("shaman"));
+          if (isRenowned) dialogueText = "Word travels fast. They say you glow like a coin left too long in the sun.";
+          else if (killedShaman) dialogueText = "Killed the shaman, did you? That's more than most manage.";
+          else if (chronicle.length > 3) dialogueText = "I've heard your name mentioned. Not in the way you'd dislike.";
+        } else if (npc.id === "mira") {
+          if ((charRef.current?.fame ?? 0) >= 20) dialogueText = "You're getting a name for yourself. Good for business.";
+        }
         let showAccept = false;
         let showComplete = false;
 
@@ -3911,8 +4213,25 @@ export default function PixelTestMapPage() {
               ) : (
                 chronicle.map((entry) => (
                   <div key={entry.ts} className="mb-4 pb-4 border-b border-[#16131f] last:border-0 last:mb-0">
-                    <p className="text-[#e8e3d4] text-sm leading-relaxed">{entry.text}</p>
-                    {entry.fame > 0 && <p className="text-[#ffd98f] text-[10px] mt-1">+{entry.fame} Fame</p>}
+                    {entry.lost ? (
+                      <>
+                        <p className="text-[#8b3d3d] text-[9px] uppercase tracking-widest mb-1">✗ Lost</p>
+                        <p className="text-[#8b3d3d] text-sm leading-relaxed italic">{entry.text}</p>
+                      </>
+                    ) : entry.narrated ? (
+                      <>
+                        <p className="text-[#ffd98f] text-[9px] uppercase tracking-widest mb-1">◇ Narrated</p>
+                        <p className="text-[#e8e3d4] text-sm leading-relaxed">{entry.text}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-1">○ Unnarrated</p>
+                        <p className="text-[#a69581] text-sm leading-relaxed">{entry.text}</p>
+                      </>
+                    )}
+                    {entry.fame > 0 && (
+                      <p className={`text-[10px] mt-1 ${entry.lost ? "text-[#8b3d3d]" : "text-[#ffd98f]"}`}>+{entry.fame} Fame</p>
+                    )}
                   </div>
                 ))
               )}

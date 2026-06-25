@@ -310,8 +310,19 @@ export default function PixelTestPage() {
       const onUp = (e: KeyboardEvent) => {
         keys[e.key] = false;
       };
+      const clearAllInput = () => {
+        for (const k of Object.keys(keys)) keys[k] = false;
+        attackConsumed = false;
+        dashConsumed = false;
+      };
+      const onBlur = clearAllInput;
+      const onVisibilityChange = () => { if (document.hidden) clearAllInput(); };
+      const onContextMenu = () => clearAllInput();
       window.addEventListener("keydown", onDown);
       window.addEventListener("keyup", onUp);
+      window.addEventListener("blur", onBlur);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      window.addEventListener("contextmenu", onContextMenu);
 
       // ── Ticker ────────────────────────────────────────────────────────────────
       app.ticker.add(() => {
@@ -466,6 +477,9 @@ export default function PixelTestPage() {
       (app as any)._cleanup = () => {
         window.removeEventListener("keydown", onDown);
         window.removeEventListener("keyup", onUp);
+        window.removeEventListener("blur", onBlur);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("contextmenu", onContextMenu);
       };
     })();
 
