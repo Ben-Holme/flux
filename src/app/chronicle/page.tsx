@@ -1357,27 +1357,17 @@ export default function ChroniclePage() {
                 }}
               />
               {/* Label — below icon */}
-              <div className="absolute translate-x-[-50%] pt-4 flex flex-col items-center gap-1">
-                <span
-                  style={{
-                    fontSize:
-                      loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
-                    textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
-                    letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
-                  }}
-                  className="tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
-                >
-                  {loc.name}
-                </span>
-                {selectedIdx === i && loc.description && (
-                  <span
-                    className="whitespace-nowrap text-center text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
-                    style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", maxWidth: "200px", whiteSpace: "normal", textAlign: "center", lineHeight: 1.4 }}
-                  >
-                    {loc.description}
-                  </span>
-                )}
-              </div>
+              <span
+                style={{
+                  fontSize:
+                    loc.radiusWorld < 0.33 ? "12px" : loc.radiusWorld < 0.66 ? "16px" : "20px",
+                  textTransform: loc.radiusWorld < 0.66 ? "none" : "uppercase",
+                  letterSpacing: loc.radiusWorld < 0.66 ? "0" : "0.3em",
+                }}
+                className="absolute translate-x-[-50%] pt-4 tracking-[0.03em] whitespace-nowrap text-white text-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+              >
+                {loc.name}
+              </span>
             </div>
           </div>
         ))}
@@ -1590,6 +1580,12 @@ export default function ChroniclePage() {
                 </button>
               </div>
             )}
+            {/* Location description */}
+            {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
+              <p style={{ margin: "0 0 10px", fontSize: "0.75rem", lineHeight: 1.6, color: "rgba(255,255,255,0.45)" }}>
+                {liveLocs[selectedIdx].description}
+              </p>
+            )}
             {/* Tab bar */}
             {navStack.length > 0 && (
               <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
@@ -1741,6 +1737,12 @@ export default function ChroniclePage() {
                     ×
                   </button>
                 </div>
+              )}
+              {/* Location description */}
+              {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
+                <p style={{ margin: "0 0 10px", fontSize: "0.75rem", lineHeight: 1.6, color: "rgba(255,255,255,0.45)" }}>
+                  {liveLocs[selectedIdx].description}
+                </p>
               )}
               {/* Tab bar */}
               {navStack.length > 0 && (
