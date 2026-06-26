@@ -10,7 +10,7 @@ import {
   PALETTE,
   RECOLOR_ORC_GRUNT, RECOLOR_ORC_SHAMAN, RECOLOR_WOLF, RECOLOR_RAT,
   RECOLOR_NPC_VENDOR, RECOLOR_NPC_SMITH, RECOLOR_NPC_QUEST, RECOLOR_VOID_WARDEN,
-  RECOLOR_ANCIENT_SKELETON, RECOLOR_ALPHA_WOLF,
+  RECOLOR_ANCIENT_SKELETON, RECOLOR_ALPHA_WOLF, RECOLOR_WARLORD, RECOLOR_SOVEREIGN,
   TORSO_FRONT, TORSO_BACK, WALK_LEGS, IDLE_LEGS, IDLE_EYES,
   EQ_HELM_IRON, EQ_SWORD_IRON, EQ_PICKAXE, EQ_AXE, EQ_SHIELD_WOOD,
   GIANT_PINE_TREE,
@@ -23,6 +23,9 @@ import {
   SKILL_CATEGORIES, defaultSkills, CLASS_BONUSES, CLASS_DESCS,
   FAME_TITLES, SKILL_MILESTONES,
   TICKS_PER_HOUR, TICKS_PER_DAY, TICKS_PER_SEASON,
+  WOLF_IDLE_FRONT, WOLF_WALK_FRONT, WOLF_IDLE_BACK, WOLF_WALK_BACK, WOLF_DEATH,
+  SKEL_IDLE_FRONT, SKEL_WALK_FRONT, SKEL_IDLE_BACK, SKEL_WALK_BACK, SKEL_DEATH,
+  RAT_IDLE_FRONT, RAT_WALK_FRONT, RAT_IDLE_BACK, RAT_WALK_BACK, RAT_DEATH,
 } from "./data";
 import {
   CHAR_KEY, HOUSE_KEY, CHRONICLE_KEY, MILESTONES_KEY, GAME_TIME_KEY,
@@ -181,7 +184,10 @@ export default function PixelTestMapPage() {
   const houseRef = useRef<House | null>(null);
 
   // Season system
+  const [sessionKey, setSessionKey] = useState(0);
   const [voidWardenDefeated, setVoidWardenDefeated] = useState(false);
+  const [sovereignDefeated, setSovereignDefeated] = useState(false);
+  const sovereignDefeatedRef = useRef(false);
   const [seasonEndScreen, setSeasonEndScreen] = useState<{
     charName: string; season: number;
     bronze: boolean; silver: boolean; gold: boolean;
@@ -215,6 +221,7 @@ export default function PixelTestMapPage() {
   const gainSkillRef = useRef<(skill: SkillName, xp: number) => void>(() => {});
   const gainFameRef = useRef<(amount: number) => void>(() => {});
   const addItemRef = useRef<(id: string, qty: number) => void>(() => {});
+  const removeItemRef = useRef<(id: string, qty: number) => void>(() => {});
   const equipmentRef = useRef<Equipment>({ head: null, chest: null, mainhand: null, offhand: null });
   const equipBonusRef = useRef<Partial<Record<SkillName, number>>>({});
   const inventoryRef = useRef<Item[]>([]);
@@ -235,6 +242,7 @@ export default function PixelTestMapPage() {
   useEffect(() => { deathScreenRef.current = deathScreen !== null; }, [deathScreen]);
   useEffect(() => { seasonEndScreenRef.current = seasonEndScreen !== null; }, [seasonEndScreen]);
   useEffect(() => { voidWardenDefeatedRef.current = voidWardenDefeated; }, [voidWardenDefeated]);
+  useEffect(() => { sovereignDefeatedRef.current = sovereignDefeated; }, [sovereignDefeated]);
   useEffect(() => { inventoryRef.current = inventory; }, [inventory]);
   useEffect(() => {
     equipmentRef.current = equipment;
@@ -296,6 +304,14 @@ export default function PixelTestMapPage() {
   };
   setStoryLostMsgRef.current = setStoryLostMsg;
   addItemRef.current = (id, qty) => addItemToInventory(createItem(id, qty));
+  removeItemRef.current = (id, qty) => setInventory(prev => {
+    const idx = prev.findIndex(i => i?.id === id);
+    if (idx === -1) return prev;
+    const next = [...prev];
+    if (next[idx].qty <= qty) next.splice(idx, 1);
+    else next[idx] = { ...next[idx], qty: next[idx].qty - qty };
+    return next;
+  });
   setGameTimeRef.current = (day, hour) => setGameTime({ day, hour });
 
   triggerDeathRef.current = (px, py, killedBy) => {
@@ -380,6 +396,20 @@ export default function PixelTestMapPage() {
       };
       saveHouse(updatedHouse);
       setHouse(updatedHouse);
+      // Fame escalation milestones
+      const FAME_ESCALATIONS: [number, string][] = [
+        [50,  "The world stirs. Night raids begin on the village."],
+        [100, "Void rifts fracture the zones. Elites grow bolder."],
+        [200, "Named warlords march on the mid-zone."],
+        [350, "The Warden Ascendant rises. The Void takes notice."],
+        [500, "The Veil weakens. The Undying Sovereign stirs."],
+      ];
+      for (const [threshold, text] of FAME_ESCALATIONS) {
+        if (h.fame < threshold && updatedHouse.fame >= threshold) {
+          const escalEntry: ChronicleEntry = { text: `${h.name}: ${text}`, fame: 0, ts: Date.now() + threshold, type: "milestone" };
+          setHouse(prev => prev ? { ...prev, chronicle: [escalEntry, ...(prev.chronicle ?? [])].slice(0, 30) } : prev);
+        }
+      }
     }
     addChronicleRef.current(`Season ${char.season} ended. ${char.name} retired.`, 0, "milestone");
     // house-level chronicle
@@ -491,15 +521,19 @@ export default function PixelTestMapPage() {
     setCharacter(null);
     setDeathScreen(null);
     setDeathButtonVisible(false);
-    // resetPlayerRef is called from handleCreateCharacter after new char is created
+    setVoidWardenDefeated(false);
+    setSovereignDefeated(false);
+    setSessionKey(k => k + 1);
   }
 
   function handleBeginNextSeason() {
     seasonEndFiredRef.current = false;
     setVoidWardenDefeated(false);
+    setSovereignDefeated(false);
     setCharacter(null);
     setSeasonEndScreen(null);
     setSeasonEndButtonVisible(false);
+    setSessionKey(k => k + 1);
   }
 
   // Sync ref with state
@@ -662,10 +696,11 @@ export default function PixelTestMapPage() {
     if (quest.reward.gold > 0) setInventory(prev => applyToInventory(prev, createItem("gold", quest.reward.gold)));
     if (quest.reward.itemId) setInventory(prev => applyToInventory(prev, createItem(quest.reward.itemId!, quest.reward.itemQty ?? 1)));
     const isAutoQuest = quest.giver === "unyha_tree";
+    const giverName = NPC_DEFS.find(n => n.id === quest.giver)?.name ?? "The quest giver";
     addChronicleRef.current(
       isAutoQuest
         ? `${charRef.current?.name ?? "They"} fulfilled the chronicle's call: "${quest.title}".`
-        : `${charRef.current?.name ?? "They"} completed "${quest.title}". Danna counted out the coin without a word.`,
+        : `${charRef.current?.name ?? "They"} completed "${quest.title}". ${giverName} counted out the coin without a word.`,
       isAutoQuest ? 20 : 10, "quest", [questId]
     );
     gainFameRef.current(isAutoQuest ? 20 : 0);
@@ -849,21 +884,12 @@ export default function PixelTestMapPage() {
       const eqAxeTex   = await canvasToTexture(PIXI, drawPixelArt(EQ_AXE, PX));
       const eqShieldTex = await canvasToTexture(PIXI, drawPixelArt(EQ_SHIELD_WOOD, PX));
 
-      const skeletonMap: Record<string, string> = {
-        "3": "e", 
-        "4": "9", 
-        "5": "9", 
-        "6": "f", 
-        "7": "e", 
-        "8": "8", 
-        "9": "e", 
-      };
-
-      const skelIdleFront = await makeTextures(IDLE_EYES.map((e) => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), skeletonMap)));
-      const skelIdleBack = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), skeletonMap)]);
-      const skelWalkFront = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_FRONT, l), skeletonMap)));
-      const skelWalkBack = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_BACK, l), skeletonMap)));
-      const skelDeathTextures = await makeTextures(deathArrays.map(arr => recolor(arr, skeletonMap)));
+      // Skeleton textures — proper bone anatomy sprites
+      const skelIdleFront = await makeTextures(SKEL_IDLE_FRONT);
+      const skelIdleBack  = await makeTextures(SKEL_IDLE_BACK);
+      const skelWalkFront = await makeTextures(SKEL_WALK_FRONT);
+      const skelWalkBack  = await makeTextures(SKEL_WALK_BACK);
+      const skelDeathTextures = await makeTextures(SKEL_DEATH);
 
       // Orc Grunt textures
       const orcIdleFront = await makeTextures(IDLE_EYES.map((e) => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_ORC_GRUNT)));
@@ -879,19 +905,19 @@ export default function PixelTestMapPage() {
       const shamWalkBack = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_BACK, l), RECOLOR_ORC_SHAMAN)));
       const shamDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_ORC_SHAMAN)));
 
-      // Wolf textures
-      const wolfIdleFront = await makeTextures(IDLE_EYES.map((e) => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_WOLF)));
-      const wolfIdleBack = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_WOLF)]);
-      const wolfWalkFront = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_FRONT, l), RECOLOR_WOLF)));
-      const wolfWalkBack = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_BACK, l), RECOLOR_WOLF)));
-      const wolfDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_WOLF)));
+      // Wolf textures — proper quadruped sprites
+      const wolfIdleFront = await makeTextures(WOLF_IDLE_FRONT);
+      const wolfIdleBack  = await makeTextures(WOLF_IDLE_BACK);
+      const wolfWalkFront = await makeTextures(WOLF_WALK_FRONT);
+      const wolfWalkBack  = await makeTextures(WOLF_WALK_BACK);
+      const wolfDeathFrames = await makeTextures(WOLF_DEATH);
 
-      // Cave Rat textures (same recolor approach, scaled smaller via sprite.scale)
-      const ratIdleFront = await makeTextures(IDLE_EYES.map((e) => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_RAT)));
-      const ratIdleBack = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_RAT)]);
-      const ratWalkFront = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_FRONT, l), RECOLOR_RAT)));
-      const ratWalkBack = await makeTextures(WALK_LEGS.map((l) => recolor(buildRows(TORSO_BACK, l), RECOLOR_RAT)));
-      const ratDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_RAT)));
+      // Cave Rat textures — compact rodent sprites, scaled smaller via sprite.scale
+      const ratIdleFront = await makeTextures(RAT_IDLE_FRONT);
+      const ratIdleBack  = await makeTextures(RAT_IDLE_BACK);
+      const ratWalkFront = await makeTextures(RAT_WALK_FRONT);
+      const ratWalkBack  = await makeTextures(RAT_WALK_BACK);
+      const ratDeathFrames = await makeTextures(RAT_DEATH);
 
       // NPC textures — idle front animation using distinct recolor palettes
       const npcVendorTex = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_NPC_VENDOR)));
@@ -906,6 +932,20 @@ export default function PixelTestMapPage() {
       const vwDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_VOID_WARDEN)));
 
       // Elite variant textures
+      // Named Warlord textures (dark iron + gold)
+      const warlordIdleFront = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_WARLORD)));
+      const warlordIdleBack  = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_WARLORD)]);
+      const warlordWalkFront = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_WARLORD)));
+      const warlordWalkBack  = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_BACK, l), RECOLOR_WARLORD)));
+      const warlordDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_WARLORD)));
+
+      // Undying Sovereign textures (dark + silver/void)
+      const sovIdleFront = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_SOVEREIGN)));
+      const sovIdleBack  = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_SOVEREIGN)]);
+      const sovWalkFront = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_SOVEREIGN)));
+      const sovWalkBack  = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_BACK, l), RECOLOR_SOVEREIGN)));
+      const sovDeathFrames = await makeTextures(deathArrays.map(arr => recolor(arr, RECOLOR_SOVEREIGN)));
+
       const ancSkelIdleFront = await makeTextures(IDLE_EYES.map(e => recolor(buildRows(TORSO_FRONT, IDLE_LEGS, e), RECOLOR_ANCIENT_SKELETON)));
       const ancSkelIdleBack  = await makeTextures([recolor(buildRows(TORSO_BACK, IDLE_LEGS), RECOLOR_ANCIENT_SKELETON)]);
       const ancSkelWalkFront = await makeTextures(WALK_LEGS.map(l => recolor(buildRows(TORSO_FRONT, l), RECOLOR_ANCIENT_SKELETON)));
@@ -998,6 +1038,30 @@ export default function PixelTestMapPage() {
         hp: 70, speed: 1.6, detectRadius: 380, damage: 25,
         dropId: "alpha_pelt", dropQty: 1, skillOnKill: "Huntercraft", fameOnKill: 20,
         scale: 1.35,
+      };
+      const WARLORD_1_CFG: MonsterConfig = {
+        idleFront: warlordIdleFront, idleBack: warlordIdleBack,
+        walkFront: warlordWalkFront, walkBack: warlordWalkBack, deathFrames: warlordDeathFrames,
+        monsterType: "orc_grunt", displayName: "Iron Grael", isElite: true,
+        hp: 150, speed: 0.8, detectRadius: 450, damage: 45,
+        dropId: "warlord_token", dropQty: 1, skillOnKill: "Melee", fameOnKill: 40,
+        scale: 1.4,
+      };
+      const WARLORD_2_CFG: MonsterConfig = {
+        idleFront: warlordIdleFront, idleBack: warlordIdleBack,
+        walkFront: warlordWalkFront, walkBack: warlordWalkBack, deathFrames: warlordDeathFrames,
+        monsterType: "orc_shaman", displayName: "Stonebreaker Dosh", isElite: true,
+        hp: 130, speed: 0.9, detectRadius: 500, damage: 35,
+        dropId: "warlord_token", dropQty: 1, skillOnKill: "Melee", fameOnKill: 35,
+        scale: 1.3,
+      };
+      const SOVEREIGN_CFG: MonsterConfig = {
+        idleFront: sovIdleFront, idleBack: sovIdleBack,
+        walkFront: sovWalkFront, walkBack: sovWalkBack, deathFrames: sovDeathFrames,
+        monsterType: "sovereign", displayName: "The Undying Sovereign", isElite: true,
+        hp: 600, speed: 0.5, detectRadius: 800, damage: 0,
+        dropId: "sovereign_crown", dropQty: 1, skillOnKill: "Melee", fameOnKill: 500,
+        scale: 2.5,
       };
 
       const pineTextures = await makeTextures([GIANT_PINE_TREE]);
@@ -1137,6 +1201,8 @@ export default function PixelTestMapPage() {
       let voidWardenAoeCooldown = 0;
       let voidWardenSpawned = false;
       let voidWardenAoeGfx: import("pixi.js").Graphics | null = null;
+      let prevGameHour = -1;
+      let voidRiftCooldown = 3600;
       let manaRegenTick = 0;
 
       const grassBg = new PIXI.Graphics();
@@ -1270,6 +1336,24 @@ export default function PixelTestMapPage() {
           setVoidWardenDefeated(true);
           voidWardenDefeatedRef.current = true;
           spawnFloatingText("⚡ GOLD OBJECTIVE!", m.sprite.x, m.sprite.y - 100, 0xffd98f);
+        }
+        // Undying Sovereign kill = legendary achievement
+        if (m.monsterType === "sovereign") {
+          setSovereignDefeated(true);
+          sovereignDefeatedRef.current = true;
+          const charName = charRef.current?.name ?? "A hero";
+          const houseName = houseRef.current?.name ?? "the House";
+          spawnFloatingText("⚡ THE SOVEREIGN FALLS", m.sprite.x, m.sprite.y - 120, 0xE0AAFF);
+          addChronicleRef.current(
+            `${charName} slew the Undying Sovereign. The Veil fractures. ${houseName} will never be forgotten.`,
+            500, "milestone", ["sovereign"]
+          );
+          const houseEntry: ChronicleEntry = {
+            text: `The Undying Sovereign was slain by ${charName} of ${houseName}. This entry stands forever.`,
+            fame: 0, ts: Date.now(), type: "milestone",
+          };
+          setHouse(prev => prev ? { ...prev, chronicle: [houseEntry, ...(prev.chronicle ?? [])].slice(0, 30) } : prev);
+          triggerSeasonEndRef.current();
         }
       }
 
@@ -1932,6 +2016,357 @@ export default function PixelTestMapPage() {
       spawnMonster(ORC_SHAMAN_CFG, 10500, 9200);
       spawnMonster(ORC_SHAMAN_CFG, 11800, 8600);
 
+      // ── Zone Labels ───────────────────────────────────────────────────────────
+      const zoneLabels: [string, number, number][] = [
+        ["Eastern Badlands", 5000, 1000],
+        ["Deep Forest",      1500, 5000],
+        ["Forsaken Fort",    9000, 7000],
+        ["The Mine",         3100,  400],
+      ];
+      for (const [name, lx, ly] of zoneLabels) {
+        const lbl = new PIXI.Text({
+          text: name,
+          style: { fontFamily: "monospace", fontSize: 12, fill: 0xc8923a, stroke: { color: 0x000000, width: 3 } },
+        });
+        lbl.anchor.set(0.5, 0.5);
+        lbl.position.set(lx, ly);
+        lbl.zIndex = 99999;
+        worldContainer.addChild(lbl);
+      }
+
+      // ── Ruined Village (x:6000-8000, y:200-1200) ─────────────────────────────
+      {
+        const ruinX = 6000, ruinY = 200, ruinW = 2000, ruinH = 1000;
+
+        // Broken wall fragments — thin grey rectangles
+        const ruinWallDefs: [number, number, number, number][] = [
+          [6080,  320, 120, 8],
+          [6250,  420, 8,  80],
+          [6500,  280, 100, 8],
+          [6700,  480, 8,  60],
+          [6900,  350, 140, 8],
+          [7100,  250, 8, 100],
+          [7300,  420,  80, 8],
+          [7500,  300, 8,  90],
+          [7700,  450, 110, 8],
+          [7850,  550, 8,  70],
+          [6200,  700, 130, 8],
+          [6450,  780, 8,  80],
+          [6800,  850, 90,  8],
+          [7200,  650, 8,  110],
+          [7600,  900, 100, 8],
+          [7900,  750, 8,   60],
+          [6100, 1050, 160, 8],
+          [7400,  980, 8,   70],
+          [7050,  600, 8,  100],
+          [6600,  950, 120, 8],
+        ];
+        for (const [wx, wy, ww, wh] of ruinWallDefs) {
+          const wg = new PIXI.Graphics();
+          wg.rect(0, 0, ww, wh).fill({ color: 0x3e424e });
+          wg.position.set(wx, wy);
+          wg.zIndex = wy + wh;
+          worldContainer.addChild(wg);
+          walls.push({ x: wx, y: wy, w: ww, h: wh });
+        }
+
+        // Containers scattered in ruins (4-6 chests/barrels)
+        const ruinContainers: [number, number][] = [
+          [6350, 550], [6900, 720], [7200, 380], [7600, 830], [7900, 480], [6650, 1050],
+        ];
+        for (const [cx, cy] of ruinContainers) {
+          const isChest = Math.random() > 0.5;
+          const rcTex = isChest ? chestClosedTex : barrelTex;
+          const rcOpenTex = isChest ? chestOpenTex : barrelOpenTex;
+          const rcProp = new PIXI.Sprite(rcTex);
+          rcProp.anchor.set(0.5, 1);
+          rcProp.x = cx; rcProp.y = cy;
+          rcProp.zIndex = cy;
+          worldContainer.addChild(rcProp);
+          walls.push({ x: cx - 20, y: cy - 30, w: 40, h: 30 });
+          let rcOpened = false;
+          const rcId = `ruin_${cx}_${cy}`;
+          const rcItems = [
+            createItem("gold", Math.floor(Math.random() * 15) + 5),
+            ...(Math.random() > 0.7 ? [createItem("bone", Math.floor(Math.random() * 3) + 1)] : []),
+          ];
+          interactables.push({
+            x: cx, y: cy, radius: 60,
+            isInteractive: () => !rcOpened,
+            getPrompt: () => isChest ? "[F] Open Chest" : "[F] Search Barrel",
+            onInteract: () => {
+              rcOpened = true;
+              rcProp.texture = rcOpenTex;
+              setLootTarget({ id: rcId, items: rcItems });
+              setUiMode("looting");
+            },
+          });
+        }
+
+        // Skeletons in and around ruins
+        for (let i = 0; i < 8; i++) {
+          spawnMonster(SKELETON_CFG, ruinX + 100 + Math.random() * (ruinW - 200), ruinY + 100 + Math.random() * (ruinH - 200));
+        }
+
+        // Ruined Shrine — cross shape, interactable for fortune text
+        const shrineX = 7050, shrineY = 700;
+        const shrineGfx = new PIXI.Graphics();
+        shrineGfx.rect(-6, -24, 12, 48).fill({ color: 0x3e424e }); // vertical beam
+        shrineGfx.rect(-18, -6, 36, 12).fill({ color: 0x3e424e }); // horizontal beam
+        shrineGfx.position.set(shrineX, shrineY);
+        shrineGfx.zIndex = shrineY;
+        worldContainer.addChild(shrineGfx);
+        walls.push({ x: shrineX - 18, y: shrineY - 24, w: 36, h: 48 });
+
+        const shrineFortunes = [
+          "The dead remember what the living have forgotten.",
+          "Three roads cross here. Only one leads back.",
+          "These stones were raised before the first kingdom fell.",
+          "Something watches from the old places.",
+        ];
+        interactables.push({
+          x: shrineX, y: shrineY, radius: 70,
+          isInteractive: () => true,
+          getPrompt: () => "[F] Read the Shrine",
+          onInteract: () => {
+            const fortune = shrineFortunes[Math.floor(Math.random() * shrineFortunes.length)];
+            spawnFloatingText(fortune, shrineX, shrineY - 50, 0x80705f);
+          },
+        });
+
+        // Zone boundary dirt ground patch
+        const ruinGround = new PIXI.Graphics();
+        ruinGround.rect(ruinX, ruinY, ruinW, ruinH).fill({ texture: dirtTex });
+        ruinGround.zIndex = -9996;
+        worldContainer.addChild(ruinGround);
+      }
+
+      // ── Graveyard (x:2500-3500, y:2500-3500) ─────────────────────────────────
+      {
+        const gvX = 2500, gvY = 2500, gvW = 1000, gvH = 1000;
+
+        // Dirt ground for graveyard
+        const gvGround = new PIXI.Graphics();
+        gvGround.rect(gvX, gvY, gvW, gvH).fill({ texture: dirtTex });
+        gvGround.zIndex = -9995;
+        worldContainer.addChild(gvGround);
+
+        // Gravestones — small grey rectangles with name labels
+        const graveName = [
+          "ALDRIC", "MORNA", "SVEN", "HELETH",
+          "BRAK",   "LYSS",  "TORN", "OSTA",
+          "GERWIN", "PELA",  "DREL", "CORVAN",
+          "YENA",   "BRULT", "AAEN",
+        ];
+        for (let i = 0; i < 15; i++) {
+          const gx = gvX + 60 + Math.random() * (gvW - 120);
+          const gy = gvY + 60 + Math.random() * (gvH - 120);
+          const stone = new PIXI.Graphics();
+          stone.rect(0, 0, 20, 30).fill({ color: 0x3e424e });
+          stone.rect(4, -6, 12, 8).fill({ color: 0x2a2d36 });  // headstone arch
+          stone.position.set(gx - 10, gy - 30);
+          stone.zIndex = gy;
+          worldContainer.addChild(stone);
+          walls.push({ x: gx - 10, y: gy - 30, w: 20, h: 30 });
+          const stoneLabel = new PIXI.Text({
+            text: graveName[i] ?? "???",
+            style: { fontFamily: "monospace", fontSize: 6, fill: 0x80705f },
+          });
+          stoneLabel.anchor.set(0.5, 1);
+          stoneLabel.position.set(gx, gy - 30);
+          stoneLabel.zIndex = gy + 1;
+          worldContainer.addChild(stoneLabel);
+        }
+
+        // Skeletons in graveyard (more at night via nightRaids flag)
+        for (let i = 0; i < 6; i++) {
+          spawnMonster(SKELETON_CFG, gvX + 100 + Math.random() * (gvW - 200), gvY + 100 + Math.random() * (gvH - 200));
+        }
+        // Ancient Skeleton guardian
+        spawnMonster(ANCIENT_SKELETON_CFG, gvX + gvW / 2, gvY + gvH / 2);
+
+        // Graveyard chest — bone + bone_amulet
+        {
+          const gcx = gvX + gvW / 2 - 50, gcy = gvY + gvH - 80;
+          const gcSprite = new PIXI.Sprite(chestClosedTex);
+          gcSprite.anchor.set(0.5, 1);
+          gcSprite.x = gcx; gcSprite.y = gcy;
+          gcSprite.zIndex = gcy;
+          worldContainer.addChild(gcSprite);
+          walls.push({ x: gcx - 20, y: gcy - 30, w: 40, h: 30 });
+          let gcOpened = false;
+          interactables.push({
+            x: gcx, y: gcy, radius: 60,
+            isInteractive: () => !gcOpened,
+            getPrompt: () => "[F] Open Chest",
+            onInteract: () => {
+              gcOpened = true;
+              gcSprite.texture = chestOpenTex;
+              setLootTarget({ id: "graveyard_chest", items: [createItem("bone", 5), createItem("bone_amulet", 1)] });
+              setUiMode("looting");
+            },
+          });
+        }
+      }
+
+      // ── Extra Resource Nodes ──────────────────────────────────────────────────
+      // Zone A (Badlands) — 4 more rock veins + 2 diamond veins
+      placeHarvestNode(rockVeinTex, 5700, 2400, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 2], ["stone", 2]], 240_000);
+      placeHarvestNode(rockVeinTex, 6800, 3500, "Mine", "pickaxe", "Mining", 14, [["iron_ore", 2], ["coal", 1]], 240_000);
+      placeHarvestNode(rockVeinTex, 7900, 2800, "Mine", "pickaxe", "Mining", 14, [["stone", 3], ["iron_ore", 1]], 240_000);
+      placeHarvestNode(rockVeinTex, 8400, 4200, "Mine", "pickaxe", "Mining", 15, [["iron_ore", 3], ["coal", 1]], 300_000);
+      placeHarvestNode(rockVeinTex, 6300, 4500, "Mine", "pickaxe", "Mining", 20, [["diamond", 1]], 600_000);
+      placeHarvestNode(rockVeinTex, 8100, 3800, "Mine", "pickaxe", "Mining", 20, [["diamond", 1]], 600_000);
+
+      // Deep Forest — 4 more herb patches + 2 mushroom nodes
+      placeHarvestNode(herbTex, 2800, 7100, "Harvest Herb", null, "Herbalism", 8, [["nightshade", 1]], 150_000);
+      placeHarvestNode(herbTex, 4200, 6800, "Harvest Herb", null, "Herbalism", 8, [["nightshade", 1]], 150_000);
+      placeHarvestNode(herbTex, 5100, 8300, "Harvest Herb", null, "Herbalism", 8, [["bloodroot", 2]], 120_000);
+      placeHarvestNode(herbTex, 3500, 9500, "Harvest Herb", null, "Herbalism", 8, [["bloodroot", 1]], 120_000);
+      placeHarvestNode(mushTex,  1900, 8400, "Forage", null, "Herbalism", 6, [["ghost_cap", 1]], 120_000, true);
+      placeHarvestNode(mushTex,  4600, 7900, "Forage", null, "Herbalism", 6, [["mushroom", 3]], 90_000);
+
+      // Forsaken Fort — 3 ore veins + 1 rare chest
+      placeHarvestNode(rockVeinTex, 9500,  7800, "Mine", "pickaxe", "Mining", 16, [["iron_ore", 2], ["coal", 2]], 240_000);
+      placeHarvestNode(rockVeinTex, 10200, 8300, "Mine", "pickaxe", "Mining", 16, [["iron_ore", 3]], 300_000);
+      placeHarvestNode(rockVeinTex, 11500, 9100, "Mine", "pickaxe", "Mining", 16, [["iron_ore", 2], ["stone", 3]], 240_000);
+
+      // Forsaken Fort rare chest
+      {
+        const fortCx = 10800, fortCy = 9600;
+        const fortChest = new PIXI.Sprite(chestClosedTex);
+        fortChest.anchor.set(0.5, 1);
+        fortChest.x = fortCx; fortChest.y = fortCy;
+        fortChest.zIndex = fortCy;
+        worldContainer.addChild(fortChest);
+        walls.push({ x: fortCx - 20, y: fortCy - 30, w: 40, h: 30 });
+        let fortOpened = false;
+        interactables.push({
+          x: fortCx, y: fortCy, radius: 60,
+          isInteractive: () => !fortOpened,
+          getPrompt: () => "[F] Open Chest",
+          onInteract: () => {
+            fortOpened = true;
+            fortChest.texture = chestOpenTex;
+            setLootTarget({ id: "fort_rare_chest", items: [createItem("void_key", 1), createItem("warlord_token", 1)] });
+            setUiMode("looting");
+          },
+        });
+      }
+
+      // ── Wandering Merchant NPC (~x:4500, y:3200) ─────────────────────────────
+      {
+        const wmx = 4500, wmy = 3200;
+        const wmSprite = new PIXI.AnimatedSprite(npcVendorTex);
+        wmSprite.anchor.set(0.5, 1);
+        wmSprite.x = wmx; wmSprite.y = wmy;
+        wmSprite.animationSpeed = 3 / 60;
+        wmSprite.play();
+        wmSprite.zIndex = wmy;
+        worldContainer.addChild(wmSprite);
+
+        const wmLabel = new PIXI.Text({
+          text: "Wandering Merchant",
+          style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 3 } },
+        });
+        wmLabel.anchor.set(0.5, 1);
+        wmLabel.x = wmx;
+        wmLabel.y = wmy - 74;
+        wmLabel.zIndex = wmy + 1;
+        worldContainer.addChild(wmLabel);
+
+        // Stock replenishes on approach — simple chest-style loot
+        const wmItems = [
+          createItem("heal_potion", 2),
+          createItem("arrow", 20),
+          createItem("gold", 5),
+        ];
+        let wmLooted = false;
+        interactables.push({
+          x: wmx, y: wmy, radius: 80,
+          isInteractive: () => true,
+          getPrompt: () => wmLooted ? "[F] Trade (restocking...)" : "[F] Trade with Wandering Merchant",
+          onInteract: () => {
+            if (wmLooted) {
+              spawnFloatingText("I'm restocking. Come back soon.", wmx, wmy - 80, 0xc8923a);
+              return;
+            }
+            wmLooted = true;
+            setLootTarget({ id: "wandering_merchant", items: wmItems });
+            setUiMode("looting");
+            // Restock after 2 minutes
+            setTimeout(() => { wmLooted = false; }, 120_000);
+          },
+        });
+      }
+
+      // ── Fame Tier Flags (read house fame at init) ─────────────────────────────
+      const initFame = houseRef.current?.fame ?? 0;
+      const fameTier = {
+        nightRaids:      initFame >= 50,
+        voidRifts:       initFame >= 100,
+        namedWarlords:   initFame >= 200,
+        wardenAscendant: initFame >= 350,
+        veilWeakens:     initFame >= 500,
+      };
+
+      // Named Warlords (house fame 200+) — patrol mid-zone
+      if (fameTier.namedWarlords) {
+        spawnMonster(WARLORD_1_CFG, 4800, 2100);
+        spawnMonster(WARLORD_2_CFG, 5400, 2700);
+      }
+
+      // ── Sovereign Chamber Portal (fame 500+) ──────────────────────────────────
+      const SOV_PORTAL_X = 12400;
+      const SOV_PORTAL_Y = 10600;
+      const sovPortalGfx = new PIXI.Graphics();
+      sovPortalGfx.circle(0, 0, 28).fill({ color: 0x100820 }).stroke({ width: 3, color: fameTier.veilWeakens ? 0x7B2FBE : 0x3d3555 });
+      sovPortalGfx.position.set(SOV_PORTAL_X, SOV_PORTAL_Y);
+      sovPortalGfx.zIndex = SOV_PORTAL_Y;
+      worldContainer.addChild(sovPortalGfx);
+      const sovPortalLabel = new PIXI.Text({
+        text: fameTier.veilWeakens ? "Void Chamber" : "???",
+        style: { fontFamily: "monospace", fontSize: 10, fill: fameTier.veilWeakens ? 0x7B2FBE : 0x3d3555, stroke: { color: 0x000000, width: 3 } },
+      });
+      sovPortalLabel.anchor.set(0.5, 1);
+      sovPortalLabel.position.set(SOV_PORTAL_X, SOV_PORTAL_Y - 32);
+      sovPortalLabel.zIndex = SOV_PORTAL_Y + 1;
+      worldContainer.addChild(sovPortalLabel);
+
+      let sovereign: Monster | null = null;
+      let sovereignPhase = 0;
+      let sovereignLungeCooldown = 150;
+      let sovereignSweepCooldown = 200;
+      let sovereignSweepWarning = 0;
+      let sovereignBeamCooldown = 180;
+      let sovereignBeamWarning = 0;
+      let sovereignMinionCooldown = 90;
+      const sovereignSweepGfx = new PIXI.Graphics();
+      sovereignSweepGfx.zIndex = 14000;
+      worldContainer.addChild(sovereignSweepGfx);
+      const sovereignBeamGfx = new PIXI.Graphics();
+      sovereignBeamGfx.zIndex = 14000;
+      worldContainer.addChild(sovereignBeamGfx);
+
+      interactables.push({
+        x: SOV_PORTAL_X, y: SOV_PORTAL_Y, radius: 80,
+        isInteractive: () => fameTier.veilWeakens && !sovereign && !sovereignDefeatedRef.current,
+        getPrompt: () => {
+          if (!fameTier.veilWeakens) return "";
+          const hasKey = inventoryRef.current.some(i => i?.id === "veil_key");
+          return hasKey ? "[F] Enter Void Chamber" : "[F] Void Chamber (needs Veil Key)";
+        },
+        onInteract: () => {
+          if (!fameTier.veilWeakens || sovereign || sovereignDefeatedRef.current) return;
+          const hasKey = inventoryRef.current.some(i => i?.id === "veil_key");
+          if (!hasKey) { spawnFloatingText("The chamber remains sealed.", knight.x, knight.y - 60, 0x7B2FBE); return; }
+          removeItemRef.current("veil_key", 1);
+          spawnMonster(SOVEREIGN_CFG, SOV_PORTAL_X, SOV_PORTAL_Y - 80);
+          sovereign = monsters[monsters.length - 1];
+          spawnFloatingText("THE UNDYING SOVEREIGN AWAKENS", knight.x, knight.y - 100, 0xE0AAFF);
+        },
+      });
+
       // ── Unyha Tree ─────────────────────────────────────────────────────────────
       const UNYHA_TREE_X = 250;
       const UNYHA_TREE_Y = 350;
@@ -2289,11 +2724,35 @@ export default function PixelTestMapPage() {
         if (gameDay >= 8 && !deathScreenRef.current) {
           triggerSeasonEndRef.current();
         }
-        // Void Warden spawns on Day 5
-        if (gameDay >= 5 && !voidWardenSpawned) {
+        // Night Raids at midnight (fame 50+)
+        if (fameTier.nightRaids && prevGameHour !== gameHour && gameHour === 0 && !deathScreenRef.current && !seasonEndScreenRef.current) {
+          const raidCount = 4 + Math.floor(Math.random() * 3);
+          for (let ri = 0; ri < raidCount; ri++) {
+            spawnMonster(Math.random() < 0.5 ? SKELETON_CFG : ORC_GRUNT_CFG, 750 + Math.random() * 500, 750 + Math.random() * 500);
+          }
+          spawnFloatingText("⚔ Night Raid!", knight.x, knight.y - 90, 0xe16565);
+        }
+        prevGameHour = gameHour;
+
+        // Void Rifts — elite spawn every hour (fame 100+)
+        if (fameTier.voidRifts && !deathScreenRef.current && !seasonEndScreenRef.current) {
+          voidRiftCooldown--;
+          if (voidRiftCooldown <= 0) {
+            voidRiftCooldown = TICKS_PER_HOUR;
+            const riftCfg = Math.random() < 0.5 ? ANCIENT_SKELETON_CFG : ALPHA_WOLF_CFG;
+            spawnMonster(riftCfg, 2000 + Math.random() * 9000, 1000 + Math.random() * 9000);
+            spawnFloatingText("Void Rift!", knight.x, knight.y - 80, 0x7B2FBE);
+          }
+        }
+
+        // Void Warden spawns (Ascendant: Day 3 + 600 HP; normal: Day 5 + 400 HP)
+        const wardenDay = fameTier.wardenAscendant ? 3 : 5;
+        if (gameDay >= wardenDay && !voidWardenSpawned && !deathScreenRef.current && !seasonEndScreenRef.current) {
           voidWardenSpawned = true;
-          spawnMonster(VOID_WARDEN_CFG, 11000, 9200);
+          const wardenCfg = fameTier.wardenAscendant ? { ...VOID_WARDEN_CFG, hp: 600 } : VOID_WARDEN_CFG;
+          spawnMonster(wardenCfg, 11000, 9200);
           voidWarden = monsters[monsters.length - 1];
+          if (fameTier.wardenAscendant) spawnFloatingText("⚡ Warden Ascendant!", knight.x, knight.y - 90, 0xB870F0);
         }
         // Persist every real minute
         saveTimerTick++;
@@ -2663,7 +3122,7 @@ export default function PixelTestMapPage() {
                 const dmgTaken = Math.max(1, Math.round(m.damage * (1 - defReduction)));
                 playerHp -= dmgTaken;
                 playerInvuln = 45;
-                lastHitBy = MONSTER_DISPLAY_NAMES[m.monsterType] ?? `a ${m.monsterType}`;
+                lastHitBy = m.displayName ? `the ${m.displayName}` : (MONSTER_DISPLAY_NAMES[m.monsterType] ?? `a ${m.monsterType}`);
                 gainSkillRef.current("Defense", 3);
                 spawnFloatingText(`-${dmgTaken}`, knight.x, knight.y - 40, 0xff0000);
 
@@ -2774,6 +3233,99 @@ export default function PixelTestMapPage() {
           }
         }
 
+        // ── Undying Sovereign phases ──────────────────────────────────────────────
+        if (sovereign && sovereign.state !== "dead" && state !== "dead") {
+          const hpPct = sovereign.hp / sovereign.maxHp;
+          const newSovPhase = hpPct > 0.7 ? 1 : hpPct > 0.4 ? 2 : hpPct > 0.15 ? 3 : 4;
+          if (newSovPhase !== sovereignPhase) {
+            sovereignPhase = newSovPhase;
+            const phaseLabels = ["", "⚡ Phase I", "🌀 Phase II: Void Sweep", "💥 Phase III: Convergence", "💀 Phase IV: Unleashed"];
+            spawnFloatingText(phaseLabels[newSovPhase] ?? "", sovereign.sprite.x, sovereign.sprite.y - 90, 0xE0AAFF);
+          }
+
+          // All phases: periodic lunge (boss dashes toward player)
+          sovereignLungeCooldown--;
+          if (sovereignLungeCooldown <= 0) {
+            sovereignLungeCooldown = 150;
+            const dx = knight.x - sovereign.sprite.x;
+            const dy = knight.y - sovereign.sprite.y;
+            const lungeLen = Math.hypot(dx, dy) || 1;
+            sovereign.sprite.x += (dx / lungeLen) * 260;
+            sovereign.sprite.y += (dy / lungeLen) * 260;
+            if (playerInvuln === 0 && Math.hypot(knight.x - sovereign.sprite.x, knight.y - sovereign.sprite.y) < 60) {
+              const dmg = 50;
+              playerHp -= dmg; playerInvuln = 60; lastHitBy = "the Undying Sovereign";
+              spawnFloatingText(`-${dmg} LUNGE`, knight.x, knight.y - 50, 0xE0AAFF);
+              if (playerHp <= 0) { setState("dead"); triggerDeathRef.current(knight.x, knight.y, lastHitBy); }
+            }
+          }
+
+          // Phase 2+: Void Sweep (warning circle → AoE damage at range 220)
+          if (sovereignPhase >= 2) {
+            if (sovereignSweepWarning > 0) {
+              sovereignSweepWarning--;
+              sovereignSweepGfx.clear();
+              sovereignSweepGfx.circle(sovereign.sprite.x, sovereign.sprite.y - 40, 220)
+                .stroke({ width: 3, color: 0x7B2FBE, alpha: 0.3 + 0.5 * (1 - sovereignSweepWarning / 20) });
+              if (sovereignSweepWarning === 0) {
+                sovereignSweepGfx.clear();
+                sovereignSweepGfx.circle(sovereign.sprite.x, sovereign.sprite.y - 40, 220).fill({ color: 0x3D1F6B, alpha: 0.5 });
+                setTimeout(() => sovereignSweepGfx.clear(), 400);
+                if (playerInvuln === 0 && Math.hypot(knight.x - sovereign.sprite.x, knight.y - sovereign.sprite.y) < 220) {
+                  const dmg = 80;
+                  playerHp -= dmg; playerInvuln = 45; lastHitBy = "the Undying Sovereign";
+                  spawnFloatingText(`-${dmg} SWEEP`, knight.x, knight.y - 50, 0x7B2FBE);
+                  if (playerHp <= 0) { setState("dead"); triggerDeathRef.current(knight.x, knight.y, lastHitBy); }
+                }
+              }
+            }
+            sovereignSweepCooldown--;
+            if (sovereignSweepCooldown <= 0 && sovereignSweepWarning === 0) {
+              sovereignSweepWarning = 20; sovereignSweepCooldown = 200;
+            }
+          }
+
+          // Phase 3+: Convergence beams (3 directional projectiles with 15-tick warning lines)
+          if (sovereignPhase >= 3) {
+            if (sovereignBeamWarning > 0) {
+              sovereignBeamWarning--;
+              const bx = sovereign.sprite.x; const by = sovereign.sprite.y - 40;
+              const baseAngle = Math.atan2(knight.y - by, knight.x - bx);
+              sovereignBeamGfx.clear();
+              for (let bi = 0; bi < 3; bi++) {
+                const a = baseAngle + (bi - 1) * (Math.PI / 5);
+                sovereignBeamGfx.moveTo(bx, by).lineTo(bx + Math.cos(a) * 450, by + Math.sin(a) * 450)
+                  .stroke({ width: 2, color: 0xB870F0, alpha: 0.4 + 0.4 * (1 - sovereignBeamWarning / 15) });
+              }
+              if (sovereignBeamWarning === 0) {
+                sovereignBeamGfx.clear();
+                const ba = Math.atan2(knight.y - sovereign.sprite.y, knight.x - sovereign.sprite.x);
+                for (let bi = 0; bi < 3; bi++) {
+                  const a = ba + (bi - 1) * (Math.PI / 5);
+                  const bgfx = new PIXI.Graphics();
+                  bgfx.circle(0, 0, 6).fill({ color: 0xE0AAFF });
+                  bgfx.x = sovereign.sprite.x; bgfx.y = sovereign.sprite.y - 40;
+                  bgfx.zIndex = 15000; worldContainer.addChild(bgfx);
+                  projectiles.push({ gfx: bgfx, x: bgfx.x, y: bgfx.y, vx: Math.cos(a) * 7, vy: Math.sin(a) * 7, life: 60, damage: 45, color: 0xE0AAFF, hitSkill: "Magery", isEnemy: true });
+                }
+              }
+            }
+            sovereignBeamCooldown--;
+            if (sovereignBeamCooldown <= 0 && sovereignBeamWarning === 0) {
+              sovereignBeamWarning = 15; sovereignBeamCooldown = 180;
+            }
+          }
+
+          // Phase 4: minion spawns every 90 ticks
+          if (sovereignPhase >= 4) {
+            sovereignMinionCooldown--;
+            if (sovereignMinionCooldown <= 0) {
+              sovereignMinionCooldown = 90;
+              spawnMonster(SKELETON_CFG, sovereign.sprite.x + (Math.random() - 0.5) * 200, sovereign.sprite.y + (Math.random() - 0.5) * 200);
+            }
+          }
+        }
+
         for (let pi = projectiles.length - 1; pi >= 0; pi--) {
           const p = projectiles[pi];
           p.x += p.vx; p.y += p.vy;
@@ -2788,7 +3340,7 @@ export default function PixelTestMapPage() {
               const dmgTaken = Math.max(1, Math.round(p.damage * (1 - defReduction)));
               playerHp -= dmgTaken;
               playerInvuln = 45;
-              lastHitBy = "the Void Warden";
+              lastHitBy = sovereign && !sovereignDefeatedRef.current ? "the Undying Sovereign" : "the Void Warden";
               spawnFloatingText(`-${dmgTaken}`, knight.x, knight.y - 40, 0xff0000);
               if (playerHp <= 0) { setState("dead"); triggerDeathRef.current(knight.x, knight.y, lastHitBy); }
               hit = true;
@@ -2915,7 +3467,7 @@ export default function PixelTestMapPage() {
       (app as any)?._cleanup?.();
       app?.destroy(true, { children: true, texture: true });
     };
-  }, []);
+  }, [sessionKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -2968,6 +3520,11 @@ export default function PixelTestMapPage() {
           <p className="text-[#e8e3d4] text-[12px] uppercase">{character.name}</p>
           <p className="text-[#564870] text-[9px]">{character.charClass} · Fame {character.fame}</p>
           <p className="text-[#564870] text-[9px]">Season {character.season}, Day {gameTime.day} · {hourPeriod(gameTime.hour)}</p>
+          {house && house.fame >= 50 && (
+            <p className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: house.fame >= 500 ? "#E0AAFF" : house.fame >= 350 ? "#B870F0" : house.fame >= 200 ? "#ffd98f" : house.fame >= 100 ? "#7B2FBE" : "#e16565" }}>
+              {house.fame >= 500 ? "⚡ The Veil Weakens" : house.fame >= 350 ? "💀 Warden Ascendant" : house.fame >= 200 ? "⚔ Named Warlords" : house.fame >= 100 ? "🌀 Void Rifts" : "⚔ Night Raids"}
+            </p>
+          )}
         </div>
       )}
 
@@ -3241,6 +3798,7 @@ export default function PixelTestMapPage() {
                   ["bronze", `Survive to Day 3`, gameTime.day >= 3, "+20 House Fame"],
                   ["silver", `Reach 50 Fame`, character.fame >= 50, "+40 House Fame"],
                   ["gold", `Defeat the Void Warden`, voidWardenDefeated, "+100 House Fame"],
+                  ...(house && house.fame >= 500 ? [["legendary", "Slay the Undying Sovereign", sovereignDefeated, "Eternal Glory"] as const] : []),
                 ] as const).map(([tier, label, done, reward]) => (
                   <div key={tier} className="flex items-center justify-between py-1 border-b border-[#3d3555]/30 last:border-0">
                     <div className="flex items-center gap-2">
