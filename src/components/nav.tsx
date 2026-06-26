@@ -44,7 +44,8 @@ const DISCORD_SVG = (
 export default function Nav() {
   const pathname = usePathname();
   const isFirst = pathname === "/";
-  const [scrolled, setScrolled] = useState(false);
+  const isChronicle = pathname === "/chronicle";
+  const [scrolled, setScrolled] = useState(!isFirst);
   const [open, setOpen] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
@@ -123,8 +124,8 @@ export default function Nav() {
             borderRadius: "100%",
             transform: active ? "scale(1)" : "scale(0)",
             transformOrigin: "30% 50%",
-            backgroundColor: scrolled ? "#000" : "transparent",
-            filter: scrolled ? "none" : "blur(100px)",
+            backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
+            filter: scrolled && !isChronicle ? "none" : "blur(100px)",
           }}
         />
 
