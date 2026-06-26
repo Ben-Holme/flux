@@ -1139,13 +1139,17 @@ export default function ChroniclePage() {
     const delta = Math.max(!isExpanded ? -150 : 0, Math.min(200, raw));
     const el = sheetElRef.current;
     if (!el) return;
-    if (!isExpanded) el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
+    const peekPx = navStackLengthRef.current > 0 ? 175 : 120;
+    if (!isExpanded) el.style.transform = `translateY(calc(100% - ${peekPx}px + ${delta}px))`;
     else if (isHalf) el.style.transform = `translateY(calc(50% + ${delta}px))`;
     else el.style.transform = `translateY(${delta}px)`;
   }, []);
 
   const sheetSnapTransform = useCallback((expanded: boolean) => {
-    if (!expanded) return "translateY(calc(100% - 120px))";
+    if (!expanded) {
+      const peekPx = navStackLengthRef.current > 0 ? 175 : 120;
+      return `translateY(calc(100% - ${peekPx}px))`;
+    }
     return navStackLengthRef.current > 0 ? "translateY(0px)" : "translateY(50%)";
   }, []);
 
@@ -1655,7 +1659,9 @@ export default function ChroniclePage() {
           ref={sheetElRef}
           className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
           style={{
-            transform: !sheetExpanded ? "translateY(calc(100% - 120px))" : navStack.length > 0 ? "translateY(0px)" : "translateY(50%)",
+            transform: !sheetExpanded
+              ? navStack.length > 0 ? "translateY(calc(100% - 175px))" : "translateY(calc(100% - 120px))"
+              : navStack.length > 0 ? "translateY(0px)" : "translateY(50%)",
             transition: "transform 0.3s ease",
           }}
         >
@@ -1671,29 +1677,9 @@ export default function ChroniclePage() {
             <div className="h-1 w-9 rounded-sm bg-white/25" />
           </div>
 
-          {/* Peek header — only visible when collapsed */}
-          {!sheetExpanded && (
-            <div
-              className="flex shrink-0 cursor-pointer items-center px-5 pt-1 pb-3"
-              onClick={() => !sheetDraggedRef.current && setSheetExpanded(true)}
-            >
-              {currentNav ? (
-                <div className="font-heading text-[0.9rem] tracking-[0.12em] uppercase" style={{ color: GOLD }}>
-                  {getBreadcrumbLabel(currentNav, players, items)}
-                </div>
-              ) : viewingSeason ? (
-                <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                  {getSeasonLabel(displaySeasonNum)}
-                </div>
-              ) : (
-                <div className="text-[0.8rem] text-white/30">Story Events</div>
-              )}
-            </div>
-          )}
-
-          {/* Sticky controls — season selector, iOS nav, tabs */}
-          {sheetExpanded && (
-            <div className="shrink-0 border-b border-white/5 px-4 pt-2 pb-0">
+          {/* Nav controls — always visible when a location/char/item is selected */}
+          {navStack.length > 0 && (
+            <div className="shrink-0 px-4 pt-1 pb-0">
               {/* Season selector */}
               {apiSeasons.length > 0 && (
                 <div className="mb-3">
@@ -1717,36 +1703,34 @@ export default function ChroniclePage() {
                 </div>
               )}
               {/* iOS-style nav bar */}
-              {navStack.length > 0 && (
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "32px" }}>
-                  <button
-                    onClick={popNav}
-                    style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                  >
-                    <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                    <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-                  </button>
-                  <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
-                    {navBarTitle}
-                  </div>
-                  <button
-                    onClick={clearNav}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "32px" }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); popNav(); }}
+                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
+                >
+                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
+                </button>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+                  {navBarTitle}
                 </div>
-              )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); clearNav(); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
               {/* Location description */}
               {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
                 <p style={{ margin: "0 0 10px", fontSize: "0.75rem", lineHeight: 1.6, color: "rgba(255,255,255,0.45)" }}>
                   {liveLocs[selectedIdx].description}
                 </p>
               )}
-              {/* Tab bar */}
-              {navStack.length > 0 && (
-                <div style={{ display: "flex" }}>
+              {/* Tab bar — only visible when expanded */}
+              {sheetExpanded && (
+                <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                   {(["events", "details"] as const).map((tab) => (
                     <button
                       key={tab}
@@ -1764,6 +1748,45 @@ export default function ChroniclePage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* No-nav peek — collapsed season name (no location selected) */}
+          {navStack.length === 0 && !sheetExpanded && (
+            <div
+              className="flex shrink-0 cursor-pointer items-center px-5 pt-1 pb-3"
+              onClick={() => !sheetDraggedRef.current && setSheetExpanded(true)}
+            >
+              {viewingSeason ? (
+                <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
+                  {getSeasonLabel(displaySeasonNum)}
+                </div>
+              ) : (
+                <div className="text-[0.8rem] text-white/30">Story Events</div>
+              )}
+            </div>
+          )}
+
+          {/* No-nav expanded controls — season selector when no location selected */}
+          {navStack.length === 0 && sheetExpanded && apiSeasons.length > 0 && (
+            <div className="shrink-0 border-b border-white/5 px-4 pt-2 pb-2">
+              <select
+                value={viewingSeasonIdx ?? apiSeasons.length}
+                onChange={(e) => {
+                  const num = Number(e.target.value);
+                  setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                  setNavStack([]);
+                  setSlideDir("back");
+                }}
+                className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
+              >
+                <option value={0}>All seasons</option>
+                {apiSeasons.map((_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
