@@ -1514,7 +1514,7 @@ export default function ChroniclePage() {
       {/* Season selector — eyebrow overlay at top-center of map */}
       {apiSeasons.length > 0 && (
         <div
-          className="pointer-events-none absolute top-3 z-10 -translate-x-1/2"
+          className="pointer-events-none absolute top-24 z-10 -translate-x-1/2"
           style={{ left: !isMobile ? "calc(50% - 170px)" : "50%" }}
         >
           <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 backdrop-blur" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
