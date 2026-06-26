@@ -1517,13 +1517,13 @@ export default function ChroniclePage() {
           className="pointer-events-none absolute top-3 z-10 -translate-x-1/2"
           style={{ left: !isMobile ? "calc(50% - 170px)" : "50%" }}
         >
-          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/8 bg-black/50 px-3 py-1.5 backdrop-blur">
-            <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/35">
+          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 backdrop-blur" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+            <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/55">
               {viewingSeasonIdx === 0
                 ? "All seasons"
                 : getSeasonLabel(displaySeasonNum) + (displaySeasonNum === apiSeasons.length ? " · Current" : "")}
             </span>
-            <span className="pointer-events-none select-none text-[0.65rem] text-white/20">⚙</span>
+            <span className="pointer-events-none select-none text-[0.65rem] text-white/35">⚙</span>
             <select
               value={viewingSeasonIdx ?? apiSeasons.length}
               onChange={(e) => {
