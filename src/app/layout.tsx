@@ -1,11 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Odibee_Sans, Inter } from "next/font/google";
-import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 import "./globals.css";
 import Nav from "@/components/nav";
-import Year from "@/components/year";
+import SiteFooter from "@/components/site-footer";
 import { AuthProvider } from "@/context/auth-context";
 
 const odebeeSans = Odibee_Sans({
@@ -51,34 +49,7 @@ export default function RootLayout({
             <Nav />
           </Suspense>
           <main className="flex-1">{children}</main>
-          <footer className="flex flex-col items-center justify-center gap-4 bg-black px-6 py-12">
-            <a href="https://realspawn.com" target="_blank" rel="noopener noreferrer">
-              <Image
-                src="/img/RealspawnStudios.png"
-                alt="Realspawn Studios"
-                width={100}
-                height={57}
-                className="opacity-30"
-              />
-            </a>
-            <nav className="flex gap-6 text-sm text-white/30">
-              <Link href="/" className="transition-colors hover:text-white/60">
-                About
-              </Link>
-              <Link href="/devlog" className="transition-colors hover:text-white/60">
-                Devlog
-              </Link>
-              <Link href="/privacy-policy" className="transition-colors hover:text-white/60">
-                Privacy Policy
-              </Link>
-            </nav>
-            <p className="text-xs text-white/30">
-              {"©"} Realspawn Studios,{" "}
-              <Suspense fallback="2026">
-                <Year />
-              </Suspense>
-            </p>
-          </footer>
+          <Suspense fallback={null}><SiteFooter /></Suspense>
         </AuthProvider>
       </body>
     </html>

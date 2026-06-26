@@ -43,6 +43,7 @@ const DISCORD_SVG = (
 
 export default function Nav() {
   const pathname = usePathname();
+  const isGame = pathname === "/pixeltest-map";
   const isFirst = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -67,6 +68,8 @@ export default function Nav() {
   }, []);
 
   const active = scrolled || open;
+
+  if (isGame) return null;
 
   return (
     <>

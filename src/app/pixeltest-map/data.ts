@@ -75,7 +75,10 @@ export const RECOLOR_WARLORD: Record<string, string> = {
 export const RECOLOR_SOVEREIGN: Record<string, string> = {
   "3": "x", "4": "1", "5": "u", "6": "E", "7": "v", "8": "8", "9": "9",
 };
-// NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal
+// NPC recolor maps — warm merchant browns, smith steel-grey, quest-giver dark teal, healer forest green
+export const RECOLOR_NPC_HEALER: Record<string, string> = {
+  "3": "a", "4": "t", "5": "r", "6": "6", "7": "c", "8": "8", "9": "m",
+};
 export const RECOLOR_NPC_VENDOR: Record<string, string> = {
   "3": "q", "4": "c", "5": "d", "6": "n", "7": "c", "8": "8", "9": "m",
 };
@@ -663,6 +666,38 @@ export const HERB_PATCH: string[] = [
   "0000000000000000",
 ];
 
+export const DEAD_TREE: string[] = [
+  "0000000c00000000",
+  "0000000cc0000000",
+  "00000ccc0cc00000",
+  "000c00ccc00c0000",
+  "0000000c00000000",
+  "0000ccc0ccc00000",
+  "000c0c000c0c0000",
+  "0000000c00000000",
+  "0000000dc0000000",
+  "0000000dc0000000",
+  "0000000dc0000000",
+  "0000000dc0000000",
+  "0000000dc0000000",
+  "0000000dc0000000",
+  "000000ddc0000000",
+  "00000ddcd0000000",
+  "0000dddcdd000000",
+  "0000000000000000",
+];
+
+export const BOULDER: string[] = [
+  "0000000000000000",
+  "00000efffff00000",
+  "000eflllllllf000",
+  "00efllmmmlllfe00",
+  "00efllllllllfe00",
+  "000effllllffe000",
+  "00000eeffeee0000",
+  "0000000000000000",
+];
+
 export const FORGE_STATION: string[] = [
   "0000000000000000",
   "0000000000000000",
@@ -755,7 +790,8 @@ export const RECIPES: Recipe[] = [
   { id: "r_iron_sword", result: "iron_sword", resultQty: 1, ingredients: [{id:"iron_ore",qty:2},{id:"coal",qty:1}],  skill:"Blacksmithing", minSkill:100, xp:20, station:"forge" },
   { id: "r_iron_helm",  result: "iron_helm",  resultQty: 1, ingredients: [{id:"iron_ore",qty:3}],                    skill:"Blacksmithing", minSkill:200, xp:30, station:"forge" },
   // Alchemy
-  { id: "r_heal_potion",  result: "heal_potion",  resultQty: 1, ingredients: [{id:"bloodroot",qty:1},{id:"ghost_cap",qty:1}],   skill:"Alchemy", minSkill:50,  xp:12, station:"alchemy" },
+  { id: "r_bandage",      result: "bandage",       resultQty: 3, ingredients: [{id:"bloodroot",qty:1}],                          skill:"Alchemy", minSkill:0,   xp:4,  station:"alchemy" },
+  { id: "r_heal_potion",  result: "heal_potion",   resultQty: 1, ingredients: [{id:"bloodroot",qty:1},{id:"ghost_cap",qty:1}],   skill:"Alchemy", minSkill:50,  xp:12, station:"alchemy" },
   { id: "r_poison_vial",  result: "poison_vial",  resultQty: 1, ingredients: [{id:"nightshade",qty:1},{id:"rat_pelt",qty:1}],   skill:"Alchemy", minSkill:150, xp:20, station:"alchemy" },
   // Loom — Tailoring
   { id: "r_leather_tunic", result: "leather_tunic", resultQty: 1, ingredients: [{id:"wolf_pelt",qty:3}], skill:"Tailoring", minSkill:100, xp:25, station:"loom" },
@@ -910,6 +946,7 @@ export const ITEM_DB: Record<string, Omit<Item, "id" | "qty">> = {
   pickaxe: { name: "Pickaxe", type: "weapon", icon: "⛏️", maxStack: 1, slot: "mainhand" },
   axe: { name: "Axe", type: "weapon", icon: "🪓", maxStack: 1, slot: "mainhand", bonuses: { Melee: 20 } },
   heal_potion: { name: "Healing Potion", type: "consumable", icon: "🧪", maxStack: 5 },
+  bandage: { name: "Bandage", type: "consumable", icon: "🩹", maxStack: 10 },
   poison_vial: { name: "Poison Vial", type: "consumable", icon: "☠️", maxStack: 5 },
   leather_tunic: { name: "Leather Tunic", type: "armor", icon: "🥼", maxStack: 1, slot: "chest", bonuses: { Defense: 20 }, quality: "common" },
   short_bow: { name: "Short Bow", type: "weapon", icon: "🏹", maxStack: 1, slot: "mainhand", bonuses: { Archery: 50 }, quality: "common" },
@@ -1040,6 +1077,47 @@ export const NPC_DEFS: NpcDef[] = [
     recolor: RECOLOR_NPC_QUEST,
     questIds: ["filed_assessment", "wolf_culling", "shamans_silence", "ancient_bone_road"],
     greeting: "Three caravans on the northern stone run. I logged them out of Brimmar myself. Not one came back.",
+  },
+  {
+    id: "wren",
+    name: "Wren",
+    title: "Herbalist",
+    x: 820, y: 1020,
+    type: "vendor",
+    recolor: RECOLOR_NPC_HEALER,
+    shop: [
+      { itemId: "bandage",     price: 6  },
+      { itemId: "heal_potion", price: 20 },
+      { itemId: "bloodroot",   price: 5  },
+      { itemId: "apple",       price: 4  },
+    ],
+    greeting: "The herbs are strange this season. Potent, but strange.",
+  },
+  {
+    id: "ingrid",
+    name: "Ingrid",
+    title: "Mine Healer",
+    x: 3350, y: 820,
+    type: "vendor",
+    recolor: RECOLOR_NPC_HEALER,
+    shop: [
+      { itemId: "bandage",     price: 8  },
+      { itemId: "heal_potion", price: 25 },
+    ],
+    greeting: "Miners come in broken and I send them back whole. Same service for you.",
+  },
+  {
+    id: "ossian",
+    name: "Ossian",
+    title: "Wandering Leech",
+    x: 6700, y: 560,
+    type: "vendor",
+    recolor: RECOLOR_NPC_HEALER,
+    shop: [
+      { itemId: "bandage",     price: 10 },
+      { itemId: "heal_potion", price: 30 },
+    ],
+    greeting: "Out here I charge what the market bears. You don't like it, bleed.",
   },
 ];
 

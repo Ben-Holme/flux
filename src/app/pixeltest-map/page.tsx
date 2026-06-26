@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import TutorialWorld from "./tutorial-world";
+import LandingScreen from "./landing-screen";
 import type {
   Item, ItemQuality, Equipment, ContainerData, ShopEntry, Quest, NpcDef, UiMode,
   CraftStationType, Recipe, Rect, Interactable,
@@ -15,7 +17,7 @@ import {
   EQ_HELM_IRON, EQ_SWORD_IRON, EQ_PICKAXE, EQ_AXE, EQ_SHIELD_WOOD,
   GIANT_PINE_TREE,
   TILE_GRASS, MOUNTAIN_ROCK, CAVE_FLOOR, TILE_FLOOR, TILE_WALL, TILE_ROOF, TILE_DIRT, TILE_COBBLE, TILE_WATER,
-  BARREL, BOX, LANTERN, FIRE_1, FIRE_2, BUSH, FLOWER, MUSHROOM, ROCK_VEIN, TREE_STUMP, HERB_PATCH,
+  BARREL, BOX, LANTERN, FIRE_1, FIRE_2, BUSH, FLOWER, MUSHROOM, ROCK_VEIN, TREE_STUMP, HERB_PATCH, DEAD_TREE, BOULDER,
   FORGE_STATION, ALCHEMY_TABLE_STA, LOOM_STA, WOODBENCH_STA,
   STATION_LABELS, RECIPES,
   DOOR_CLOSED, DOOR_OPEN, CHEST_CLOSED, CHEST_OPEN, BARREL_OPEN, BOX_OPEN,
@@ -28,7 +30,7 @@ import {
   RAT_IDLE_FRONT, RAT_WALK_FRONT, RAT_IDLE_BACK, RAT_WALK_BACK, RAT_DEATH,
 } from "./data";
 import {
-  CHAR_KEY, HOUSE_KEY, CHRONICLE_KEY, MILESTONES_KEY, GAME_TIME_KEY,
+  CHAR_KEY, HOUSE_KEY, CHRONICLE_KEY, MILESTONES_KEY, GAME_TIME_KEY, BOUND_TREES_KEY, INTRO_SEEN_KEY, TUTORIAL_KEY,
   createItem, getSellPrice,
   loadCharacter, saveCharacter,
   loadHouse, saveHouse,
@@ -132,8 +134,250 @@ interface Monster {
   fameOnKill?: number;
 }
 
-// ── Shared Global State (Pixi -> React) ───────────────────────────────────────
+// ── World Map ─────────────────────────────────────────────────────────────────
 
+const WORLD_W = 14000;
+const WORLD_H = 12500;
+
+// Named locations: [worldX, worldY, label, color, radius]
+const MAP_LOCATIONS: [number, number, string, string, number][] = [
+  [1050,  1000, "Village",           "#ffd98f", 5],
+  [3450,  900,  "The Mine",          "#80705f", 4],
+  [3700,  2200, "Orc Camp",          "#4a7a40", 4],
+  [7000,  3000, "Eastern Badlands",  "#c8923a", 0],
+  [3500,  3000, "Graveyard",         "#564870", 4],
+  [3500,  8000, "Deep Forest",       "#244a30", 0],
+  [11000, 9500, "Forsaken Fort",     "#3e424e", 0],
+  [7000,  700,  "Ruined Village",    "#80705f", 0],
+  [4500,  3200, "Wandering Merchant","#ffa200", 3],
+  [12400, 10600,"Void Chamber",      "#7B2FBE", 4],
+  [800,   300,  "Unyha Tree",        "#40261a", 3],
+];
+
+// Zone polygons: [points as flat [x,y,...], fill color, label]
+const MAP_ZONES: [number[], string, string][] = [
+  // Deep forest (south-center)
+  [[1500,5000, 6000,5000, 6000,10500, 1500,10500], "#1a2e1a", ""],
+  // Eastern Badlands
+  [[5000,1500, 9000,1500, 9000,5000, 5000,5000], "#2a2018", ""],
+  // Forsaken Fort zone
+  [[9000,7000, 13500,7000, 13500,12500, 9000,12500], "#1a1820", ""],
+  // Ruined Village zone (north-east)
+  [[5800,100, 8200,100, 8200,1400, 5800,1400], "#201e1a", ""],
+  // Grassland starting area (northwest)
+  [[0,0, 5000,0, 5000,5000, 0,5000], "#182018", ""],
+  // Mine cave area
+  [[2900,400, 4200,400, 4200,1400, 2900,1400], "#141214", ""],
+];
+
+// Roads: [x1,y1, x2,y2] world coords (used for world map overlay display)
+const MAP_ROADS: [number, number, number, number][] = [
+  [800,  300,  1050, 1000],  // unyha tree → village
+  [1050, 1000, 3450, 900],   // village → mine (north highway)
+  [3450, 900,  7000, 700],   // mine → ruined village
+  [7000, 700,  7000, 3000],  // ruined village → badlands (N-S)
+  [3450, 900,  3700, 2200],  // mine → orc camp
+  [1050, 1000, 3500, 3000],  // village → graveyard (SE diagonal)
+  [3700, 2200, 3500, 3000],  // orc camp → graveyard
+  [3500, 3000, 4500, 3200],  // graveyard → merchant
+  [4500, 3200, 7000, 3000],  // merchant → badlands
+  [3500, 3000, 3500, 8000],  // graveyard → deep forest
+  [7000, 3000, 11000, 9500], // badlands → fort (long SE road)
+  [11000, 9500, 12400, 10600], // fort → void chamber
+];
+
+function WorldMapOverlay({
+  playerPos,
+  houseFame,
+  milestones,
+  onClose,
+}: {
+  playerPos: { x: number; y: number };
+  houseFame: number;
+  milestones: Set<string>;
+  onClose: () => void;
+}) {
+  const SVG_W = 660;
+  const SVG_H = 540;
+  const sx = (x: number) => (x / WORLD_W) * SVG_W;
+  const sy = (y: number) => (y / WORLD_H) * SVG_H;
+  const px = sx(playerPos.x);
+  const py = sy(playerPos.y);
+
+  const discoveredZones = new Set([
+    milestones.has("zone:mine:first") && "mine",
+    milestones.has("zone:orc_camp:first") && "orc_camp",
+    milestones.has("zone:badlands:first") && "badlands",
+    milestones.has("zone:deep_forest:first") && "deep_forest",
+    milestones.has("zone:forsaken_fort:first") && "fort",
+    "village", // always known
+  ]);
+
+  return (
+    <div className="absolute inset-0 z-[3000000] flex items-center justify-center bg-[#08060a]/92 font-mono">
+      <div className="flex flex-col gap-3" style={{ width: 740 }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <p className="text-[#c8923a] text-[9px] tracking-[0.5em] uppercase">— World Map —</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[#3d3555] text-[10px] tracking-widest hover:text-[#ffd98f] uppercase"
+          >
+            Close (M / Esc)
+          </button>
+        </div>
+
+        {/* Map */}
+        <div className="border border-[#2c2640]" style={{ background: "#0d0b12" }}>
+          <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`}>
+            {/* Base ground */}
+            <rect width={SVG_W} height={SVG_H} fill="#111216" />
+
+            {/* Zone fills */}
+            {MAP_ZONES.map(([pts, fill], i) => (
+              <polygon
+                key={i}
+                points={pts.map((v, j) => j % 2 === 0 ? sx(v) : sy(v)).join(" ")}
+                fill={fill}
+                opacity={0.9}
+              />
+            ))}
+
+            {/* Roads / paths */}
+            {MAP_ROADS.map(([x1,y1,x2,y2], i) => (
+              <line
+                key={i}
+                x1={sx(x1)} y1={sy(y1)} x2={sx(x2)} y2={sy(y2)}
+                stroke="#3a2100" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.6}
+              />
+            ))}
+
+            {/* Zone name labels */}
+            {[
+              [7000, 3000, "Eastern Badlands", "#7a6040"],
+              [3500, 7500, "Deep Forest",       "#3a5a3a"],
+              [11000, 9500,"Forsaken Fort",     "#3a3545"],
+              [7000, 700,  "Ruined Village",    "#5a5040"],
+            ].map(([wx, wy, label, col], i) => (
+              <text
+                key={i}
+                x={sx(wx as number)}
+                y={sy(wy as number)}
+                textAnchor="middle"
+                fill={col as string}
+                fontSize={9}
+                fontFamily="monospace"
+                opacity={0.7}
+              >
+                {label as string}
+              </text>
+            ))}
+
+            {/* Location dots + labels */}
+            {MAP_LOCATIONS.map(([wx, wy, label, color, radius], i) => {
+              if (radius === 0) return null;
+              const lx = sx(wx), ly = sy(wy);
+              return (
+                <g key={i}>
+                  <circle cx={lx} cy={ly} r={radius + 2} fill={color} opacity={0.2} />
+                  <circle cx={lx} cy={ly} r={radius} fill={color} />
+                  <text
+                    x={lx + (radius + 4)}
+                    y={ly + 3}
+                    fill={color}
+                    fontSize={8}
+                    fontFamily="monospace"
+                    opacity={0.9}
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Void Chamber — only show when fame ≥ 500 */}
+            {houseFame >= 500 && (() => {
+              const [wx, wy, label, color, radius] = MAP_LOCATIONS.find(l => l[2] === "Void Chamber")!;
+              const lx = sx(wx), ly = sy(wy);
+              return (
+                <g>
+                  <circle cx={lx} cy={ly} r={(radius + 2)} fill={color} opacity={0.3} />
+                  <circle cx={lx} cy={ly} r={radius} fill={color} />
+                  <text x={lx + 6} y={ly + 3} fill={color} fontSize={8} fontFamily="monospace">{label}</text>
+                </g>
+              );
+            })()}
+
+            {/* Grid lines (subtle) */}
+            {[2000,4000,6000,8000,10000,12000].map(gx => (
+              <line key={`gx${gx}`} x1={sx(gx)} y1={0} x2={sx(gx)} y2={SVG_H}
+                stroke="#1e1c24" strokeWidth={0.5} />
+            ))}
+            {[2000,4000,6000,8000,10000,12000].map(gy => (
+              <line key={`gy${gy}`} x1={0} y1={sy(gy)} x2={SVG_W} y2={sy(gy)}
+                stroke="#1e1c24" strokeWidth={0.5} />
+            ))}
+
+            {/* Player position */}
+            <circle cx={px} cy={py} r={5} fill="none" stroke="#ffd98f" strokeWidth={1.5} opacity={0.5} />
+            <circle cx={px} cy={py} r={2.5} fill="#ffd98f" />
+
+            {/* Compass rose (bottom-right) */}
+            <g transform={`translate(${SVG_W - 30}, ${SVG_H - 30})`} opacity={0.4}>
+              <line x1={0} y1={-10} x2={0} y2={10} stroke="#564870" strokeWidth={1} />
+              <line x1={-10} y1={0} x2={10} y2={0} stroke="#564870" strokeWidth={1} />
+              <text x={-2} y={-13} fill="#ffd98f" fontSize={8} fontFamily="monospace">N</text>
+            </g>
+
+            {/* Border */}
+            <rect width={SVG_W} height={SVG_H} fill="none" stroke="#2c2640" strokeWidth={1} />
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="flex gap-6 px-1 pb-1">
+          <div className="flex items-center gap-2">
+            <svg width={10} height={10}><circle cx={5} cy={5} r={2.5} fill="#ffd98f" /></svg>
+            <span className="text-[#564870] text-[9px] uppercase tracking-wider">Your position</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <svg width={10} height={10}><line x1={0} y1={5} x2={10} y2={5} stroke="#3a2100" strokeWidth={1.5} strokeDasharray="3 2" /></svg>
+            <span className="text-[#564870] text-[9px] uppercase tracking-wider">Road</span>
+          </div>
+          {houseFame < 500 && (
+            <div className="flex items-center gap-2">
+              <svg width={10} height={10}><circle cx={5} cy={5} r={2} fill="#3d3555" /></svg>
+              <span className="text-[#3d3555] text-[9px] uppercase tracking-wider">??? (unknown)</span>
+            </div>
+          )}
+          <div className="ml-auto text-[#3d3555] text-[9px] uppercase tracking-wider">
+            House Fame: <span className="text-[#ffd98f]">{houseFame}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Character preview canvas (used in creation screen) ────────────────────────
+function CharPreview() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rows = buildRows(TORSO_FRONT, IDLE_LEGS, IDLE_EYES[0]);
+    const src = drawPixelArt(rows, 8);
+    canvas.width = src.width;
+    canvas.height = src.height;
+    canvas.getContext("2d")!.drawImage(src, 0, 0);
+  }, []);
+
+  return <canvas ref={canvasRef} style={{ imageRendering: "pixelated" }} />;
+}
 
 export default function PixelTestMapPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,10 +422,34 @@ export default function PixelTestMapPage() {
   // House system
   const [house, setHouse] = useState<House | null>(null);
   const [showHousePanel, setShowHousePanel] = useState(false);
+  const [showWorldMap, setShowWorldMap] = useState(false);
+  const showWorldMapRef = useRef(false);
+  const playerPosRef = useRef({ x: 1050, y: 1050 });
   const [houseCreationName, setHouseCreationName] = useState("");
   const [houseCreationColor, setHouseCreationColor] = useState("#b8442a");
   const showHousePanelRef = useRef(false);
   const houseRef = useRef<House | null>(null);
+
+  // Unyha Tree network — bind points
+  const [boundTrees, setBoundTrees] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(BOUND_TREES_KEY) ?? "[]"); } catch { return []; }
+  });
+  const boundTreesRef = useRef<string[]>([]);
+  const [unyhNetworkTarget, setUnyhNetworkTarget] = useState<string | null>(null); // current tree ID open in panel
+  const teleportToRef = useRef<(treeId: string) => void>(() => {});
+
+  // Tutorial world gate — main PixiJS only initialises after tutorial is done
+  const [tutorialWorldDone, setTutorialWorldDone] = useState<boolean>(() => {
+    try { return !!localStorage.getItem(TUTORIAL_KEY); } catch { return false; }
+  });
+  const mainGameInitRef = useRef(false);
+
+  // Landing screen — player chooses where to begin; set before PixiJS init
+  const [landingPos, setLandingPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Active hint system
+  const [activeHint, setActiveHint] = useState<string | null>(null);
+  const activeHintRef = useRef<string | null>(null);
 
   // Season system
   const [sessionKey, setSessionKey] = useState(0);
@@ -227,6 +495,7 @@ export default function PixelTestMapPage() {
   const inventoryRef = useRef<Item[]>([]);
   const questProgressRef = useRef<Record<string, { status: "active" | "ready" | "done"; progress: number }>>({});
   const handleTakeAllRef = useRef<() => void>(() => {});
+  const spawnFloatingTextRef = useRef<(txt: string, color?: number) => void>(() => {});
 
   useEffect(() => { setHouse(loadHouse()); }, []);
   useEffect(() => { setCharacter(loadCharacter()); }, []);
@@ -239,6 +508,12 @@ export default function PixelTestMapPage() {
   useEffect(() => { charRef.current = character; charCreationRef.current = (house === null || character === null) && !deathScreen; }, [house, character, deathScreen]);
   useEffect(() => { showCharPanelRef.current = showCharPanel; }, [showCharPanel]);
   useEffect(() => { showHousePanelRef.current = showHousePanel; }, [showHousePanel]);
+  useEffect(() => { showWorldMapRef.current = showWorldMap; }, [showWorldMap]);
+  useEffect(() => {
+    boundTreesRef.current = boundTrees;
+    try { localStorage.setItem(BOUND_TREES_KEY, JSON.stringify(boundTrees)); } catch {}
+  }, [boundTrees]);
+  useEffect(() => { activeHintRef.current = activeHint; }, [activeHint]);
   useEffect(() => { deathScreenRef.current = deathScreen !== null; }, [deathScreen]);
   useEffect(() => { seasonEndScreenRef.current = seasonEndScreen !== null; }, [seasonEndScreen]);
   useEffect(() => { voidWardenDefeatedRef.current = voidWardenDefeated; }, [voidWardenDefeated]);
@@ -264,6 +539,13 @@ export default function PixelTestMapPage() {
       const newVal = newSkills[skill];
       const updated = { ...prev, skills: newSkills };
       saveCharacter(updated);
+      // Notify on every 50-point milestone
+      const NOTIFY_STEPS = [50, 100, 150, 200, 250, 300, 400, 500];
+      for (const step of NOTIFY_STEPS) {
+        if (oldVal < step && newVal >= step) {
+          setTimeout(() => spawnFloatingTextRef.current(`⬆ ${skill} ${step}`, 0xffd98f), 0);
+        }
+      }
       const milestones = SKILL_MILESTONES[skill];
       if (milestones) {
         for (const [threshold, text, fame] of milestones) {
@@ -517,7 +799,10 @@ export default function PixelTestMapPage() {
   }
 
   function handleBeginNextCharacter() {
+    mainGameInitRef.current = false;
+    resetPlayerRef.current = () => {};
     localStorage.removeItem(GAME_TIME_KEY);
+    setLandingPos(null);
     setCharacter(null);
     setDeathScreen(null);
     setDeathButtonVisible(false);
@@ -527,7 +812,10 @@ export default function PixelTestMapPage() {
   }
 
   function handleBeginNextSeason() {
+    mainGameInitRef.current = false;
+    resetPlayerRef.current = () => {};
     seasonEndFiredRef.current = false;
+    setLandingPos(null);
     setVoidWardenDefeated(false);
     setSovereignDefeated(false);
     setCharacter(null);
@@ -778,6 +1066,20 @@ export default function PixelTestMapPage() {
           return next;
         });
       }
+      if (e.key === "m" || e.key === "M") {
+        uiModeRef.current = "closed";
+        setUiMode("closed");
+        setSplitModal(null);
+        setShowCharPanel(false);
+        showCharPanelRef.current = false;
+        setShowHousePanel(false);
+        showHousePanelRef.current = false;
+        setShowWorldMap(prev => {
+          const next = !prev;
+          showWorldMapRef.current = next;
+          return next;
+        });
+      }
       if (e.key === "f" || e.key === "F") {
         if (uiModeRef.current === "looting") handleTakeAllRef.current();
       }
@@ -788,10 +1090,13 @@ export default function PixelTestMapPage() {
         uiModeRef.current = "closed";
         showCharPanelRef.current = false;
         showHousePanelRef.current = false;
+        showWorldMapRef.current = false;
         setUiMode("closed");
         setShowCharPanel(false);
         setShowHousePanel(false);
+        setShowWorldMap(false);
         setShowChronicle(false);
+        setUnyhNetworkTarget(null);
         setSplitModal(null);
       }
     };
@@ -801,6 +1106,11 @@ export default function PixelTestMapPage() {
 
   // ── Pixi Game Engine ────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!tutorialWorldDone) return; // wait until tutorial is complete
+    if (!landingPos) return; // wait until player has chosen a landing spot
+    if (mainGameInitRef.current) return; // only initialise once
+    mainGameInitRef.current = true;
+
     let app: import("pixi.js").Application | undefined;
     let destroyed = false;
 
@@ -820,13 +1130,28 @@ export default function PixelTestMapPage() {
         resizeTo: window,
         background: 0x08060a,
         antialias: false,
-        resolution: 1,
+        resolution: window.devicePixelRatio ?? 1,
+        autoDensity: true,
       });
       if (destroyed) {
         app.destroy(true);
         return;
       }
       containerRef.current?.appendChild(app.canvas);
+
+      // ── Consistent viewport scale ─────────────────────────────────────────────
+      // Reference resolution: 1280×720. On larger screens the world zooms in so
+      // sprites appear the same physical size on every display.
+      const REF_W = 1280, REF_H = 720;
+      let zoom = Math.min(app.screen.width / REF_W, app.screen.height / REF_H);
+      const applyZoom = () => {
+        zoom = Math.min(app!.screen.width / REF_W, app!.screen.height / REF_H);
+        worldContainer.scale.set(zoom);
+      };
+      app.renderer.on("resize", applyZoom);
+
+      // Cap at 60 fps so all counter-based timers are frame-rate independent
+      app.ticker.maxFPS = 60;
 
       const PX = 4;
 
@@ -1081,6 +1406,8 @@ export default function PixelTestMapPage() {
       const grassTex = (await makeTextures([TILE_GRASS]))[0];
       const rockTex = (await makeTextures([MOUNTAIN_ROCK]))[0];
       const caveTex = (await makeTextures([CAVE_FLOOR]))[0];
+      const deadTreeTex = (await makeTextures([DEAD_TREE]))[0];
+      const boulderTex = (await makeTextures([BOULDER]))[0];
 
       const doorClosedTex = (await makeTextures([DOOR_CLOSED]))[0];
       const doorOpenTex = (await makeTextures([DOOR_OPEN]))[0];
@@ -1097,6 +1424,7 @@ export default function PixelTestMapPage() {
       // ── Scene ────────────────────────────────────────────────────────────────
       const worldContainer = new PIXI.Container();
       worldContainer.sortableChildren = true;
+      worldContainer.scale.set(zoom);
       app.stage.addChild(worldContainer);
 
       const uiContainer = new PIXI.Container();
@@ -1112,6 +1440,70 @@ export default function PixelTestMapPage() {
       nightOverlay.alpha = 0;
       nightOverlay.zIndex = 50000;
       app.stage.addChild(nightOverlay);
+
+      // ── Atmosphere: void zone fog ──────────────────────────────────────────────
+      const voidFogOverlay = new PIXI.Graphics();
+      voidFogOverlay.rect(-500, -500, 20000, 20000).fill({ color: 0x080612 });
+      voidFogOverlay.alpha = 0;
+      voidFogOverlay.zIndex = 49999;
+      app.stage.addChild(voidFogOverlay);
+      let voidFogTarget = 0;
+
+      // ── Atmosphere: night firefly particles ───────────────────────────────────
+      const NUM_FIREFLIES = 10;
+      const fireflies: { g: import("pixi.js").Graphics; vx: number; vy: number; phase: number }[] = [];
+      for (let f = 0; f < NUM_FIREFLIES; f++) {
+        const g = new PIXI.Graphics();
+        g.circle(0, 0, 1.5).fill({ color: 0xd4f0a0 });
+        g.alpha = 0;
+        g.zIndex = 60000;
+        g.x = Math.random() * (app.screen.width ?? 1280);
+        g.y = Math.random() * (app.screen.height ?? 720);
+        app.stage.addChild(g);
+        fireflies.push({ g, vx: (Math.random() - 0.5) * 0.4, vy: -0.2 - Math.random() * 0.3, phase: Math.random() * Math.PI * 2 });
+      }
+
+      // ── Atmosphere: zone entry banner ─────────────────────────────────────────
+      const zoneBanner = new PIXI.Text({
+        text: "",
+        style: { fontFamily: "monospace", fontSize: 22, fill: 0xe8e3d4, stroke: { color: 0x000000, width: 5 }, letterSpacing: 8 },
+      });
+      zoneBanner.anchor.set(0.5, 0.5);
+      zoneBanner.alpha = 0;
+      zoneBanner.zIndex = 70000;
+      app.stage.addChild(zoneBanner);
+      let zoneBannerTimer = 0;
+      let zoneBannerShown = false;
+
+      function showZoneBanner(text: string) {
+        zoneBanner.text = `— ${text.toUpperCase()} —`;
+        zoneBanner.x = app!.screen.width / 2;
+        zoneBanner.y = app!.screen.height * 0.35;
+        zoneBannerTimer = 150;
+        zoneBannerShown = true;
+      }
+
+      // ── Hint display (PixiJS canvas) ──────────────────────────────────────────
+      const hintText = new PIXI.Text({
+        text: "",
+        style: { fontFamily: "monospace", fontSize: 10, fill: 0xe8e3d4, stroke: { color: 0x000000, width: 3 } },
+      });
+      hintText.anchor.set(0.5, 1);
+      hintText.alpha = 0;
+      hintText.zIndex = 70001;
+      app.stage.addChild(hintText);
+      let hintTimer = 0;
+
+      const seenHints = new Set<string>();
+      function spawnHint(id: string, text: string, duration = 200) {
+        if (seenHints.has(id)) return;
+        seenHints.add(id);
+        hintText.text = text;
+        hintText.x = app!.screen.width / 2;
+        hintText.y = app!.screen.height - 28;
+        hintTimer = duration;
+        setActiveHint(text);
+      }
 
       const dawnOverlay = new PIXI.Graphics();
       dawnOverlay.rect(0, 0, 8000, 8000).fill(0xaa3300);
@@ -1151,14 +1543,37 @@ export default function PixelTestMapPage() {
       manaText.position.set(24, 48);
       uiContainer.addChild(manaText);
 
+      // Active quest tracker line
+      const questTrackerText = new PIXI.Text({
+        text: "",
+        style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 2 } },
+      });
+      questTrackerText.position.set(20, 62);
+      uiContainer.addChild(questTrackerText);
+
       // Golden State HUD indicator
       const goldenHudText = new PIXI.Text({
         text: "◇ Renowned — reach the Unyha Tree",
         style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f },
       });
-      goldenHudText.position.set(20, 66);
+      goldenHudText.position.set(20, 74);
       goldenHudText.alpha = 0;
       uiContainer.addChild(goldenHudText);
+
+      // ── Compass ───────────────────────────────────────────────────────────────
+      const compassRose = new PIXI.Text({
+        text: "N\n↑",
+        style: { fontFamily: "monospace", fontSize: 8, fill: 0x564870, align: "center" },
+      });
+      compassRose.anchor.set(0.5, 0);
+      compassRose.zIndex = 70002;
+      uiContainer.addChild(compassRose);
+      const updateCompassPos = () => {
+        compassRose.x = app!.screen.width - 28;
+        compassRose.y = 14;
+      };
+      app.renderer.on("resize", updateCompassPos);
+      updateCompassPos();
 
       // Screen vignette for Golden State
       const goldenVignette = new PIXI.Graphics();
@@ -1236,6 +1651,10 @@ export default function PixelTestMapPage() {
         };
         app?.ticker.add(tick);
       }
+      // Allow React-side code (e.g. skill-up handler) to spawn floating text at player position
+      spawnFloatingTextRef.current = (txt: string, color = 0xffe600) => {
+        spawnFloatingText(txt, knight.x, knight.y - 80, color);
+      };
 
       // ── Spell Projectiles ─────────────────────────────────────────────────────
       interface Projectile {
@@ -1327,8 +1746,14 @@ export default function PixelTestMapPage() {
           const quest = QUESTS.find(q => q.id === qId);
           if (!quest || quest.objective.type !== "kill" || m.monsterType !== quest.objective.target) continue;
           const newProg = Math.min(qp.progress + 1, quest.objective.count);
-          nextQMap[qId] = { status: newProg >= quest.objective.count ? "ready" : "active", progress: newProg };
+          const nowReady = newProg >= quest.objective.count;
+          nextQMap[qId] = { status: nowReady ? "ready" : "active", progress: newProg };
           qChanged = true;
+          if (nowReady) {
+            spawnFloatingText(`◈ ${quest.title} — complete`, m.sprite.x, m.sprite.y - 50, 0xffd98f);
+          } else {
+            spawnFloatingText(`${quest.objective.label} ${newProg}/${quest.objective.count}`, m.sprite.x, m.sprite.y - 50, 0xc8a86b);
+          }
         }
         if (qChanged) { questProgressRef.current = nextQMap; setQuestProgress(nextQMap); }
         // Void Warden kill = gold season objective
@@ -1423,17 +1848,69 @@ export default function PixelTestMapPage() {
       worldContainer.addChild(lake);
       walls.push(lakeBounds);
 
+      // ── Village internal cobblestone paths ───────────────────────────────────
       const townPaths = new PIXI.Graphics();
-      townPaths.rect(700, 900, 600, 150).fill({ texture: cobbleTex }); 
-      townPaths.rect(900, 700, 150, 600).fill({ texture: cobbleTex }); 
-      townPaths.rect(800, 800, 300, 300).fill({ texture: cobbleTex }); 
+      townPaths.rect(700, 900, 600, 150).fill({ texture: cobbleTex });
+      townPaths.rect(900, 700, 150, 600).fill({ texture: cobbleTex });
+      townPaths.rect(800, 800, 300, 300).fill({ texture: cobbleTex });
       townPaths.zIndex = -9998;
       worldContainer.addChild(townPaths);
 
-      const longRoad = new PIXI.Graphics();
-      longRoad.rect(1300, 930, 2000, 100).fill({ texture: dirtTex });
-      longRoad.zIndex = -9998;
-      worldContainer.addChild(longRoad);
+      // ── World road network ────────────────────────────────────────────────────
+      // Two-layer roads: wide pale shoulder + narrow dark surface
+      const roadShoulder = new PIXI.Graphics();
+      const roadSurface  = new PIXI.Graphics();
+      roadShoulder.zIndex = -9997;
+      roadSurface.zIndex  = -9996;
+
+      type Pt = [number, number];
+      function drawRoad(pts: Pt[], surfW: number, shoulderW: number) {
+        if (pts.length < 2) return;
+        // Shoulder (lighter border)
+        roadShoulder.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) roadShoulder.lineTo(pts[i][0], pts[i][1]);
+        roadShoulder.stroke({ width: shoulderW, color: 0x6b5535, alpha: 0.7, cap: "round", join: "round" });
+        // Surface (darker packed dirt)
+        roadSurface.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) roadSurface.lineTo(pts[i][0], pts[i][1]);
+        roadSurface.stroke({ width: surfW, color: 0x42301a, alpha: 0.85, cap: "round", join: "round" });
+      }
+
+      // North spur: Unyha Tree → Village
+      drawRoad([[800,300],[900,600],[1000,900]], 55, 75);
+
+      // North highway: Village → Mine → Ruined Village
+      drawRoad([[1100,980],[2000,960],[3450,920],[5200,800],[7000,720]], 80, 104);
+
+      // Mine south: Mine → Orc Camp
+      drawRoad([[3480,960],[3560,1500],[3700,2200]], 65, 85);
+
+      // Ruined Village → Badlands (north-south connector)
+      drawRoad([[7000,750],[7000,1600],[7000,2950]], 70, 92);
+
+      // Village → Graveyard (SE diagonal)
+      drawRoad([[1100,1050],[1800,1700],[2800,2600],[3480,3000]], 72, 94);
+
+      // Orc Camp → Graveyard connector
+      drawRoad([[3700,2250],[3600,2700],[3520,2980]], 60, 78);
+
+      // Graveyard → Wandering Merchant
+      drawRoad([[3580,3020],[4100,3100],[4500,3200]], 68, 88);
+
+      // Wandering Merchant → Badlands
+      drawRoad([[4550,3200],[5600,3120],[6600,3000],[7000,2960]], 72, 94);
+
+      // Graveyard → Deep Forest (south road, becomes more overgrown)
+      drawRoad([[3500,3060],[3500,4200],[3500,5800],[3500,8000]], 70, 88);
+
+      // Badlands → Forsaken Fort (long SE road — main artery)
+      drawRoad([[7050,2950],[8000,4200],[9000,6000],[10000,7800],[10800,9000],[11000,9350]], 85, 110);
+
+      // Fort → Void Chamber (narrow final path)
+      drawRoad([[11050,9550],[11600,9900],[12000,10200],[12400,10600]], 55, 70);
+
+      worldContainer.addChild(roadShoulder);
+      worldContainer.addChild(roadSurface);
 
       function buildHouse(world: import("pixi.js").Container, x: number, y: number, w: number, h: number) {
         const floor = new PIXI.Graphics();
@@ -1694,6 +2171,9 @@ export default function PixelTestMapPage() {
       placeStation(benchTex,  900,  760,  "woodbench");
 
       // ── Friendly NPCs ──────────────────────────────────────────────────────────
+      // npcId → quest-ready indicator text sprite
+      const npcQuestIndicators = new Map<string, import("pixi.js").Text>();
+
       for (const npc of NPC_DEFS) {
         const npcTex = npc.id === "bram" ? npcSmithTex : npc.id === "danna" ? npcQuestTex : npcVendorTex;
         const npcSprite = new PIXI.AnimatedSprite(npcTex);
@@ -1715,14 +2195,33 @@ export default function PixelTestMapPage() {
         nameLabel.zIndex = npc.y + 1;
         worldContainer.addChild(nameLabel);
 
+        // Quest-ready "!" indicator (hidden until a quest is ready to collect)
+        const questIndicator = new PIXI.Text({
+          text: "!",
+          style: { fontFamily: "monospace", fontSize: 14, fill: 0xffd98f, stroke: { color: 0x000000, width: 4 }, fontWeight: "bold" },
+        });
+        questIndicator.anchor.set(0.5, 1);
+        questIndicator.x = npc.x;
+        questIndicator.y = npc.y - 88;
+        questIndicator.zIndex = npc.y + 2;
+        questIndicator.alpha = 0;
+        worldContainer.addChild(questIndicator);
+        npcQuestIndicators.set(npc.id, questIndicator);
+
         // Capture npc in closure
         const capturedNpc = npc;
         interactables.push({
           x: npc.x, y: npc.y, radius: 80,
           isInteractive: () => true,
-          getPrompt: () => capturedNpc.type === "vendor"
-            ? `[F] Trade with ${capturedNpc.name}`
-            : `[F] Talk to ${capturedNpc.name}`,
+          getPrompt: () => {
+            const hasReady = capturedNpc.questIds?.some(
+              qid => questProgressRef.current[qid]?.status === "ready"
+            );
+            const base = capturedNpc.type === "vendor"
+              ? `[F] Trade with ${capturedNpc.name}`
+              : `[F] Talk to ${capturedNpc.name}`;
+            return hasReady ? `${base} — quest ready` : base;
+          },
           onInteract: () => {
             const mode: UiMode = capturedNpc.type === "vendor" ? "shop" : "dialogue";
             uiModeRef.current = mode;
@@ -1763,6 +2262,222 @@ export default function PixelTestMapPage() {
         }
       }
 
+      // ── Helper: scatter sprites in a region ───────────────────────────────────
+      function scatterSprites(
+        textures: import("pixi.js").Texture[],
+        count: number,
+        x0: number, y0: number, x1: number, y1: number,
+        scale = 1,
+        isCollidable = false,
+        exclusions: [number,number,number,number][] = [],
+      ) {
+        for (let i = 0; i < count; i++) {
+          const tx = x0 + Math.random() * (x1 - x0);
+          const ty = y0 + Math.random() * (y1 - y0);
+          if (exclusions.some(([ex,ey,ew,eh]) => tx>ex && tx<ex+ew && ty>ey && ty<ey+eh)) continue;
+          const tex = textures[Math.floor(Math.random() * textures.length)];
+          const sp = new PIXI.Sprite(tex);
+          sp.anchor.set(0.5, 1);
+          sp.x = tx; sp.y = ty;
+          sp.scale.set(scale * (0.85 + Math.random() * 0.3));
+          sp.zIndex = ty;
+          worldContainer.addChild(sp);
+          if (isCollidable) {
+            trees.push(sp);
+            walls.push({ x: tx - 28 * scale, y: ty - 36 * scale, w: 56 * scale, h: 36 * scale });
+          }
+        }
+      }
+
+      // ── Zone ground overlays ──────────────────────────────────────────────────
+
+      // Badlands: sandy dirt ground (x:4800-9200, y:1000-5200)
+      const badlandsGround = new PIXI.Graphics();
+      badlandsGround.rect(4800, 1000, 4400, 4200).fill({ texture: dirtTex });
+      badlandsGround.alpha = 0.55;
+      badlandsGround.zIndex = -9998;
+      worldContainer.addChild(badlandsGround);
+
+      // Ruined Village: dirt/rubble ground (x:5700-8300, y:100-1500)
+      const ruinGround = new PIXI.Graphics();
+      ruinGround.rect(5700, 100, 2600, 1400).fill({ texture: dirtTex });
+      ruinGround.alpha = 0.45;
+      ruinGround.zIndex = -9998;
+      worldContainer.addChild(ruinGround);
+
+      // Deep Forest: darker ground tint (x:1400-6200, y:4800-10500)
+      const forestGround = new PIXI.Graphics();
+      forestGround.rect(1400, 4800, 4800, 5700).fill({ color: 0x0a1208 });
+      forestGround.alpha = 0.35;
+      forestGround.zIndex = -9998;
+      worldContainer.addChild(forestGround);
+
+      // Forsaken Fort zone: dark cobble ground (x:8800-13200, y:6800-12200)
+      const fortGround = new PIXI.Graphics();
+      fortGround.rect(8800, 6800, 4400, 5400).fill({ texture: cobbleTex });
+      fortGround.alpha = 0.4;
+      fortGround.zIndex = -9999;
+      worldContainer.addChild(fortGround);
+
+      // ── Forsaken Fort structure ────────────────────────────────────────────────
+      // Outer fort walls centred around (11000, 9400), 1800×1400
+      {
+        const FX = 10100, FY = 8700, FW = 1800, FH = 1400;
+        const WALL = 90;
+        const TOWER = 200;
+        const wallColor = 0x2a2630;
+        const towerColor = 0x1e1c24;
+
+        // Ground inside fort
+        const fortFloor = new PIXI.Graphics();
+        fortFloor.rect(FX, FY, FW, FH).fill({ texture: cobbleTex });
+        fortFloor.zIndex = -9997;
+        worldContainer.addChild(fortFloor);
+
+        // North wall
+        const nWall = new PIXI.Graphics();
+        nWall.rect(FX, FY, FW, WALL).fill({ color: wallColor });
+        nWall.zIndex = FY + WALL;
+        worldContainer.addChild(nWall);
+        walls.push({ x: FX, y: FY, w: FW, h: WALL });
+
+        // South wall (gap in centre for gate)
+        const gateW = 220;
+        const gateCx = FX + FW / 2;
+        const sWall1 = new PIXI.Graphics();
+        sWall1.rect(FX, FY + FH - WALL, gateCx - FX - gateW / 2, WALL).fill({ color: wallColor });
+        sWall1.zIndex = FY + FH;
+        worldContainer.addChild(sWall1);
+        walls.push({ x: FX, y: FY + FH - WALL, w: gateCx - FX - gateW / 2, h: WALL });
+        const sWall2 = new PIXI.Graphics();
+        sWall2.rect(gateCx + gateW / 2, FY + FH - WALL, FX + FW - gateCx - gateW / 2, WALL).fill({ color: wallColor });
+        sWall2.zIndex = FY + FH;
+        worldContainer.addChild(sWall2);
+        walls.push({ x: gateCx + gateW / 2, y: FY + FH - WALL, w: FX + FW - gateCx - gateW / 2, h: WALL });
+
+        // West wall
+        const wWall = new PIXI.Graphics();
+        wWall.rect(FX, FY + WALL, WALL, FH - WALL * 2).fill({ color: wallColor });
+        wWall.zIndex = FY + FH / 2;
+        worldContainer.addChild(wWall);
+        walls.push({ x: FX, y: FY + WALL, w: WALL, h: FH - WALL * 2 });
+
+        // East wall
+        const eWall = new PIXI.Graphics();
+        eWall.rect(FX + FW - WALL, FY + WALL, WALL, FH - WALL * 2).fill({ color: wallColor });
+        eWall.zIndex = FY + FH / 2;
+        worldContainer.addChild(eWall);
+        walls.push({ x: FX + FW - WALL, y: FY + WALL, w: WALL, h: FH - WALL * 2 });
+
+        // Corner towers
+        for (const [tx, ty] of [[FX-20, FY-20],[FX+FW-TOWER+20, FY-20],[FX-20, FY+FH-TOWER+20],[FX+FW-TOWER+20, FY+FH-TOWER+20]] as [number,number][]) {
+          const tower = new PIXI.Graphics();
+          tower.rect(tx, ty, TOWER, TOWER).fill({ color: towerColor });
+          tower.zIndex = ty + TOWER;
+          worldContainer.addChild(tower);
+          walls.push({ x: tx, y: ty, w: TOWER, h: TOWER });
+        }
+
+        // Keep/throne room — inner building at north centre
+        const kx = FX + FW/2 - 200, ky = FY + WALL + 80;
+        const keepG = new PIXI.Graphics();
+        keepG.rect(kx, ky, 400, 300).fill({ color: 0x181620 });
+        keepG.zIndex = ky + 300;
+        worldContainer.addChild(keepG);
+        walls.push({ x: kx, y: ky, w: 400, h: 300 });
+        // Keep door
+        interactables.push({
+          x: kx + 200, y: ky + 300, radius: 60,
+          isInteractive: () => true,
+          getPrompt: () => "[F] Enter Keep",
+          onInteract: () => {},
+        });
+
+        // Battlements — decorative crenellations on north wall top
+        for (let bx = FX + 60; bx < FX + FW - 60; bx += 80) {
+          const cren = new PIXI.Graphics();
+          cren.rect(bx, FY - 30, 40, 30).fill({ color: 0x22202a });
+          cren.zIndex = FY;
+          worldContainer.addChild(cren);
+        }
+
+        // Add some campfires inside the fort (static decorative — campfireSprites not yet declared here)
+        for (const [cfx, cfy] of [[FX+400, FY+300],[FX+FW-400, FY+300],[FX+FW/2, FY+FH-300]] as [number,number][]) {
+          const fire = new PIXI.Sprite(fireTex1);
+          fire.anchor.set(0.5, 1);
+          fire.x = cfx; fire.y = cfy;
+          fire.zIndex = cfy;
+          worldContainer.addChild(fire);
+        }
+
+        // Fort labels
+        const fortLabel = new PIXI.Text({
+          text: "Forsaken Fort",
+          style: { fontFamily: "monospace", fontSize: 12, fill: 0x564870, stroke: { color: 0x000000, width: 3 } },
+        });
+        fortLabel.anchor.set(0.5, 1);
+        fortLabel.position.set(FX + FW/2, FY - 40);
+        fortLabel.zIndex = 99999;
+        worldContainer.addChild(fortLabel);
+      }
+
+      // ── Deep Forest terrain: dense trees + undergrowth ────────────────────────
+      // Core deep forest: x:1500-6000, y:5000-10500 (very dense)
+      scatterSprites([pineTextures[0]], 3500, 1500, 5000, 6000, 10500, 1.0, true,
+        [[1400, 4800, 200, 200]]  // tiny exclusion at entry point
+      );
+      // Undergrowth in forest
+      scatterSprites([bushTex, flowerTex], 1500, 1500, 5000, 6000, 10500, 1.2);
+      // Forest mushrooms (decorative, non-harvest)
+      scatterSprites([boulderTex], 200, 1500, 5000, 6000, 10500, 0.5);
+      // Dead trees in forest depths
+      scatterSprites([deadTreeTex], 400, 2000, 7000, 5800, 10500, 1.0, true);
+
+      // ── Eastern Badlands terrain: sparse, rocky, dead ─────────────────────────
+      // Sparse dead trees
+      scatterSprites([deadTreeTex], 300, 5000, 1500, 9000, 5000, 1.0, true);
+      // Boulders and rocks
+      scatterSprites([boulderTex], 600, 5000, 1500, 9000, 5000, 1.0);
+      scatterSprites([rockTex],    400, 5000, 1500, 9000, 5000, 0.8);
+      // A few rock clusters (stumpTex declared later, use rockTex here)
+      scatterSprites([rockTex],    150, 5000, 1500, 9000, 5000, 0.7);
+      // Rare bushes
+      scatterSprites([bushTex],    200, 5000, 1500, 9000, 5000, 0.9);
+
+      // ── Ruined Village terrain: dead trees growing through ruins ─────────────
+      scatterSprites([deadTreeTex], 120, 5800, 200, 8200, 1400, 0.9, true,
+        // avoid the exact ruin wall positions (rough exclusion)
+        [[6000, 200, 2200, 1200]]  // covered by ruin block itself
+      );
+      scatterSprites([boulderTex], 80, 5800, 200, 8200, 1400, 0.8);
+      scatterSprites([bushTex],    100, 5800, 200, 8200, 1400, 1.1); // overgrown
+
+      // ── Forsaken Fort zone: rubble and dead trees outside walls ──────────────
+      scatterSprites([deadTreeTex], 250, 9000, 7000, 13000, 12000, 1.0, true,
+        // keep inside fort clear
+        [[10100, 8700, 1800, 1400]]
+      );
+      scatterSprites([boulderTex], 350, 9000, 7000, 13000, 12000, 0.9,  false,
+        [[10100, 8700, 1800, 1400]]
+      );
+      scatterSprites([rockTex],    200, 9000, 7000, 13000, 12000, 0.8,  false,
+        [[10100, 8700, 1800, 1400]]
+      );
+
+      // ── Graveyard area: sparse dead trees around plot ─────────────────────────
+      scatterSprites([deadTreeTex], 30, 2400, 2400, 3600, 3600, 0.9, true);
+      scatterSprites([bushTex],     25, 2400, 2400, 3600, 3600, 0.8);
+
+      // ── Mid-map transition (x:4000-5000, all y) and (x:0-6000, y:4000-5200) ──
+      scatterSprites([pineTextures[0]], 400, 4000, 0, 5000, 5000, 1.0, true);
+      scatterSprites([bushTex],         200, 4000, 0, 5000, 5000, 1.0);
+      scatterSprites([pineTextures[0]], 600, 0, 4000, 1500, 5000, 1.0, true);
+      scatterSprites([bushTex],         300, 0, 4000, 1500, 5000, 1.0);
+      // Forest south of orc camp bridging deep forest entry
+      scatterSprites([pineTextures[0]], 800, 0, 3500, 5000, 5000, 1.0, true,
+        [[3400, 1800, 700, 900]]  // avoid orc camp
+      );
+
       const lanternPositions = [
         [880, 930], [1120, 930], [880, 1070], [1120, 1070],
         [1000, 830], [1000, 1170]
@@ -1793,8 +2508,8 @@ export default function PixelTestMapPage() {
 
       const knight = new PIXI.AnimatedSprite(idleFrontTextures);
       knight.anchor.set(0.5, 1);
-      knight.x = 1050;
-      knight.y = 1050;
+      knight.x = landingPos.x;
+      knight.y = landingPos.y;
       knight.animationSpeed = 3 / 60;
       knight.play();
       worldContainer.addChild(knight);
@@ -2367,48 +3082,112 @@ export default function PixelTestMapPage() {
         },
       });
 
-      // ── Unyha Tree ─────────────────────────────────────────────────────────────
+      // ── Unyha Tree Network ─────────────────────────────────────────────────────
+      // Each tree is a bind point; from any bound tree you can teleport to others.
+      const allTreeRings: import("pixi.js").Graphics[] = [];
+
+      // First Unyha Tree is also the narration hub (Autochronicle)
       const UNYHA_TREE_X = 250;
       const UNYHA_TREE_Y = 350;
 
-      // Large gold-tinted pine as the sacred tree
-      const unyhTreeSprite = new PIXI.Sprite(pineTextures[0]);
-      unyhTreeSprite.anchor.set(0.5, 1);
-      unyhTreeSprite.x = UNYHA_TREE_X;
-      unyhTreeSprite.y = UNYHA_TREE_Y;
-      unyhTreeSprite.scale.set(2.5);
-      unyhTreeSprite.tint = 0xffd98f;
-      unyhTreeSprite.zIndex = UNYHA_TREE_Y;
-      worldContainer.addChild(unyhTreeSprite);
-      walls.push({ x: UNYHA_TREE_X - 18, y: UNYHA_TREE_Y - 50, w: 36, h: 50 });
+      function buildUnyhTree(tx: number, ty: number, locationId: string, isNarrationHub = false) {
+        const sprite = new PIXI.Sprite(pineTextures[0]);
+        sprite.anchor.set(0.5, 1);
+        sprite.x = tx; sprite.y = ty;
+        sprite.scale.set(2.5);
+        sprite.tint = 0xffd98f;
+        sprite.zIndex = ty;
+        worldContainer.addChild(sprite);
+        walls.push({ x: tx - 18, y: ty - 50, w: 36, h: 50 });
 
-      // Pulsing ring (updated in ticker)
-      const treeRing = new PIXI.Graphics();
-      treeRing.x = UNYHA_TREE_X;
-      treeRing.y = UNYHA_TREE_Y - 30;
-      treeRing.zIndex = UNYHA_TREE_Y - 1;
-      worldContainer.addChild(treeRing);
+        const ring = new PIXI.Graphics();
+        ring.x = tx; ring.y = ty - 30;
+        ring.zIndex = ty - 1;
+        worldContainer.addChild(ring);
+        allTreeRings.push(ring);
 
-      // Name label
-      const treeLabel = new PIXI.Text({
-        text: "Unyha Tree",
-        style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 3 } },
+        const label = new PIXI.Text({
+          text: locationId,
+          style: { fontFamily: "monospace", fontSize: 10, fill: 0xffd98f, stroke: { color: 0x000000, width: 3 } },
+        });
+        label.anchor.set(0.5, 1);
+        label.x = tx; label.y = ty - 88;
+        label.zIndex = ty + 1;
+        worldContainer.addChild(label);
+
+        interactables.push({
+          x: tx, y: ty, radius: 90,
+          isInteractive: () => true,
+          getPrompt: () => {
+            const bound = boundTreesRef.current.includes(locationId);
+            if (isNarrationHub && localGoldenState) return "[F] Narrate your deeds";
+            if (!bound) return "[F] Bind to Unyha Tree";
+            return boundTreesRef.current.length > 1 ? "[F] Unyha Network" : "[F] Bound — find more trees";
+          },
+          onInteract: () => {
+            // Bind if not yet bound
+            if (!boundTreesRef.current.includes(locationId)) {
+              setBoundTrees(prev => {
+                const next = [...prev, locationId];
+                boundTreesRef.current = next;
+                return next;
+              });
+              spawnFloatingText("Bound.", tx, ty - 100, 0xffd98f);
+              firedMilestonesRef.current.add(`tree:bound:${locationId}`);
+              addChronicleRef.current(`${charRef.current?.name ?? "They"} bound their spirit to the Unyha Tree at ${locationId}.`, 3, "milestone");
+            }
+            // Open narration hub
+            if (isNarrationHub && localGoldenState) {
+              uiModeRef.current = "narration";
+              setUiMode("narration");
+              return;
+            }
+            // Open teleport network if 2+ trees bound
+            if (boundTreesRef.current.length > 1) {
+              setUnyhNetworkTarget(locationId);
+              uiModeRef.current = "unyha_network";
+              setUiMode("unyha_network");
+            }
+          },
+        });
+      }
+
+      buildUnyhTree(UNYHA_TREE_X, UNYHA_TREE_Y, "Village", true);  // narration hub
+      buildUnyhTree(3200, 750,   "The Mine");
+      buildUnyhTree(6800, 600,   "Ruined Village");
+      buildUnyhTree(10600, 9200, "Forsaken Fort");
+
+      // Teleport handler (called from the network panel)
+      const UNYHA_TREE_POSITIONS: Record<string, [number, number]> = {
+        "Village":       [UNYHA_TREE_X, UNYHA_TREE_Y],
+        "The Mine":      [3200, 750],
+        "Ruined Village":[6800, 600],
+        "Forsaken Fort": [10600, 9200],
+      };
+      let teleportFade = 0; // >0 = fading, <0 = arriving
+      let teleportDestX = 0, teleportDestY = 0;
+      // Full-screen black overlay for teleport fade — must be on app.stage so it
+      // covers everything regardless of zoom or uiContainer sort order.
+      const fadeOverlay = new PIXI.Graphics();
+      fadeOverlay.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x000000 });
+      fadeOverlay.alpha = 0;
+      app.stage.addChild(fadeOverlay); // added last → renders on top
+      // Resize handler keeps it covering the full screen
+      app.renderer.on("resize", () => {
+        fadeOverlay.clear();
+        fadeOverlay.rect(0, 0, app!.screen.width, app!.screen.height).fill({ color: 0x000000 });
       });
-      treeLabel.anchor.set(0.5, 1);
-      treeLabel.x = UNYHA_TREE_X;
-      treeLabel.y = UNYHA_TREE_Y - 85;
-      treeLabel.zIndex = UNYHA_TREE_Y + 1;
-      worldContainer.addChild(treeLabel);
 
-      interactables.push({
-        x: UNYHA_TREE_X, y: UNYHA_TREE_Y, radius: 90,
-        isInteractive: () => true,
-        getPrompt: () => localGoldenState ? "[F] Narrate your deeds" : "[F] Unyha Tree",
-        onInteract: () => {
-          uiModeRef.current = "narration";
-          setUiMode("narration");
-        },
-      });
+      teleportToRef.current = (treeId: string) => {
+        const pos = UNYHA_TREE_POSITIONS[treeId];
+        if (!pos) return;
+        teleportDestX = pos[0];
+        teleportDestY = pos[1];
+        teleportFade = 30; // start fade-out
+        uiModeRef.current = "closed";
+        setUiMode("closed");
+        setUnyhNetworkTarget(null);
+      };
 
       // ── State machine ─────────────────────────────────────────────────────────
       type State = "idle" | "walk" | "attack" | "dash" | "dead";
@@ -2483,8 +3262,8 @@ export default function PixelTestMapPage() {
       }
 
       resetPlayerRef.current = () => {
-        knight.x = 1050;
-        knight.y = 1050;
+        knight.x = landingPos.x;
+        knight.y = landingPos.y;
         knight.scale.x = 1;
         dashCooldown = 0;
         facing = "front";
@@ -2503,9 +3282,9 @@ export default function PixelTestMapPage() {
         const up = keys["ArrowUp"] || keys["w"];
         const down = keys["ArrowDown"] || keys["s"];
 
-        // Mouse aim offset from knight (screen centre = knight position)
-        const mDx = mouseX - app!.screen.width / 2;
-        const mDy = mouseY - app!.screen.height / 2;
+        // Mouse aim offset from knight in world space (divide out zoom)
+        const mDx = (mouseX - app!.screen.width / 2) / zoom;
+        const mDy = (mouseY - app!.screen.height / 2) / zoom;
 
         let newFacing = facing;
         if (down) newFacing = "front";
@@ -2687,7 +3466,8 @@ export default function PixelTestMapPage() {
       drawCursor(undefined);
 
       // ── Ticker ────────────────────────────────────────────────────────────────
-      app.ticker.add(() => {
+      app.ticker.add((ticker) => {
+        const dt = ticker.deltaTime; // ~1.0 at 60fps; >1 when lagging
         tickCount++;
 
         // ── Day/Night cycle (advances regardless of UI state) ─────────────────
@@ -2761,8 +3541,18 @@ export default function PixelTestMapPage() {
           saveGameTime(gameDay, tickInDay);
         }
 
+        // ── NPC quest-ready indicators ────────────────────────────────────────
+        for (const npc of NPC_DEFS) {
+          const indicator = npcQuestIndicators.get(npc.id);
+          if (!indicator) continue;
+          const hasReady = npc.questIds?.some(qid => questProgressRef.current[qid]?.status === "ready") ?? false;
+          const targetAlpha = hasReady ? (0.6 + 0.4 * Math.sin(tickCount * 0.08)) : 0;
+          indicator.alpha += (targetAlpha - indicator.alpha) * 0.1;
+        }
+
         // ── Custom cursor ────────────────────────────────────────────────────
-        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current || seasonEndScreenRef.current;
+        playerPosRef.current = { x: knight.x, y: knight.y };
+        const uiOpen = uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || showWorldMapRef.current || deathScreenRef.current || seasonEndScreenRef.current;
         cursorGfx.visible = !uiOpen;
         cursorGfx.x = mouseX;
         cursorGfx.y = mouseY;
@@ -2772,7 +3562,7 @@ export default function PixelTestMapPage() {
           drawCursor(curWeapon);
         }
 
-        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || deathScreenRef.current || seasonEndScreenRef.current) {
+        if (uiModeRef.current !== "closed" || charCreationRef.current || showCharPanelRef.current || showHousePanelRef.current || showWorldMapRef.current || deathScreenRef.current || seasonEndScreenRef.current) {
           // Flush keys so nothing is still "held" when the UI closes
           for (const k of Object.keys(keys)) { keys[k] = false; delete keyAge[k]; }
           for (const b of Object.keys(mouseButtons)) mouseButtons[Number(b)] = false;
@@ -2795,14 +3585,34 @@ export default function PixelTestMapPage() {
           goldenVignette.alpha = vpAlpha;
           goldenHudText.alpha = 1;
           const treePulse = 0.3 + 0.3 * Math.sin(tickCount * 0.04);
-          treeRing.clear();
-          treeRing.circle(0, 0, 45).stroke({ color: 0xffd98f, width: 2, alpha: treePulse });
+          for (const ring of allTreeRings) {
+            ring.clear();
+            ring.circle(0, 0, 45).stroke({ color: 0xffd98f, width: 2, alpha: treePulse });
+          }
         } else {
           goldenAura.clear();
           goldenVignette.alpha = 0;
           goldenHudText.alpha = 0;
-          treeRing.clear();
-          treeRing.circle(0, 0, 35).stroke({ color: 0xffd98f, width: 1, alpha: 0.2 });
+          for (const ring of allTreeRings) {
+            ring.clear();
+            ring.circle(0, 0, 35).stroke({ color: 0xffd98f, width: 1, alpha: 0.2 });
+          }
+        }
+
+        // ── Teleport fade ────────────────────────────────────────────────────────
+        if (teleportFade > 0) {
+          teleportFade -= dt;
+          fadeOverlay.alpha = Math.min(1, (30 - teleportFade) / 20);
+          if (teleportFade <= 0) {
+            knight.x = teleportDestX;
+            knight.y = teleportDestY;
+            teleportFade = -25; // start fade-in
+            spawnFloatingText("✦", teleportDestX, teleportDestY - 100, 0xffd98f);
+          }
+        } else if (teleportFade < 0) {
+          teleportFade += dt;
+          fadeOverlay.alpha = Math.max(0, (-teleportFade) / 25);
+          if (teleportFade >= 0) teleportFade = 0;
         }
 
         // ── Zone discovery ───────────────────────────────────────────────────
@@ -2822,6 +3632,84 @@ export default function PixelTestMapPage() {
               firedMilestonesRef.current.add(key);
               saveMilestones(firedMilestonesRef.current);
               addChronicleRef.current(text, fame);
+            }
+          }
+        }
+
+        // ── Zone atmosphere (fog) ────────────────────────────────────────────────
+        {
+          const kx = knight.x, ky = knight.y;
+          const inDeepForest = kx < 6000 && ky > 5000;
+          const inFortZone   = kx > 9000 && ky > 7000;
+          voidFogTarget = inFortZone ? 0.28 : inDeepForest ? 0.18 : 0;
+          const fogStep = 0.003 * dt;
+          if (voidFogOverlay.alpha < voidFogTarget) voidFogOverlay.alpha = Math.min(voidFogTarget, voidFogOverlay.alpha + fogStep);
+          else if (voidFogOverlay.alpha > voidFogTarget) voidFogOverlay.alpha = Math.max(voidFogTarget, voidFogOverlay.alpha - fogStep);
+        }
+
+        // ── Night firefly particles ──────────────────────────────────────────────
+        if (isNight) {
+          const targetAlpha = 0.7 + 0.3 * Math.sin(tickCount * 0.03);
+          for (const f of fireflies) {
+            f.g.alpha = Math.min(targetAlpha, f.g.alpha + 0.02 * dt);
+            f.g.x += f.vx * dt;
+            f.g.y += f.vy * dt;
+            f.g.tint = 0xd4f0a0;
+            // Drift in a slow sine wave and wrap screen
+            f.g.x += Math.sin(tickCount * 0.01 + f.phase) * 0.3;
+            if (f.g.y < -10) { f.g.y = app!.screen.height + 10; f.g.x = Math.random() * app!.screen.width; }
+            if (f.g.x < -10 || f.g.x > app!.screen.width + 10) f.g.x = Math.random() * app!.screen.width;
+          }
+        } else {
+          for (const f of fireflies) {
+            f.g.alpha = Math.max(0, f.g.alpha - 0.01 * dt);
+          }
+        }
+
+        // ── Zone entry banner ────────────────────────────────────────────────────
+        if (zoneBannerTimer > 0) {
+          zoneBannerTimer -= dt;
+          zoneBanner.x = app!.screen.width / 2;
+          zoneBanner.y = app!.screen.height * 0.35;
+          zoneBanner.alpha = zoneBannerTimer > 120 ? Math.min(1, (150 - zoneBannerTimer) / 15)
+                           : zoneBannerTimer < 30  ? zoneBannerTimer / 30
+                           : 1;
+        } else if (zoneBannerShown) {
+          zoneBanner.alpha = 0;
+          zoneBannerShown = false;
+        }
+
+        // ── Contextual hints ─────────────────────────────────────────────────────
+        if (hintTimer > 0) {
+          hintTimer -= dt;
+          hintText.x = app!.screen.width / 2;
+          hintText.y = app!.screen.height - 28;
+          hintText.alpha = hintTimer > 150 ? Math.min(1, (200 - hintTimer) / 20)
+                         : hintTimer < 40  ? hintTimer / 40
+                         : 1;
+        } else {
+          hintText.alpha = 0;
+          if (activeHintRef.current) setActiveHint(null);
+        }
+        // Trigger hints based on game state
+        if (gameDay === 1 && tickCount < 200) spawnHint("start", "The Unyha Tree glows to the north. Reach it before you fall.");
+        if (isNight && !seenHints.has("night")) spawnHint("night", "Enemies grow bolder at night.");
+        if (playerHp / Math.max(1, playerMaxHp) < 0.4) spawnHint("lowhp", "Low HP — press E to use a potion, or rest near a campfire.");
+
+        // Zone discovery → banner
+        {
+          const kx = knight.x, ky = knight.y;
+          const bannerChecks: [string, () => boolean, string][] = [
+            ["banner:badlands",    () => kx > 5000 && ky < 5000,  "Eastern Badlands"],
+            ["banner:deepforest",  () => ky > 5000,               "Deep Forest"],
+            ["banner:fort",        () => kx > 9000 && ky > 7000,  "Forsaken Fort"],
+            ["banner:ruin",        () => kx > 5800 && ky < 1400,  "Ruined Village"],
+            ["banner:graveyard",   () => Math.hypot(kx-3500, ky-3000) < 400, "The Graveyard"],
+          ];
+          for (const [key, check, label] of bannerChecks) {
+            if (!firedMilestonesRef.current.has(key) && check()) {
+              firedMilestonesRef.current.add(key);
+              showZoneBanner(label);
             }
           }
         }
@@ -2885,8 +3773,8 @@ export default function PixelTestMapPage() {
             if (!spellConsumed && (keys["q"]) && (state === "idle" || state === "walk")) {
               if (playerMana >= 8) {
                 spellConsumed = true;
-                const wx = knight.x + (mouseX - app!.screen.width / 2);
-                const wy = knight.y + (mouseY - app!.screen.height / 2);
+                const wx = knight.x + (mouseX - app!.screen.width / 2) / zoom;
+                const wy = knight.y + (mouseY - app!.screen.height / 2) / zoom;
                 castFirebolt(knight.x, knight.y, wx, wy);
                 spawnFloatingText("Firebolt", knight.x, knight.y - 65, 0xe16565);
               }
@@ -2894,18 +3782,34 @@ export default function PixelTestMapPage() {
             if (!keys["q"]) spellConsumed = false;
 
             if (!healConsumed && (keys["e"]) && (state === "idle" || state === "walk")) {
+              healConsumed = true;
               const effectiveMagery = (charRef.current?.skills.Magery ?? 0) + (equipBonusRef.current.Magery ?? 0);
               if (playerMana >= 12 && effectiveMagery >= 100) {
-                healConsumed = true;
                 castHealSelf();
+              } else {
+                const potionIdx = inventoryRef.current.findIndex(i => i?.id === "heal_potion" && i.qty > 0);
+                if (potionIdx !== -1) {
+                  removeItemRef.current("heal_potion", 1);
+                  playerHp = Math.min(playerMaxHp, playerHp + 40);
+                  spawnFloatingText("🧪 +40 HP", knight.x, knight.y - 70, 0x6dbd6d);
+                } else {
+                  const bandageIdx = inventoryRef.current.findIndex(i => i?.id === "bandage" && i.qty > 0);
+                  if (bandageIdx !== -1) {
+                    removeItemRef.current("bandage", 1);
+                    playerHp = Math.min(playerMaxHp, playerHp + 20);
+                    spawnFloatingText("🩹 +20 HP", knight.x, knight.y - 70, 0x6dbd6d);
+                  } else {
+                    spawnHint("no_heal_item", "No potions — buy them from a Healer in any settlement.");
+                  }
+                }
               }
             }
             if (!keys["e"]) healConsumed = false;
 
             if (state === "attack" && knight.currentFrame === 2 && slashTimer === 0) {
               const isBow = equipmentRef.current.mainhand?.id === "short_bow";
-              const rawDx = mouseX - app!.screen.width / 2;
-              const rawDy = mouseY - app!.screen.height / 2;
+              const rawDx = (mouseX - app!.screen.width / 2) / zoom;
+              const rawDy = (mouseY - app!.screen.height / 2) / zoom;
 
               if (isBow) {
                 const hasArrow = inventoryRef.current.some(i => i.id === "arrow" && i.qty > 0);
@@ -2993,7 +3897,7 @@ export default function PixelTestMapPage() {
 
             if (state === "dash") {
               dashTimer--;
-              tryMoveEntity(knight, dashDirX, dashDirY, 6);
+              tryMoveEntity(knight, dashDirX, dashDirY, 12 * dt);
               knight.x = Math.max(40, Math.min(15960, knight.x));
               knight.y = Math.max(40, Math.min(15960, knight.y));
 
@@ -3025,7 +3929,7 @@ export default function PixelTestMapPage() {
 
               if (dx !== 0 || dy !== 0) {
                 const len = Math.hypot(dx, dy);
-                tryMoveEntity(knight, dx / len, dy / len, 2);
+                tryMoveEntity(knight, dx / len, dy / len, 4 * dt);
               }
 
               knight.x = Math.max(40, Math.min(15960, knight.x));
@@ -3095,14 +3999,14 @@ export default function PixelTestMapPage() {
 
           if (m.knockback > 0) {
             m.knockback--;
-            tryMoveEntity(m.sprite, m.vx, m.vy, 4);
+            tryMoveEntity(m.sprite, m.vx, m.vy, 4 * dt);
           } else {
             const dist = distToPlayer;
             if (dist < m.detectRadius && state !== "dead") {
               m.state = "chase";
               m.vx = (knight.x - m.sprite.x) / dist;
               m.vy = (knight.y - m.sprite.y) / dist;
-              tryMoveEntity(m.sprite, m.vx, m.vy, m.speed);
+              tryMoveEntity(m.sprite, m.vx, m.vy, m.speed * dt);
 
               if (m.vx > 0) m.sprite.scale.x = m.sprite.scale.x < 0 ? -m.sprite.scale.x : m.sprite.scale.x;
               else if (m.vx < 0) m.sprite.scale.x = m.sprite.scale.x > 0 ? -m.sprite.scale.x : m.sprite.scale.x;
@@ -3125,6 +4029,7 @@ export default function PixelTestMapPage() {
                 lastHitBy = m.displayName ? `the ${m.displayName}` : (MONSTER_DISPLAY_NAMES[m.monsterType] ?? `a ${m.monsterType}`);
                 gainSkillRef.current("Defense", 3);
                 spawnFloatingText(`-${dmgTaken}`, knight.x, knight.y - 40, 0xff0000);
+                spawnHint("firsthit", "J or LMB to attack · Shift to dash · E to heal");
 
                 if (playerHp <= 0) {
                   dieConsumed = true;
@@ -3177,6 +4082,22 @@ export default function PixelTestMapPage() {
         }
         manaBar.width = Math.max(0, (playerMana / Math.max(1, playerMaxMana)) * 200);
         manaText.text = `${Math.floor(playerMana)}/${playerMaxMana}`;
+
+        // Active quest tracker
+        {
+          const qp = questProgressRef.current;
+          const activeEntry = Object.entries(qp).find(([, v]) => v.status === "active" || v.status === "ready");
+          if (activeEntry) {
+            const [qid, qstate] = activeEntry;
+            const qdef = QUESTS.find(q => q.id === qid);
+            if (qdef) {
+              const label = qstate.status === "ready" ? "✓ Return to complete" : `${qdef.title}: ${qstate.progress}/${qdef.objective?.count ?? "?"}`;
+              questTrackerText.text = `◈ ${label}`;
+            }
+          } else {
+            questTrackerText.text = "";
+          }
+        }
 
         // Projectile updates
         // ── Void Warden boss phases ───────────────────────────────────────────
@@ -3328,8 +4249,8 @@ export default function PixelTestMapPage() {
 
         for (let pi = projectiles.length - 1; pi >= 0; pi--) {
           const p = projectiles[pi];
-          p.x += p.vx; p.y += p.vy;
-          p.life--;
+          p.x += p.vx * dt; p.y += p.vy * dt;
+          p.life -= dt;
           p.gfx.x = p.x; p.gfx.y = p.y;
           p.gfx.alpha = Math.min(1, p.life / 8);
           let hit = false;
@@ -3446,11 +4367,13 @@ export default function PixelTestMapPage() {
           }
         }
 
-        worldContainer.x = app!.screen.width / 2 - knight.x;
-        worldContainer.y = app!.screen.height / 2 - knight.y;
+        worldContainer.x = app!.screen.width / 2 - knight.x * zoom;
+        worldContainer.y = app!.screen.height / 2 - knight.y * zoom;
       });
 
       (app as any)._cleanup = () => {
+        app?.renderer.off("resize", applyZoom);
+        app?.renderer.off("resize", updateCompassPos);
         window.removeEventListener("keydown", onDown);
         window.removeEventListener("keyup", onUp);
         window.removeEventListener("mousemove", onMouseMove);
@@ -3467,7 +4390,7 @@ export default function PixelTestMapPage() {
       (app as any)?._cleanup?.();
       app?.destroy(true, { children: true, texture: true });
     };
-  }, [sessionKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionKey, tutorialWorldDone, landingPos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -3534,9 +4457,31 @@ export default function PixelTestMapPage() {
           Unyha — Pixel World
         </p>
         <p className="font-mono text-[9px] tracking-[0.2em] text-white/20 uppercase">
-          WASD move · LMB / J attack · Shift dash · Q firebolt · E heal · F interact · I inventory · C character · H house · L chronicle
+          WASD move · LMB / J attack · Shift dash · Q firebolt · E potion/heal · F interact · I inventory · C character · H house · M map · L chronicle
         </p>
       </div>
+
+      {/* ── Tutorial World ───────────────────────────────────────────────────── */}
+      {!tutorialWorldDone && house !== null && character !== null && (
+        <div className="absolute inset-0 z-[3000002]">
+          <TutorialWorld
+            charClass={character.charClass}
+            charName={character.name}
+            onComplete={() => {
+              try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
+              setTutorialWorldDone(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* ── Landing Screen (The Crossing) ────────────────────────────────────── */}
+      {tutorialWorldDone && !landingPos && character !== null && (
+        <LandingScreen
+          charName={character.name}
+          onLand={(x, y) => setLandingPos({ x, y })}
+        />
+      )}
 
       {/* ── House Creation Modal ─────────────────────────────────────────────── */}
       {house === null && (
@@ -3595,61 +4540,134 @@ export default function PixelTestMapPage() {
         </div>
       )}
 
-      {/* ── Character Creation Modal ──────────────────────────────────────────── */}
-      {house !== null && character === null && (
-        <div className="absolute inset-0 z-[2000000] flex items-center justify-center bg-[#08060a]">
-          <div className="w-[460px] bg-[#16131f] border-[4px] border-[#3d3555] p-8 flex flex-col gap-6 font-mono">
-            <div>
-              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-2" style={{ textShadow: "0 0 12px #ffd98f" }}>
-                Unyha · New Character
-              </p>
-              <h1 className="text-[#e8e3d4] text-2xl uppercase tracking-widest">Begin Your Journey</h1>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-[#a69581] text-[10px] uppercase tracking-widest">Character Name</label>
-              <input
-                type="text"
-                value={charCreationName}
-                onChange={e => setCharCreationName(e.target.value)}
-                maxLength={20}
-                placeholder="Enter your name..."
-                autoFocus
-                className="bg-[#0d0b12] border-2 border-[#3d3555] text-[#e8e3d4] px-3 py-2 text-sm focus:outline-none focus:border-[#ffd98f]"
-                onKeyDown={e => { if (e.key === "Enter") handleCreateCharacter(); }}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-[#a69581] text-[10px] uppercase tracking-widest">Class</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["Warrior", "Mage", "Ranger"] as CharClass[]).map(cls => (
-                  <button
-                    key={cls}
-                    onClick={() => setCharCreationClass(cls)}
-                    className={`border-2 p-3 text-center transition-colors ${
-                      charCreationClass === cls
-                        ? "border-[#ffd98f] bg-[#2c2640] text-[#ffd98f]"
-                        : "border-[#3d3555] text-[#a69581] hover:border-[#564870] hover:text-[#e8e3d4]"
-                    }`}
-                  >
-                    <div className="text-xs uppercase tracking-widest mb-1">{cls}</div>
-                    <div className="text-[9px] text-[#564870] leading-tight">{CLASS_DESCS[cls]}</div>
-                  </button>
-                ))}
+      {/* ── Character Creation ────────────────────────────────────────────────── */}
+      {house !== null && character === null && (() => {
+        const classGlow: Record<CharClass, string> = {
+          Warrior: "#b8442a",
+          Mage: "#7B2FBE",
+          Ranger: "#4a7a40",
+        };
+        const classLore: Record<CharClass, { icon: string; flavor: string; skills: string }> = {
+          Warrior: {
+            icon: "⚔",
+            flavor: "Built for the front lines. Takes hits, deals hits.",
+            skills: "Melee 15 · Defense 10",
+          },
+          Mage: {
+            icon: "◈",
+            flavor: "Weaves spells and stories. Fragile but deadly at range.",
+            skills: "Magery 15 · Meditation 10",
+          },
+          Ranger: {
+            icon: "🏹",
+            flavor: "Reads the land. Hunts from the shadows.",
+            skills: "Archery 15 · Huntercraft 10",
+          },
+        };
+        const glow = classGlow[charCreationClass];
+        const lore = classLore[charCreationClass];
+        return (
+          <div className="absolute inset-0 z-[2000000] flex bg-[#08060a] font-mono">
+            {/* Left: character preview */}
+            <div className="w-[45%] flex flex-col items-center justify-center relative overflow-hidden">
+              {/* Background glow */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 rounded-full opacity-10" style={{ background: glow, filter: "blur(60px)" }} />
+              </div>
+              {/* Pixel art canvas */}
+              <CharPreview key={charCreationClass} />
+              <div className="mt-6 text-center">
+                <p className="text-[10px] tracking-[0.4em] uppercase mb-1 transition-colors" style={{ color: glow }}>
+                  {lore.icon} {charCreationClass}
+                </p>
+                <p className="text-[#a69581] text-xs italic leading-relaxed max-w-[200px]">{lore.flavor}</p>
+                <p className="text-[#564870] text-[9px] mt-2">{lore.skills}</p>
               </div>
             </div>
 
-            <button
-              onClick={handleCreateCharacter}
-              disabled={!charCreationName.trim()}
-              className="border-2 border-[#ffd98f] text-[#ffd98f] py-3 uppercase tracking-widest text-sm hover:bg-[#ffd98f] hover:text-[#0d0b12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Enter the World
-            </button>
+            {/* Divider */}
+            <div className="w-px bg-[#1c1825] self-stretch" />
+
+            {/* Right: form */}
+            <div className="flex-1 flex flex-col justify-center px-12 gap-8 max-w-[480px]">
+              <div>
+                <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-3"
+                  style={{ textShadow: "0 0 12px #ffd98f" }}>
+                  {house?.name ?? "Your House"} · New Character
+                </p>
+                <h1 className="text-[#e8e3d4] text-2xl uppercase tracking-widest leading-tight">
+                  Who Enters the World?
+                </h1>
+                <p className="text-[#564870] text-[10px] mt-2 leading-relaxed">
+                  Your deeds will be recorded. Your fame will outlast your life.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-[#a69581] text-[10px] uppercase tracking-widest">Name</label>
+                <input
+                  type="text"
+                  value={charCreationName}
+                  onChange={e => setCharCreationName(e.target.value)}
+                  maxLength={20}
+                  placeholder="Enter your name..."
+                  autoFocus
+                  className="bg-[#0d0b12] border-2 border-[#3d3555] text-[#e8e3d4] px-4 py-3 text-sm focus:outline-none focus:border-[#ffd98f] tracking-wider"
+                  onKeyDown={e => { if (e.key === "Enter") handleCreateCharacter(); }}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <label className="text-[#a69581] text-[10px] uppercase tracking-widest">Class</label>
+                <div className="flex flex-col gap-2">
+                  {(["Warrior", "Mage", "Ranger"] as CharClass[]).map(cls => {
+                    const selected = charCreationClass === cls;
+                    const clsGlow = classGlow[cls];
+                    return (
+                      <button
+                        key={cls}
+                        onClick={() => setCharCreationClass(cls)}
+                        className="border-2 p-4 text-left transition-all"
+                        style={{
+                          borderColor: selected ? clsGlow : "#3d3555",
+                          background: selected ? `${clsGlow}18` : "transparent",
+                          boxShadow: selected ? `0 0 16px ${clsGlow}22` : "none",
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs uppercase tracking-widest" style={{ color: selected ? clsGlow : "#a69581" }}>
+                            {classLore[cls].icon} {cls}
+                          </span>
+                          <span className="text-[9px]" style={{ color: selected ? clsGlow : "#3d3555" }}>
+                            {classLore[cls].skills}
+                          </span>
+                        </div>
+                        <p className="text-[9px] leading-tight" style={{ color: selected ? "#a69581" : "#564870" }}>
+                          {classLore[cls].flavor}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={handleCreateCharacter}
+                disabled={!charCreationName.trim()}
+                className="border-2 py-4 uppercase tracking-widest text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  borderColor: glow,
+                  color: glow,
+                }}
+                onMouseEnter={e => { if (charCreationName.trim()) { (e.currentTarget as HTMLButtonElement).style.background = glow; (e.currentTarget as HTMLButtonElement).style.color = "#0d0b12"; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = ""; (e.currentTarget as HTMLButtonElement).style.color = glow; }}
+              >
+                Begin Your Story
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Character Panel ────────────────────────────────────────────────────── */}
       {showCharPanel && character && (
@@ -3827,6 +4845,51 @@ export default function PixelTestMapPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Unyha Network Panel ──────────────────────────────────────────────── */}
+      {uiMode === "unyha_network" && unyhNetworkTarget && (
+        <div className="absolute inset-0 z-[200000] flex items-center justify-center bg-[#08060a]/70">
+          <div className="w-[360px] bg-[#16131f] border-[3px] border-[#3d3555] p-6 flex flex-col gap-4 font-mono">
+            <div>
+              <p className="text-[#ffd98f] text-[9px] tracking-[0.5em] uppercase mb-1" style={{ textShadow: "0 0 10px #ffd98f88" }}>
+                Unyha Network
+              </p>
+              <p className="text-[#564870] text-[9px]">Bound to: {unyhNetworkTarget}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {boundTrees.filter(t => t !== unyhNetworkTarget).map(treeId => (
+                <button
+                  key={treeId}
+                  className="flex items-center justify-between border border-[#2c2640] px-4 py-2 hover:border-[#ffd98f] hover:text-[#ffd98f] text-[#a69581] text-xs uppercase tracking-widest transition-colors"
+                  onClick={() => teleportToRef.current(treeId)}
+                >
+                  <span>✦ {treeId}</span>
+                  <span className="text-[#564870] text-[9px]">Teleport</span>
+                </button>
+              ))}
+              {boundTrees.length <= 1 && (
+                <p className="text-[#564870] text-[9px] italic">Bind to more Unyha Trees to travel the network.</p>
+              )}
+            </div>
+            <button
+              className="text-[#564870] text-[9px] uppercase tracking-widest hover:text-[#a69581] transition-colors text-right"
+              onClick={() => { setUiMode("closed"); uiModeRef.current = "closed"; setUnyhNetworkTarget(null); }}
+            >
+              [Esc] Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── World Map (M) ────────────────────────────────────────────────────── */}
+      {showWorldMap && (
+        <WorldMapOverlay
+          playerPos={playerPosRef.current}
+          houseFame={house?.fame ?? 0}
+          milestones={firedMilestonesRef.current}
+          onClose={() => { setShowWorldMap(false); showWorldMapRef.current = false; }}
+        />
       )}
 
       {/* ── Death Screen ─────────────────────────────────────────────────────── */}
@@ -4028,12 +5091,17 @@ export default function PixelTestMapPage() {
                 )}
               </div>
 
-              <div className="p-5 pt-4 border-t border-[#2a2035] flex gap-3">
+              <div className="p-5 pt-4 border-t border-[#2a2035] flex flex-col gap-3">
+                <p className="text-[#564870] text-[10px] leading-relaxed text-center">
+                  Inscribing marks your unnarrated deeds as permanent — they become part of the world and can never be lost.
+                  You gain <span className="text-[#ffd98f]">+25 fame</span> and the tree&apos;s golden light resets for the next season.
+                </p>
+                <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    const name = charRef.current?.name ?? "The wanderer";
                     setChronicle(prev => { const next = prev.map(e => (!e.narrated && !e.lost) ? { ...e, narrated: true } : e); saveChronicle(next); return next; });
-                    addChronicleRef.current(`${name} narrated their deeds at the Unyha Tree. Their story is now part of the world.`, 25, "milestone");
+                    gainFameRef.current(25);
+                    spawnFloatingTextRef.current("◇ Story inscribed · +25 fame", 0xffd98f);
                     resetGoldenStateRef.current();
                     setUiMode("closed"); uiModeRef.current = "closed";
                   }}
@@ -4046,6 +5114,7 @@ export default function PixelTestMapPage() {
                   className="px-6 border border-[#3d3555] text-[#564870] uppercase tracking-widest text-xs hover:border-[#ffd98f] hover:text-[#ffd98f] transition-colors">
                   Leave
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4500,29 +5569,43 @@ export default function PixelTestMapPage() {
               {chronicle.length === 0 ? (
                 <p className="text-[#564870] text-sm italic">Your deeds have not yet been recorded.</p>
               ) : (
-                chronicle.map((entry) => (
+                chronicle.map((entry) => {
+                  const typeColor = (() => {
+                    if (entry.type === "death") return "#e16565";
+                    if (entry.type === "quest") return "#ffd98f";
+                    if (entry.type === "milestone") return "#B870F0";
+                    if (entry.type === "craft" || entry.type === "harvest") return "#9d9090";
+                    return "#c4b99a";
+                  })();
+                  return (
                   <div key={entry.ts} className="mb-4 pb-4 border-b border-[#16131f] last:border-0 last:mb-0">
+                    <div className="flex items-center justify-between mb-1">
+                      {entry.lost ? (
+                        <p className="text-[#8b3d3d] text-[9px] uppercase tracking-widest">✗ Lost</p>
+                      ) : entry.narrated ? (
+                        <p className="text-[#ffd98f] text-[9px] uppercase tracking-widest">◇ Narrated</p>
+                      ) : (
+                        <p className="text-[#564870] text-[9px] uppercase tracking-widest">○ Unnarrated</p>
+                      )}
+                      {entry.type && (
+                        <span className="text-[8px] uppercase tracking-[0.12em]" style={{ color: typeColor }}>
+                          {entry.type}
+                        </span>
+                      )}
+                    </div>
                     {entry.lost ? (
-                      <>
-                        <p className="text-[#8b3d3d] text-[9px] uppercase tracking-widest mb-1">✗ Lost</p>
-                        <p className="text-[#8b3d3d] text-sm leading-relaxed italic">{entry.text}</p>
-                      </>
+                      <p className="text-[#8b3d3d] text-sm leading-relaxed italic">{entry.text}</p>
                     ) : entry.narrated ? (
-                      <>
-                        <p className="text-[#ffd98f] text-[9px] uppercase tracking-widest mb-1">◇ Narrated</p>
-                        <p className="text-[#e8e3d4] text-sm leading-relaxed">{entry.text}</p>
-                      </>
+                      <p className="text-[#e8e3d4] text-sm leading-relaxed">{entry.text}</p>
                     ) : (
-                      <>
-                        <p className="text-[#564870] text-[9px] uppercase tracking-widest mb-1">○ Unnarrated</p>
-                        <p className="text-[#a69581] text-sm leading-relaxed">{entry.text}</p>
-                      </>
+                      <p className="text-[#a69581] text-sm leading-relaxed">{entry.text}</p>
                     )}
                     {entry.fame > 0 && (
                       <p className={`text-[10px] mt-1 ${entry.lost ? "text-[#8b3d3d]" : "text-[#ffd98f]"}`}>+{entry.fame} Fame</p>
                     )}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
             <button

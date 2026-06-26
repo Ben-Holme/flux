@@ -8,6 +8,9 @@ export const HOUSE_KEY = "unyha_house";
 export const CHRONICLE_KEY = "unyha_chronicle";
 export const MILESTONES_KEY = "unyha_milestones";
 export const GAME_TIME_KEY = "unyha_game_time";
+export const BOUND_TREES_KEY = "unyha_bound_trees";
+export const INTRO_SEEN_KEY = "unyha_intro_seen";
+export const TUTORIAL_KEY = "unyha_tutorial_done";
 
 // ── Item helpers ──────────────────────────────────────────────────────────────
 

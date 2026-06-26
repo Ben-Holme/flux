@@ -54,7 +54,7 @@ export interface NpcDef {
   greeting: string;
 }
 
-export type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting" | "narration";
+export type UiMode = "closed" | "inventory" | "looting" | "shop" | "dialogue" | "crafting" | "narration" | "unyha_network";
 
 export type CraftStationType = "forge" | "alchemy" | "loom" | "woodbench";
 
