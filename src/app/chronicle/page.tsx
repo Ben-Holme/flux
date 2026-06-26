@@ -1253,12 +1253,6 @@ export default function ChroniclePage() {
     [viewingSeason, currentNav],
   );
 
-  const prevNavLabel = navStack.length === 0
-    ? null
-    : navStack.length === 1
-      ? (viewingSeasonIdx === 0 ? "All seasons" : getSeasonLabel(displaySeasonNum))
-      : getBreadcrumbLabel(navStack[navStack.length - 2], players, items);
-
   const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
 
   return (
@@ -1517,6 +1511,40 @@ export default function ChroniclePage() {
           })()}
       </div>
 
+      {/* Season selector — eyebrow overlay at top-center of map */}
+      {apiSeasons.length > 0 && (
+        <div
+          className="pointer-events-none absolute top-3 z-10 -translate-x-1/2"
+          style={{ left: !isMobile ? "calc(50% - 170px)" : "50%" }}
+        >
+          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/8 bg-black/50 px-3 py-1.5 backdrop-blur">
+            <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/35">
+              {viewingSeasonIdx === 0
+                ? "All seasons"
+                : getSeasonLabel(displaySeasonNum) + (displaySeasonNum === apiSeasons.length ? " · Current" : "")}
+            </span>
+            <span className="pointer-events-none select-none text-[0.65rem] text-white/20">⚙</span>
+            <select
+              value={viewingSeasonIdx ?? apiSeasons.length}
+              onChange={(e) => {
+                const num = Number(e.target.value);
+                setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                setNavStack([]);
+                setSlideDir("back");
+              }}
+              className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+            >
+              <option value={0}>All seasons</option>
+              {apiSeasons.map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
       <div className="pointer-events-none absolute bottom-6 left-6 z-10 flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
@@ -1540,48 +1568,31 @@ export default function ChroniclePage() {
         <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)] backdrop-blur-lg">
           {/* Sticky header */}
           <div className="shrink-0 px-4 pt-20 pb-2">
-            {/* Season selector */}
-            {apiSeasons.length > 0 && (
-              <div className="mb-4">
-                <select
-                  value={viewingSeasonIdx ?? apiSeasons.length}
-                  onChange={(e) => {
-                    const num = Number(e.target.value);
-                    setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                    setNavStack([]);
-                    setSlideDir("back");
-                  }}
-                  className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-                >
-                  <option value={0}>All seasons</option>
-                  {apiSeasons.map((_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
             {/* iOS-style nav bar */}
             {navStack.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
-                <button
-                  onClick={popNav}
-                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                >
-                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-                </button>
-                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "36px" }}>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-start", flexShrink: 0 }}>
+                  {navStack.length > 1 && (
+                    <button
+                      onClick={popNav}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px", lineHeight: 1 }}
+                    >
+                      <span style={{ fontSize: "1.3rem", lineHeight: 1, display: "block" }}>‹</span>
+                    </button>
+                  )}
+                </div>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.9rem", letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", padding: "0 4px" }}>
                   {navBarTitle}
                 </div>
-                <button
-                  onClick={clearNav}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+                  <button
+                    onClick={clearNav}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", lineHeight: 1, padding: "4px" }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )}
             {/* Location description */}
@@ -1680,47 +1691,30 @@ export default function ChroniclePage() {
           {/* Nav controls — always visible when a location/char/item is selected */}
           {navStack.length > 0 && (
             <div className="shrink-0 px-4 pt-1 pb-0">
-              {/* Season selector */}
-              {apiSeasons.length > 0 && (
-                <div className="mb-3">
-                  <select
-                    value={viewingSeasonIdx ?? apiSeasons.length}
-                    onChange={(e) => {
-                      const num = Number(e.target.value);
-                      setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                      setNavStack([]);
-                      setSlideDir("back");
-                    }}
-                    className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-                  >
-                    <option value={0}>All seasons</option>
-                    {apiSeasons.map((_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
               {/* iOS-style nav bar */}
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "32px" }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); popNav(); }}
-                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                >
-                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-                </button>
-                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "36px" }}>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-start", flexShrink: 0 }}>
+                  {navStack.length > 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); popNav(); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px", lineHeight: 1 }}
+                    >
+                      <span style={{ fontSize: "1.3rem", lineHeight: 1, display: "block" }}>‹</span>
+                    </button>
+                  )}
+                </div>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.9rem", letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", padding: "0 4px" }}>
                   {navBarTitle}
                 </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); clearNav(); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearNav(); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", lineHeight: 1, padding: "4px" }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               {/* Location description */}
               {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
@@ -1764,29 +1758,6 @@ export default function ChroniclePage() {
               ) : (
                 <div className="text-[0.8rem] text-white/30">Story Events</div>
               )}
-            </div>
-          )}
-
-          {/* No-nav expanded controls — season selector when no location selected */}
-          {navStack.length === 0 && sheetExpanded && apiSeasons.length > 0 && (
-            <div className="shrink-0 border-b border-white/5 px-4 pt-2 pb-2">
-              <select
-                value={viewingSeasonIdx ?? apiSeasons.length}
-                onChange={(e) => {
-                  const num = Number(e.target.value);
-                  setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                  setNavStack([]);
-                  setSlideDir("back");
-                }}
-                className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-              >
-                <option value={0}>All seasons</option>
-                {apiSeasons.map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
-                  </option>
-                ))}
-              </select>
             </div>
           )}
 
