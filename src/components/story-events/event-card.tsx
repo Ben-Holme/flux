@@ -85,7 +85,7 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
 
   return (
     <div
-      className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/45 backdrop-blur-[14px]"
+      className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/70"
       style={{ borderLeft: `3px solid ${cfg.color}` }}
     >
       {/* Header */}

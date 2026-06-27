@@ -20,7 +20,7 @@ function SeasonHeader({ season }: { season: Season }) {
 
   return (
     <div
-      className="mb-6 rounded-lg border border-white/[0.08] bg-black/50 px-5 py-[18px] backdrop-blur-[14px]"
+      className="mb-6 rounded-lg border border-white/[0.08] bg-black/70 px-5 py-[18px]"
       style={{ borderLeft: "3px solid #f4a86a" }}
     >
       <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-[#f4a86a]">
@@ -45,7 +45,7 @@ function SeasonFooter({ event }: { event: StoryEvent }) {
   if (!sp.beginning && !sp.middle && !sp.end) return null;
   return (
     <div
-      className="mt-2 rounded-lg border border-white/[0.06] bg-black/40 px-5 py-4 backdrop-blur-[14px]"
+      className="mt-2 rounded-lg border border-white/[0.06] bg-black/65 px-5 py-4"
       style={{ borderLeft: "3px solid #f4a86a" }}
     >
       <div className="mb-3 text-[0.6rem] uppercase tracking-[0.18em] text-white/[0.28]">
