@@ -882,6 +882,7 @@ export default function ChroniclePage() {
             const ox = ((_v3b.current.x + 1) / 2) * locW;
             const oy = ((-_v3b.current.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
+            // scale() is compositor-only — no layout reflow, unlike setAttribute on width/height
             svg.style.transform = `scale(${pr.toFixed(2)})`;
           }
         });
@@ -1364,7 +1365,7 @@ export default function ChroniclePage() {
               targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
             }}
           >
-            {/* Radius ring */}
+            {/* Radius ring — fixed 2×2 SVG scaled via transform; avoids layout reflow on every frame */}
             {selectedIdx === i && (
               <svg
                 ref={(el) => {
