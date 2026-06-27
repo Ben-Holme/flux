@@ -1110,8 +1110,8 @@ export default function ChroniclePage() {
       return;
     }
 
-    if (!draggingRef.current) {
-      // Tapping empty canvas deselects; location selection is handled by overlay onClick
+    if (!draggingRef.current && mountRef.current?.contains(e.target as Node)) {
+      // Only deselect when tapping the canvas itself — overlay taps are handled by their own onClick
       startTransition(() => setNavStack([]));
     }
     lastDragStateRef.current = draggingRef.current;
