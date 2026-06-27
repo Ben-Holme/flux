@@ -77,6 +77,28 @@ function DayDivider({ dayNum, date, isBossDay }: { dayNum: number; date: Date; i
   );
 }
 
+import type { SeasonDay } from "./season-utils";
+
+type DayGroup =
+  | { kind: "events"; day: SeasonDay }
+  | { kind: "empty"; start: SeasonDay; end: SeasonDay };
+
+function groupDays(days: SeasonDay[]): DayGroup[] {
+  const groups: DayGroup[] = [];
+  let i = 0;
+  while (i < days.length) {
+    if (days[i].events.length > 0) {
+      groups.push({ kind: "events", day: days[i++] });
+    } else {
+      let j = i;
+      while (j < days.length && days[j].events.length === 0) j++;
+      groups.push({ kind: "empty", start: days[i], end: days[j - 1] });
+      i = j;
+    }
+  }
+  return groups;
+}
+
 interface Props {
   season: Season;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
@@ -87,23 +109,32 @@ interface Props {
 }
 
 export default function SeasonTimeline({ season, players, items, onCharClick, onItemClick, onLocClick }: Props) {
+  const groups = groupDays(season.days);
   return (
     <div>
       <SeasonHeader season={season} />
 
-      {season.days.map((day) => (
-        <div key={day.dayNum}>
-          <DayDivider
-            dayNum={day.dayNum}
-            date={day.date}
-            isBossDay={day.dayNum === season.bossDay}
-          />
-          {day.events.length === 0 ? (
-            <div className="pb-1 pt-2.5 text-[0.7rem] tracking-[0.06em] text-white/[0.15]">
-              No events
+      {groups.map((group) => {
+        if (group.kind === "empty") {
+          const { start, end } = group;
+          const label = start.dayNum === end.dayNum
+            ? `${fmtDate(start.date)}`
+            : `${fmtDate(start.date)} – ${fmtDate(end.date)}`;
+          return (
+            <div key={`empty-${start.dayNum}`} className="mt-4 mb-1 text-[0.6rem] tracking-[0.1em] text-white/[0.18] font-heading uppercase">
+              {label} · no events
             </div>
-          ) : (
-            day.events.map((event, i) => (
+          );
+        }
+        const { day } = group;
+        return (
+          <div key={day.dayNum}>
+            <DayDivider
+              dayNum={day.dayNum}
+              date={day.date}
+              isBossDay={day.dayNum === season.bossDay}
+            />
+            {day.events.map((event, i) => (
               <EventCard
                 key={(event.id as string) ?? `${day.dayNum}-${i}`}
                 event={event}
@@ -113,10 +144,10 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
                 onItemClick={onItemClick}
                 onLocClick={onLocClick}
               />
-            ))
-          )}
-        </div>
-      ))}
+            ))}
+          </div>
+        );
+      })}
 
       {season.summaryEvent && <SeasonFooter event={season.summaryEvent} />}
     </div>
