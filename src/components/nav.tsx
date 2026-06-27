@@ -125,7 +125,7 @@ export default function Nav() {
             transform: active ? "scale(1)" : "scale(0)",
             transformOrigin: "30% 50%",
             backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
-            filter: scrolled && !isChronicle ? "none" : "blur(100px)",
+            filter: !scrolled && !isChronicle ? "blur(100px)" : "none",
           }}
         />
 
