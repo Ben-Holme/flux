@@ -797,6 +797,9 @@ export default function ChroniclePage() {
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
+    // Force-compile all shader programs upfront so the first interaction doesn't stall
+    renderer.compile(scene, camera);
+
     // Animation loop — idle state tracking to skip composer.render() when nothing moves
     let prevRadius = radiusRef.current;
     let prevTargetX = targetRef.current.x;
