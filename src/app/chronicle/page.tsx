@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, startTransition } from "react";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
@@ -1091,7 +1091,7 @@ export default function ChroniclePage() {
 
     if (!draggingRef.current) {
       // Tapping empty canvas deselects; location selection is handled by overlay onClick
-      setNavStack([]);
+      startTransition(() => setNavStack([]));
     }
     lastDragStateRef.current = draggingRef.current;
     draggingRef.current = false;
@@ -1203,34 +1203,44 @@ export default function ChroniclePage() {
 
   const clearNav = useCallback(() => {
     setSlideDir("back");
-    setNavStack([]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack([]);
+      setActiveTab("events");
+    });
     setSheetExpanded(true); // show half-state (no nav → sheet sits at 50%)
   }, []);
 
   const popNav = useCallback(() => {
     setSlideDir("back");
-    setNavStack((prev) => prev.slice(0, -1));
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => prev.slice(0, -1));
+      setActiveTab("events");
+    });
   }, []);
 
   const handleCharClick = useCallback((charId: number) => {
     setSlideDir("forward");
-    setNavStack((prev) => [...prev, { kind: "character", charId }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => [...prev, { kind: "character", charId }]);
+      setActiveTab("events");
+    });
   }, []);
 
   const handleItemClick = useCallback((itemId: string | number) => {
     setSlideDir("forward");
-    setNavStack((prev) => [...prev, { kind: "item", itemId }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => [...prev, { kind: "item", itemId }]);
+      setActiveTab("events");
+    });
   }, []);
 
   const handleLocClick = useCallback((locName: string) => {
     const locIdx = liveLocs.findIndex((l) => l.name === locName);
     setSlideDir("forward");
-    setNavStack([{ kind: "location", locName }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack([{ kind: "location", locName }]);
+      setActiveTab("events");
+    });
     if (locIdx !== -1) {
       const loc = liveLocs[locIdx];
       focusTargetRef.current = new THREE.Vector3(
@@ -1311,8 +1321,10 @@ export default function ChroniclePage() {
             onClick={() => {
               if (lastDragStateRef.current) return;
               setSlideDir("forward");
-              setNavStack([{ kind: "location", locName: loc.name }]);
-              setActiveTab("events");
+              startTransition(() => {
+                setNavStack([{ kind: "location", locName: loc.name }]);
+                setActiveTab("events");
+              });
               focusTargetRef.current = new THREE.Vector3(
                 Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
                 (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
@@ -1580,7 +1592,7 @@ export default function ChroniclePage() {
 
       {/* Desktop side panel — always visible, shows season timeline */}
       {!isMobile && (
-        <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)] backdrop-blur-lg">
+        <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)]">
           {/* Sticky header */}
           <div className="shrink-0 px-4 pt-20 pb-2">
             {/* iOS-style nav bar */}
@@ -1682,7 +1694,7 @@ export default function ChroniclePage() {
       {isMobile && (
         <div
           ref={sheetElRef}
-          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)]"
           style={{
             transform: !sheetExpanded
               ? navStack.length > 0 ? "translateY(calc(100% - 175px))" : "translateY(calc(100% - 120px))"

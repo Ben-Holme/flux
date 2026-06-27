@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import EVENT_TYPES from "./event-types";
 import { parseSpecial, formatDate } from "./utils";
 import Stat from "./stat";
@@ -63,7 +63,7 @@ function SpecialDisclosure({
   );
 }
 
-export default function EventCard({ event, players, items, onCharClick, onItemClick, onLocClick }: Props) {
+const EventCard = memo(function EventCard({ event, players, items, onCharClick, onItemClick, onLocClick }: Props) {
   const displayType = (event.type === "seasonContext" || event.type === "seasonSummary") ? "season" : event.type;
   const cfg    = EVENT_TYPES[displayType] || { label: event.type, symbol: "○", color: "#888" };
   const sp     = parseSpecial(event.special);
@@ -221,4 +221,6 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
       />
     </div>
   );
-}
+});
+
+export default EventCard;
