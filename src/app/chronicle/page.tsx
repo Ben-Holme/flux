@@ -217,6 +217,9 @@ export default function ChroniclePage() {
   const revealAtRef = useRef<number[]>([]); // per-liveLocsRef index reveal threshold
   const hmDataRef = useRef<Uint8ClampedArray | null>(null); // decoded heightmap pixel data
   const locHeightsRef = useRef<number[]>([]); // terrain Y (0-1) per liveLoc index
+  // Reusable Vector3 instances for the animation loop — avoids per-frame GC pressure
+  const _v3a = useRef(new THREE.Vector3());
+  const _v3b = useRef(new THREE.Vector3());
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -478,18 +481,28 @@ export default function ChroniclePage() {
   const seasonOffset = apiSeasons.length > 0 ? apiSeasons.length - seasons.length : 0;
   const resolveSeasonNum = (viewingSeasonIdx ?? apiSeasons.length) - seasonOffset;
   const viewingSeason = resolveSeasonNum >= 1 ? (seasons.find((s) => s.number === resolveSeasonNum) ?? null) : null;
-  const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
-  const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
-  const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
+  const seasonEvents = useMemo(
+    () => (currentSeason ? currentSeason.days.flatMap((d) => d.events) : []),
+    [currentSeason],
+  );
+  const eventLocNames = useMemo(
+    () => new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]),
+    [seasonEvents],
+  );
+  const viewingSeasonEvents = useMemo(
+    () => (viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : []),
+    [viewingSeason],
+  );
 
   // Per-location top-3 characters by fame within the viewing season only.
   const locPortraits = useMemo(() => {
+    const locIdxByName = new Map(liveLocs.map((l, i) => [l.name, i]));
     const charToLocIdx = new Map<number, number>();
     for (const ev of viewingSeasonEvents) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
-      const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
-      if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
+      const locIdx = locIdxByName.get(ev.location);
+      if (locIdx !== undefined) charToLocIdx.set(ev.primary_char, locIdx);
     }
     const data: Record<number, Array<{ charId: number; fame: number }>> = {};
     for (const [cid, locIdx] of charToLocIdx) {
@@ -800,13 +813,9 @@ export default function ChroniclePage() {
           const liveLoc = liveLocsRef.current[locIdx];
           if (!liveLoc) return;
           const h = locHeightsRef.current[locIdx] ?? 0;
-          const pos = new THREE.Vector3(
-            liveLoc.threeX,
-            h * dispScaleRef.current + 0.08,
-            liveLoc.threeZ,
-          ).project(camera);
-          const sx = ((pos.x + 1) / 2) * W;
-          const sy = ((-pos.y + 1) / 2) * H;
+          _v3a.current.set(liveLoc.threeX, h * dispScaleRef.current + 0.08, liveLoc.threeZ).project(camera);
+          const sx = ((_v3a.current.x + 1) / 2) * W;
+          const sy = ((-_v3a.current.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
           el.style.opacity = portraitOpacity.toFixed(3);
         });
@@ -835,25 +844,21 @@ export default function ChroniclePage() {
           const locOpacity = zoomOpacity * distOpacity;
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
-          const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
-          if (pos.z > 1) {
+          _v3a.current.set(loc.threeX, worldY, loc.threeZ).project(camera);
+          if (_v3a.current.z > 1) {
             el.style.opacity = "0";
             return;
           }
-          const sx = ((pos.x + 1) / 2) * locW;
-          const sy = ((-pos.y + 1) / 2) * locH;
+          const sx = ((_v3a.current.x + 1) / 2) * locW;
+          const sy = ((-_v3a.current.y + 1) / 2) * locH;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
           el.style.opacity = locOpacity.toFixed(3);
           const svg = locRingSvgRefs.current.get(i);
           const circle = locRingCircleRefs.current.get(i);
           if (svg && circle && loc.radiusWorld > 0) {
-            const offsetPos = new THREE.Vector3(
-              loc.threeX + loc.radiusWorld,
-              worldY,
-              loc.threeZ,
-            ).project(camera);
-            const ox = ((offsetPos.x + 1) / 2) * locW;
-            const oy = ((-offsetPos.y + 1) / 2) * locH;
+            _v3b.current.set(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
+            const ox = ((_v3b.current.x + 1) / 2) * locW;
+            const oy = ((-_v3b.current.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
             svg.setAttribute("width", String(Math.ceil(pr * 2 + 2)));
             svg.setAttribute("height", String(Math.ceil(pr * 2 + 2)));
@@ -1253,6 +1258,16 @@ export default function ChroniclePage() {
     [viewingSeason, currentNav],
   );
 
+  // Pre-filter all seasons for the "all seasons" view so filterSeasonByNav isn't called
+  // per-season inside the JSX render (which would re-run on every unrelated re-render).
+  const filteredSeasons = useMemo(
+    () => [...seasons].reverse().map((season) => ({
+      season,
+      filtered: filterSeasonByNav(season, currentNav),
+    })),
+    [seasons, currentNav],
+  );
+
   const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
 
   return (
@@ -1515,7 +1530,7 @@ export default function ChroniclePage() {
       {apiSeasons.length > 0 && (
         <div
           className="pointer-events-none absolute z-10 -translate-x-1/2"
-          style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "34px" : "26px" }}
+          style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "46px" : "38px" }}
         >
           <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 backdrop-blur" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
             <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/55">
@@ -1629,15 +1644,14 @@ export default function ChroniclePage() {
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
               ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? [...seasons].reverse().map((season) => {
-                  const fs = filterSeasonByNav(season, currentNav);
-                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
+                seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                  if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
                   return (
                     <div key={season.number} style={{ marginBottom: "32px" }}>
                       <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                         {getSeasonLabel(season.number + seasonOffset)}
                       </div>
-                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                      <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                     </div>
                   );
                 }) : eventsLoading ? (
@@ -1770,15 +1784,14 @@ export default function ChroniclePage() {
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
               ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? [...seasons].reverse().map((season) => {
-                  const fs = filterSeasonByNav(season, currentNav);
-                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
+                seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                  if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
                   return (
                     <div key={season.number} style={{ marginBottom: "32px" }}>
                       <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                         {getSeasonLabel(season.number + seasonOffset)}
                       </div>
-                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                      <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                     </div>
                   );
                 }) : eventsLoading ? (
