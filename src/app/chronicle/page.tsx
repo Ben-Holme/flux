@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo, startTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo, startTransition } from "react";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
@@ -221,6 +221,7 @@ export default function ChroniclePage() {
   const _v3a = useRef(new THREE.Vector3());
   const _v3b = useRef(new THREE.Vector3());
   const mountSizeRef = useRef({ w: 0, h: 0 });
+  const needsRenderRef = useRef(true); // set true any time the scene must redraw
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -244,7 +245,6 @@ export default function ChroniclePage() {
   const liveLocsRef = useRef<LiveLoc[]>([]);
   const locOverlayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const locRingSvgRefs = useRef<Map<number, SVGSVGElement>>(new Map());
-  const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
   const [navStack, setNavStack] = useState<NavEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"events" | "details">("events");
@@ -361,7 +361,8 @@ export default function ChroniclePage() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
+  // useLayoutEffect fires before paint so mobile users never see the desktop panel flash
+  useLayoutEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
@@ -455,6 +456,7 @@ export default function ChroniclePage() {
       locHeightsRef.current = liveLocs.map((l) =>
         sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ),
       );
+    needsRenderRef.current = true;
   }, [liveLocs]);
 
   // Decode heightmap once; re-sample loc heights if liveLocs already loaded
@@ -794,7 +796,11 @@ export default function ChroniclePage() {
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
-    // Animation loop
+    // Animation loop — idle state tracking to skip composer.render() when nothing moves
+    let prevRadius = radiusRef.current;
+    let prevTargetX = targetRef.current.x;
+    let prevTargetZ = targetRef.current.z;
+
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
       if (focusTargetRef.current) {
@@ -806,6 +812,19 @@ export default function ChroniclePage() {
       }
       // Smooth zoom
       radiusRef.current += (targetRadiusRef.current - radiusRef.current) * 0.12;
+
+      // Detect movement since last frame; skip render entirely when settled
+      const moved =
+        Math.abs(radiusRef.current - prevRadius) > 0.0001 ||
+        Math.abs(targetRef.current.x - prevTargetX) > 0.0001 ||
+        Math.abs(targetRef.current.z - prevTargetZ) > 0.0001;
+      prevRadius = radiusRef.current;
+      prevTargetX = targetRef.current.x;
+      prevTargetZ = targetRef.current.z;
+
+      if (!moved && !draggingRef.current && !needsRenderRef.current) return;
+      needsRenderRef.current = false;
+
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
@@ -857,19 +876,13 @@ export default function ChroniclePage() {
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
           el.style.opacity = locOpacity.toFixed(3);
           const svg = locRingSvgRefs.current.get(i);
-          const circle = locRingCircleRefs.current.get(i);
-          if (svg && circle && loc.radiusWorld > 0) {
+          if (svg && loc.radiusWorld > 0) {
             _v3b.current.set(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
             const ox = ((_v3b.current.x + 1) / 2) * locW;
             const oy = ((-_v3b.current.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
-            svg.setAttribute("width", String(Math.ceil(pr * 2 + 2)));
-            svg.setAttribute("height", String(Math.ceil(pr * 2 + 2)));
-            svg.style.left = `${-(pr + 1)}px`;
-            svg.style.top = `${-(pr + 1)}px`;
-            circle.setAttribute("cx", String(pr + 1));
-            circle.setAttribute("cy", String(pr + 1));
-            circle.setAttribute("r", String(pr));
+            // scale() is compositor-only — no layout reflow, unlike setAttribute on width/height
+            svg.style.transform = `scale(${pr.toFixed(2)})`;
           }
         });
       }
@@ -1351,29 +1364,20 @@ export default function ChroniclePage() {
               targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
             }}
           >
-            {/* Radius ring */}
+            {/* Radius ring — fixed 2×2 SVG scaled via transform; avoids layout reflow on every frame */}
             {selectedIdx === i && (
               <svg
                 ref={(el) => {
-                  if (el) locRingSvgRefs.current.set(i, el);
+                  if (el) { locRingSvgRefs.current.set(i, el); needsRenderRef.current = true; }
                   else locRingSvgRefs.current.delete(i);
                 }}
-                className="pointer-events-none absolute"
-                width="0"
-                height="0"
+                className="pointer-events-none absolute overflow-visible"
+                width="2"
+                height="2"
+                viewBox="-1 -1 2 2"
+                style={{ left: "-1px", top: "-1px", transformOrigin: "1px 1px" }}
               >
-                <circle
-                  ref={(el) => {
-                    if (el) locRingCircleRefs.current.set(i, el);
-                    else locRingCircleRefs.current.delete(i);
-                  }}
-                  cx="0"
-                  cy="0"
-                  r="0"
-                  fill="none"
-                  stroke="#fff3"
-                  strokeWidth="2"
-                />
+                <circle cx="0" cy="0" r="1" fill="none" stroke="#fff3" strokeWidth="2" vectorEffect="non-scaling-stroke" />
               </svg>
             )}
             <div
