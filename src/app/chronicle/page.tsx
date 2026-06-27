@@ -447,9 +447,9 @@ export default function ChroniclePage() {
     // the label size threshold) are pinned above R_MAX so they're fully visible at max zoom-out.
     const out: number[] = new Array(liveLocs.length);
     liveLocs.forEach((l, i) => {
-      out[i] = l.radiusWorld >= 0.66
-        ? R_MAX + 3                                              // big-text: always visible at max zoom-out
-        : Math.min(R_MAX, Math.max(R_MIN + 2, l.radiusWorld * 12)); // small: disappear early
+      // Continuous scale: larger radius = visible from further out. Factor 20 puts a
+      // radiusWorld ~1.9 location at R_MAX; anything bigger is always visible.
+      out[i] = Math.min(R_MAX + 3, Math.max(R_MIN + 2, l.radiusWorld * 20));
     });
     revealAtRef.current = out;
     if (hmDataRef.current)
@@ -867,7 +867,7 @@ export default function ChroniclePage() {
           const visR = radiusRef.current * 0.55;
           const fadeW = Math.max(2.5, visR * 0.4);
           const distOpacity = Math.max(0, Math.min(1, (visR - distFromTarget) / fadeW));
-          const locOpacity = zoomOpacity * distOpacity;
+          const locOpacity = Math.min(1, zoomOpacity * distOpacity * (loc.type === "city" ? 1.2 : 1));
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
           _v3a.current.set(loc.threeX, worldY, loc.threeZ).project(camera);
