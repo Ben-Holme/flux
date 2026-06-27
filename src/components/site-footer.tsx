@@ -1,13 +1,9 @@
-"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { usePathname } from "next/navigation";
 import Year from "@/components/year";
 
 export default function SiteFooter() {
-  const pathname = usePathname();
-  if (pathname === "/pixeltest-map") return null;
   return (
     <footer className="flex flex-col items-center justify-center gap-4 bg-black px-6 py-12">
       <a href="https://realspawn.com" target="_blank" rel="noopener noreferrer">
