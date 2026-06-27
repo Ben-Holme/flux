@@ -235,6 +235,9 @@ export default function ChroniclePage() {
   const sheetExpandedRef = useRef(false);
   const navStackLengthRef = useRef(0);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
+  const desktopAnimRef = useRef<HTMLDivElement | null>(null);
+  const mobileAnimRef = useRef<HTMLDivElement | null>(null);
+  const prevContentKeyRef = useRef<string>("root");
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
   const liveLocsRef = useRef<LiveLoc[]>([]);
@@ -1258,10 +1261,24 @@ export default function ChroniclePage() {
 
   const currentNav = navStack[navStack.length - 1] ?? null;
 
-  // Unique key for animated content — changes on every navigation
+  // Slide animation — triggered imperatively so React can reuse EventCard DOM
+  // instead of destroying + recreating it (which key= would force).
   const contentKey = navStack.map((e) =>
     e.kind === "location" ? `L:${e.locName}` : e.kind === "character" ? `C:${e.charId}` : `I:${String(e.itemId)}`
   ).join(">") || "root";
+
+  useEffect(() => {
+    if (contentKey === prevContentKeyRef.current) return;
+    prevContentKeyRef.current = contentKey;
+    if (contentKey === "root") return;
+    const anim = `chronicle-${slideDir} 0.22s ease both`;
+    [desktopAnimRef.current, mobileAnimRef.current].forEach((el) => {
+      if (!el) return;
+      el.style.animation = "none";
+      void el.offsetHeight; // force reflow so browser registers the reset
+      el.style.animation = anim;
+    });
+  }, [contentKey, slideDir]);
 
   const displaySeason = useMemo(
     () => (viewingSeason ? filterSeasonByNav(viewingSeason, currentNav) : null),
@@ -1652,7 +1669,7 @@ export default function ChroniclePage() {
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
-            <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
+            <div ref={desktopAnimRef}>
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
               ) : viewingSeasonIdx === 0 ? (
@@ -1792,7 +1809,7 @@ export default function ChroniclePage() {
             className="flex-1 overflow-y-auto px-4 pt-3 pb-8"
             style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
           >
-            <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
+            <div ref={mobileAnimRef}>
               {activeTab === "details" && currentNav ? (
                 <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
               ) : viewingSeasonIdx === 0 ? (
