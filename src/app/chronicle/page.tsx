@@ -1538,7 +1538,7 @@ export default function ChroniclePage() {
               </div>
             );
             return (
-              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
+              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-black/85 px-3 py-2.5">
                 {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
@@ -1567,7 +1567,7 @@ export default function ChroniclePage() {
           className="pointer-events-none absolute z-10 -translate-x-1/2"
           style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "46px" : "38px" }}
         >
-          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 backdrop-blur" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-3 py-1.5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
             <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/55">
               {viewingSeasonIdx === 0
                 ? "All seasons"
