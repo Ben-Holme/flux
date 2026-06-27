@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/cn";
 import EventCard from "./event-card";
 import { parseSpecial } from "./utils";
@@ -108,7 +109,7 @@ interface Props {
   onLocClick?: (locName: string) => void;
 }
 
-export default function SeasonTimeline({ season, players, items, onCharClick, onItemClick, onLocClick }: Props) {
+const SeasonTimeline = memo(function SeasonTimeline({ season, players, items, onCharClick, onItemClick, onLocClick }: Props) {
   const groups = groupDays(season.days);
   return (
     <div>
@@ -152,4 +153,6 @@ export default function SeasonTimeline({ season, players, items, onCharClick, on
       {season.summaryEvent && <SeasonFooter event={season.summaryEvent} />}
     </div>
   );
-}
+});
+
+export default SeasonTimeline;

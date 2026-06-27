@@ -220,6 +220,7 @@ export default function ChroniclePage() {
   // Reusable Vector3 instances for the animation loop — avoids per-frame GC pressure
   const _v3a = useRef(new THREE.Vector3());
   const _v3b = useRef(new THREE.Vector3());
+  const mountSizeRef = useRef({ w: 0, h: 0 });
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -528,6 +529,7 @@ export default function ChroniclePage() {
 
     const W = mount.clientWidth;
     const H = mount.clientHeight;
+    mountSizeRef.current = { w: W, h: H };
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -810,8 +812,7 @@ export default function ChroniclePage() {
       // Portrait overlays: project world positions to screen coords
       if (portraitGroupRefs.current.size > 0 && mount) {
         const portraitOpacity = Math.max(0, Math.min(1, (15 - radiusRef.current) / 3));
-        const W = mount.clientWidth;
-        const H = mount.clientHeight;
+        const { w: W, h: H } = mountSizeRef.current;
         portraitGroupRefs.current.forEach((el, locIdx) => {
           const liveLoc = liveLocsRef.current[locIdx];
           if (!liveLoc) return;
@@ -826,8 +827,7 @@ export default function ChroniclePage() {
 
       // Location overlays: project world positions to screen coords
       if (locOverlayRefs.current.size > 0 && mount) {
-        const locW = mount.clientWidth;
-        const locH = mount.clientHeight;
+        const { w: locW, h: locH } = mountSizeRef.current;
         locOverlayRefs.current.forEach((el, i) => {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
@@ -886,11 +886,12 @@ export default function ChroniclePage() {
     }
     animate();
 
-    // Resize handler
+    // Resize handler — also caches dimensions so animate loop avoids layout reads
     function onResize() {
       if (!mount) return;
       const w = mount.clientWidth,
         h = mount.clientHeight;
+      mountSizeRef.current = { w, h };
       renderer.setSize(w, h);
       composer.setSize(w, h);
       camera.aspect = w / h;
@@ -1670,38 +1671,45 @@ export default function ChroniclePage() {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
             <div ref={desktopAnimRef}>
-              {activeTab === "details" && currentNav ? (
-                <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
-              ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
-                  if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
-                  return (
-                    <div key={season.number} style={{ marginBottom: "32px" }}>
-                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                        {getSeasonLabel(season.number + seasonOffset)}
+              {/* Details — always mounted when nav active; shown/hidden via CSS to avoid remounting events */}
+              {currentNav && (
+                <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+                  <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+                </div>
+              )}
+              {/* Events — hidden when details tab is active */}
+              <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
+                {viewingSeasonIdx === 0 ? (
+                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                    if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
+                    return (
+                      <div key={season.number} style={{ marginBottom: "32px" }}>
+                        <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                          {getSeasonLabel(season.number + seasonOffset)}
+                        </div>
+                        <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
-                      <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
-                    </div>
-                  );
-                }) : eventsLoading ? (
+                    );
+                  }) : eventsLoading ? (
+                    <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                  ) : (
+                    <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                  )
+                ) : displaySeason ? (
+                  <SeasonTimeline
+                    season={displaySeason}
+                    players={players}
+                    items={items}
+                    onCharClick={handleCharClick}
+                    onItemClick={handleItemClick}
+                    onLocClick={handleLocClick}
+                  />
+                ) : eventsLoading ? (
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-                )
-              ) : displaySeason ? (
-                <SeasonTimeline
-                  season={displaySeason}
-                  players={players}
-                  items={items}
-                  onCharClick={handleCharClick}
-                  onItemClick={handleItemClick}
-                  onLocClick={handleLocClick}
-                />
-              ) : eventsLoading ? (
-                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-              ) : (
-                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1810,38 +1818,43 @@ export default function ChroniclePage() {
             style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
           >
             <div ref={mobileAnimRef}>
-              {activeTab === "details" && currentNav ? (
-                <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
-              ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
-                  if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
-                  return (
-                    <div key={season.number} style={{ marginBottom: "32px" }}>
-                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                        {getSeasonLabel(season.number + seasonOffset)}
+              {currentNav && (
+                <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+                  <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+                </div>
+              )}
+              <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
+                {viewingSeasonIdx === 0 ? (
+                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                    if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
+                    return (
+                      <div key={season.number} style={{ marginBottom: "32px" }}>
+                        <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                          {getSeasonLabel(season.number + seasonOffset)}
+                        </div>
+                        <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
-                      <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
-                    </div>
-                  );
-                }) : eventsLoading ? (
+                    );
+                  }) : eventsLoading ? (
+                    <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                  ) : (
+                    <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                  )
+                ) : displaySeason ? (
+                  <SeasonTimeline
+                    season={displaySeason}
+                    players={players}
+                    items={items}
+                    onCharClick={handleCharClick}
+                    onItemClick={handleItemClick}
+                    onLocClick={handleLocClick}
+                  />
+                ) : eventsLoading ? (
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-                )
-              ) : displaySeason ? (
-                <SeasonTimeline
-                  season={displaySeason}
-                  players={players}
-                  items={items}
-                  onCharClick={handleCharClick}
-                  onItemClick={handleItemClick}
-                  onLocClick={handleLocClick}
-                />
-              ) : eventsLoading ? (
-                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-              ) : (
-                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
