@@ -786,6 +786,7 @@ export default function ChroniclePage() {
         gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, seaFog);`,
         );
     };
+    seaMat.customProgramCacheKey = () => "sea-height-fog";
     seaMatRef.current = seaMat;
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
