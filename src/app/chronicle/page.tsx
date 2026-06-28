@@ -979,7 +979,8 @@ export default function ChroniclePage() {
           const visR = radiusRef.current * 0.55;
           const fadeW = Math.max(2.5, visR * 0.4);
           const distOpacity = Math.max(0, Math.min(1, (visR - distFromTarget) / fadeW));
-          const locOpacity = Math.min(1, zoomOpacity * distOpacity * (loc.type === "city" ? 1.2 : 1));
+          const minOpacity = loc.radiusWorld >= 0.5 ? 0.2 : 0;
+          const locOpacity = Math.min(1, Math.max(minOpacity, zoomOpacity * distOpacity * (loc.type === "city" ? 1.2 : 1)));
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
           _v3a.current.set(loc.threeX, worldY, loc.threeZ).project(camera);
