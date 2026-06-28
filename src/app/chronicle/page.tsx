@@ -548,7 +548,7 @@ export default function ChroniclePage() {
     liveLocs.forEach((l, i) => {
       // Continuous scale: larger radius = visible from further out. Factor 20 puts a
       // radiusWorld ~1.9 location at R_MAX; anything bigger is always visible.
-      out[i] = Math.min(R_MAX + 3, Math.max(R_MIN + 2, l.radiusWorld * 20));
+      out[i] = Math.min(R_MAX + 3, Math.max(R_MIN + 3, l.radiusWorld * 20));
     });
     revealAtRef.current = out;
     if (hmDataRef.current)
@@ -977,9 +977,9 @@ export default function ChroniclePage() {
           const dz = loc.threeZ - targetRef.current.z;
           const distFromTarget = Math.sqrt(dx * dx + dz * dz);
           const visR = radiusRef.current * 0.55;
-          const fadeW = Math.max(2.5, visR * 0.4);
+          const fadeW = visR * 0.4;
           const distOpacity = Math.max(0, Math.min(1, (visR - distFromTarget) / fadeW));
-          const minOpacity = loc.radiusWorld >= 0.5 ? 0.2 : 0;
+          const minOpacity = loc.radiusWorld >= 1.0 ? 0.2 : 0;
           const locOpacity = Math.min(1, Math.max(minOpacity, zoomOpacity * distOpacity * (loc.type === "city" ? 1.2 : 1)));
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
