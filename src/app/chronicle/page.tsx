@@ -81,6 +81,8 @@ function buildCloudTexture(): THREE.DataTexture {
   // DataTexture writes raw RGBA bytes — no HTML5 canvas premultiplied-alpha issues.
   const S = 512;
   const data = new Uint8ClampedArray(S * S * 4); // all zeros = fully transparent
+  // Pre-fill RGB to white so blur-spread pixels are never black
+  for (let i = 0; i < S * S; i++) { data[i * 4] = 255; data[i * 4 + 1] = 255; data[i * 4 + 2] = 255; }
 
   let seed = 99991;
   const rnd = () => {
@@ -152,7 +154,7 @@ function buildCloudTexture(): THREE.DataTexture {
     }
     for (let i = 0; i < S * S; i++) data[i * 4 + 3] = Math.round(a[i]);
   };
-  blurAlpha(20); blurAlpha(20); blurAlpha(20);
+  blurAlpha(8);
 
   // Fade alpha to zero near all four edges so the plane boundary is never visible
   for (let y = 0; y < S; y++) {
