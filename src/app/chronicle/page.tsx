@@ -849,6 +849,7 @@ export default function ChroniclePage() {
       transparent: true,
       opacity: 0,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
     cloudMatRef.current = cloudMat;
     const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), cloudMat);
