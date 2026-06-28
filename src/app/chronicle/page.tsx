@@ -154,6 +154,19 @@ function buildCloudTexture(): THREE.DataTexture {
   };
   blurAlpha(20); blurAlpha(20); blurAlpha(20);
 
+  // Fade alpha to zero near all four edges so the plane boundary is never visible
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const nx = Math.abs((x / (S - 1)) * 2 - 1); // 0 at centre, 1 at edge
+      const ny = Math.abs((y / (S - 1)) * 2 - 1);
+      const edge = Math.max(nx, ny);
+      const u = Math.max(0, (edge - 0.65) / 0.35); // ramp from 65% to 100% of half-extent
+      const fade = 1 - u * u * (3 - 2 * u);        // smoothstep
+      const idx = (y * S + x) * 4;
+      data[idx + 3] = Math.round(data[idx + 3] * fade);
+    }
+  }
+
   const tex = new THREE.DataTexture(new Uint8Array(data.buffer), S, S, THREE.RGBAFormat);
   tex.needsUpdate = true;
   return tex;
