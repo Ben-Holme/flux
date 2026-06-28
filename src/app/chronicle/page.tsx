@@ -853,7 +853,7 @@ export default function ChroniclePage() {
     cloudMatRef.current = cloudMat;
     const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), cloudMat);
     cloudMesh.rotation.x = -Math.PI / 2;
-    cloudMesh.position.y = 1.9;
+    cloudMesh.position.y = 5.7;
     scene.add(cloudMesh);
 
     scene.add(camera);
