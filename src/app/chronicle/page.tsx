@@ -159,10 +159,10 @@ function buildCloudTexture(): THREE.DataTexture {
   // Fade alpha to zero near all four edges so the plane boundary is never visible
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
-      const nx = Math.abs((x / (S - 1)) * 2 - 1); // 0 at centre, 1 at edge
-      const ny = Math.abs((y / (S - 1)) * 2 - 1);
-      const edge = Math.max(nx, ny);
-      const u = Math.max(0, (edge - 0.65) / 0.35); // ramp from 65% to 100% of half-extent
+      const nx = (x / (S - 1)) * 2 - 1; // -1 to 1
+      const ny = (y / (S - 1)) * 2 - 1;
+      const edge = Math.sqrt(nx * nx + ny * ny); // radial distance from centre
+      const u = Math.max(0, (edge - 0.65) / 0.35); // ramp from 65% to 100% of radius
       const fade = 1 - u * u * (3 - 2 * u);        // smoothstep
       const idx = (y * S + x) * 4;
       data[idx + 3] = Math.round(data[idx + 3] * fade);
