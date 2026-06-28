@@ -77,52 +77,58 @@ const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
 
-function buildCloudTexture(): THREE.CanvasTexture {
-  const S = 1024;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = S;
-  const ctx = canvas.getContext("2d")!;
+function buildCloudTexture(): THREE.DataTexture {
+  // DataTexture writes raw RGBA bytes — no HTML5 canvas premultiplied-alpha issues.
+  const S = 512;
+  const data = new Uint8ClampedArray(S * S * 4); // all zeros = fully transparent
 
-  // XOR-shift seeded RNG — deterministic, no Math.random()
   let seed = 99991;
   const rnd = () => {
     seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
     return (seed >>> 0) / 0xffffffff;
   };
 
+  const addPuff = (cx: number, cy: number, rx: number, ry: number, cos: number, sin: number, maxA: number) => {
+    const r = Math.max(rx, ry);
+    const x0 = Math.max(0, Math.floor(cx - r));
+    const x1 = Math.min(S - 1, Math.ceil(cx + r));
+    const y0 = Math.max(0, Math.floor(cy - r));
+    const y1 = Math.min(S - 1, Math.ceil(cy + r));
+    const contrib = Math.round(maxA * 255);
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - cx, dy = y - cy;
+        const lx = dx * cos + dy * sin;
+        const ly = -dx * sin + dy * cos;
+        const t = (lx / rx) ** 2 + (ly / ry) ** 2;
+        if (t >= 1) continue;
+        const idx = (y * S + x) * 4;
+        data[idx] = 255;
+        data[idx + 1] = 255;
+        data[idx + 2] = 255;
+        data[idx + 3] += Math.round(contrib * (1 - t)); // Uint8ClampedArray auto-clamps to 255
+      }
+    }
+  };
+
   // Large elongated masses give the base cloud forms
   for (let k = 0; k < 70; k++) {
     const cx = rnd() * S, cy = rnd() * S;
-    const rx = 70 + rnd() * 180;
+    const rx = 35 + rnd() * 90;
     const ry = rx * (0.3 + rnd() * 0.35);
     const angle = rnd() * Math.PI;
-    const alpha = 0.04 + rnd() * 0.11;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-    ctx.scale(1, ry / rx);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-    g.addColorStop(0, `rgba(255,255,255,${(alpha * 1.5).toFixed(3)})`);
-    g.addColorStop(0.5, `rgba(255,255,255,${alpha.toFixed(3)})`);
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    addPuff(cx, cy, rx, ry, Math.cos(angle), Math.sin(angle), 0.04 + rnd() * 0.11);
   }
-
-  // Smaller puffs add detail and break up the edge silhouettes
+  // Smaller puffs add detail and break up edge silhouettes
   for (let k = 0; k < 140; k++) {
     const cx = rnd() * S, cy = rnd() * S;
-    const r = 12 + rnd() * 55;
-    const alpha = 0.03 + rnd() * 0.09;
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    g.addColorStop(0, `rgba(255,255,255,${alpha.toFixed(3)})`);
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    const r = 6 + rnd() * 27;
+    addPuff(cx, cy, r, r, 1, 0, 0.03 + rnd() * 0.09);
   }
 
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.DataTexture(new Uint8Array(data.buffer), S, S, THREE.RGBAFormat);
+  tex.needsUpdate = true;
+  return tex;
 }
 
 function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
@@ -849,7 +855,6 @@ export default function ChroniclePage() {
       transparent: true,
       opacity: 0,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
     });
     cloudMatRef.current = cloudMat;
     const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), cloudMat);
