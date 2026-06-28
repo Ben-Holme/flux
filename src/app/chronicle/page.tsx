@@ -162,7 +162,7 @@ function buildCloudTexture(): THREE.DataTexture {
       const nx = (x / (S - 1)) * 2 - 1; // -1 to 1
       const ny = (y / (S - 1)) * 2 - 1;
       const edge = Math.sqrt(nx * nx + ny * ny); // radial distance from centre
-      const u = Math.max(0, (edge - 0.65) / 0.35); // ramp from 65% to 100% of radius
+      const u = Math.min(1, Math.max(0, (edge - 0.52) / 0.28)); // ramp 52%→80%; clamped so smoothstep never overshoots
       const fade = 1 - u * u * (3 - 2 * u);        // smoothstep
       const idx = (y * S + x) * 4;
       data[idx + 3] = Math.round(data[idx + 3] * fade);
