@@ -126,6 +126,34 @@ function buildCloudTexture(): THREE.DataTexture {
     addPuff(cx, cy, r, r, 1, 0, 0.03 + rnd() * 0.09);
   }
 
+  // Separable box blur on alpha only — 3 passes approximate Gaussian, one-time CPU cost ~5ms
+  const blurAlpha = (radius: number) => {
+    const a = new Float32Array(S * S);
+    for (let i = 0; i < S * S; i++) a[i] = data[i * 4 + 3];
+    const tmp = new Float32Array(S * S);
+    const inv = 1 / (2 * radius + 1);
+    for (let y = 0; y < S; y++) {
+      let sum = 0;
+      for (let x = 0; x < radius; x++) sum += a[y * S + x];
+      for (let x = 0; x < S; x++) {
+        sum += a[y * S + Math.min(S - 1, x + radius)];
+        sum -= a[y * S + Math.max(0, x - radius - 1)];
+        tmp[y * S + x] = sum * inv;
+      }
+    }
+    for (let x = 0; x < S; x++) {
+      let sum = 0;
+      for (let y = 0; y < radius; y++) sum += tmp[y * S + x];
+      for (let y = 0; y < S; y++) {
+        sum += tmp[Math.min(S - 1, y + radius) * S + x];
+        sum -= tmp[Math.max(0, y - radius - 1) * S + x];
+        a[y * S + x] = sum * inv;
+      }
+    }
+    for (let i = 0; i < S * S; i++) data[i * 4 + 3] = Math.round(a[i]);
+  };
+  blurAlpha(20); blurAlpha(20); blurAlpha(20);
+
   const tex = new THREE.DataTexture(new Uint8Array(data.buffer), S, S, THREE.RGBAFormat);
   tex.needsUpdate = true;
   return tex;
