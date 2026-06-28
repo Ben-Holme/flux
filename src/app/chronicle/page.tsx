@@ -77,6 +77,54 @@ const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
 
+function buildCloudTexture(): THREE.CanvasTexture {
+  const S = 1024;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = S;
+  const ctx = canvas.getContext("2d")!;
+
+  // XOR-shift seeded RNG — deterministic, no Math.random()
+  let seed = 99991;
+  const rnd = () => {
+    seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 0xffffffff;
+  };
+
+  // Large elongated masses give the base cloud forms
+  for (let k = 0; k < 70; k++) {
+    const cx = rnd() * S, cy = rnd() * S;
+    const rx = 70 + rnd() * 180;
+    const ry = rx * (0.3 + rnd() * 0.35);
+    const angle = rnd() * Math.PI;
+    const alpha = 0.04 + rnd() * 0.11;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, `rgba(255,255,255,${(alpha * 1.5).toFixed(3)})`);
+    g.addColorStop(0.5, `rgba(255,255,255,${alpha.toFixed(3)})`);
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Smaller puffs add detail and break up the edge silhouettes
+  for (let k = 0; k < 140; k++) {
+    const cx = rnd() * S, cy = rnd() * S;
+    const r = 12 + rnd() * 55;
+    const alpha = 0.03 + rnd() * 0.09;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(255,255,255,${alpha.toFixed(3)})`);
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  return new THREE.CanvasTexture(canvas);
+}
+
 function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
   const nx = threeX / 20 + 0.5;
   const ny = threeZ / 20 + 0.5;
@@ -208,6 +256,7 @@ export default function ChroniclePage() {
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
   const seaMatRef = useRef<THREE.MeshPhongMaterial | null>(null);
+  const cloudMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const heightFogDensityRef = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
@@ -794,6 +843,19 @@ export default function ChroniclePage() {
     sea.renderOrder = 0;
     scene.add(sea);
 
+    // Cloud layer — flat plane well above peaks, fades out as camera zooms in
+    const cloudMat = new THREE.MeshBasicMaterial({
+      map: buildCloudTexture(),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    cloudMatRef.current = cloudMat;
+    const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), cloudMat);
+    cloudMesh.rotation.x = -Math.PI / 2;
+    cloudMesh.position.y = 1.9;
+    scene.add(cloudMesh);
+
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
@@ -889,6 +951,11 @@ export default function ChroniclePage() {
             svg.style.transform = `scale(${pr.toFixed(2)})`;
           }
         });
+      }
+
+      // Clouds fade in as camera pulls back (radius 10 → 20); max opacity 0.75
+      if (cloudMatRef.current) {
+        cloudMatRef.current.opacity = Math.max(0, Math.min(1, (radiusRef.current - 10) / 10)) * 0.75;
       }
 
       // Fog ramps in over the last 15% of [R_MIN, FOG_THRESHOLD]; threshold set by fogNearRef
