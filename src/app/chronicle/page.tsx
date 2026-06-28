@@ -70,7 +70,7 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 const PAN_LIMIT = 10;
 
 // Orbit constants
-const R_MIN = 2,
+const R_MIN = 1,
   R_MAX = 35;
 const ELEV_NEAR = Math.PI * (30 / 180); // camera elevation when close (30° from horizontal)
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
@@ -403,6 +403,7 @@ export default function ChroniclePage() {
           >,
         )) {
           if (loc.underground === "true") continue;
+          if (name === "Star room") continue;
           const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
           if (!match) continue;
           const ueX = parseFloat(match[1]);
