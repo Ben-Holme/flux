@@ -370,6 +370,9 @@ export default function ChroniclePage() {
   const [heightScale, setHeightScale] = useState(1.8);
   const [contrast, setContrast] = useState(1.5);
   const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
+  const [mapScale, setMapScale] = useState(1.015);
+  const colorTexRef = useRef<THREE.Texture | null>(null);
+  const specTexRef = useRef<THREE.Texture | null>(null);
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
 
@@ -525,6 +528,17 @@ export default function ChroniclePage() {
   useEffect(() => {
     fogNearRef.current = fogNear;
   }, [fogNear]);
+
+  useEffect(() => {
+    const off = (1 - mapScale) / 2;
+    [colorTexRef.current, specTexRef.current].forEach((t) => {
+      if (!t) return;
+      t.repeat.set(mapScale, mapScale);
+      t.offset.set(off, off);
+      t.needsUpdate = true;
+    });
+    needsRenderRef.current = true;
+  }, [mapScale]);
 
   useEffect(() => {
     dispScaleRef.current = heightScale;
@@ -687,16 +701,18 @@ export default function ChroniclePage() {
     // Color texture from world map jpg
     const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
     colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
-    const mapScale = 1.015;
-    const mapOffset = (1 - mapScale) / 2;
-    colorTexture.repeat.set(mapScale, mapScale);
-    colorTexture.offset.set(mapOffset, mapOffset);
+    const initMapScale = mapScale;
+    const initMapOffset = (1 - initMapScale) / 2;
+    colorTexture.repeat.set(initMapScale, initMapScale);
+    colorTexture.offset.set(initMapOffset, initMapOffset);
+    colorTexRef.current = colorTexture;
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
     const specTexture = new THREE.TextureLoader().load("/specmap.png");
     specTexture.wrapS = specTexture.wrapT = THREE.ClampToEdgeWrapping;
-    specTexture.repeat.set(mapScale, mapScale);
-    specTexture.offset.set(mapOffset, mapOffset);
+    specTexture.repeat.set(initMapScale, initMapScale);
+    specTexture.offset.set(initMapOffset, initMapOffset);
+    specTexRef.current = specTexture;
 
     const seaNormalTexture = buildSeaNormalMap();
 
@@ -1672,6 +1688,7 @@ export default function ChroniclePage() {
                 {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
                 {sliderRow("Height scale", heightScale, 0, 5, 0.1, setHeightScale)}
                 {sliderRow("Contrast", contrast, 0.5, 4, 0.05, setContrast)}
+                {sliderRow("UV scale", mapScale, 0.99, 1.03, 0.001, setMapScale)}
                 {sec("Sea")}
                 {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
                 {sec("Effects")}
