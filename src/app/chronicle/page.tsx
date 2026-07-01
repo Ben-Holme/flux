@@ -28,6 +28,9 @@ interface ApiSeason {
   start: string | null;
 }
 
+type RoadPoint = { threeX: number; threeZ: number };
+type RoadPath = RoadPoint[];
+
 const GOLD = "#c8923a";
 
 // Hostility tier colors
@@ -242,6 +245,9 @@ export default function ChroniclePage() {
   const [activeTab, setActiveTab] = useState<"events" | "details">("events");
   const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
+  const [roads, setRoads] = useState<RoadPath[]>([]);
+  const [hmReady, setHmReady] = useState(false);
+  const roadLinesRef = useRef<THREE.Line[]>([]);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -354,6 +360,69 @@ export default function ChroniclePage() {
   }, []);
 
   useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getRoads-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        const rawRoads: unknown[] = Array.isArray(data.roads) ? data.roads : Array.isArray(data) ? data : [];
+        const parsed: RoadPath[] = [];
+        for (const road of rawRoads) {
+          const pts: unknown[] = Array.isArray(road)
+            ? road
+            : Array.isArray((road as { points?: unknown }).points)
+              ? (road as { points: unknown[] }).points
+              : [];
+          const path: RoadPoint[] = [];
+          for (const pt of pts) {
+            let ueX: number | null = null, ueY: number | null = null;
+            if (typeof pt === "string") {
+              const m = pt.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
+              if (m) { ueX = parseFloat(m[1]); ueY = parseFloat(m[2]); }
+            } else if (Array.isArray(pt) && pt.length >= 2) {
+              ueX = Number(pt[0]); ueY = Number(pt[1]);
+            } else if (pt && typeof pt === "object") {
+              const p = pt as Record<string, unknown>;
+              ueX = Number(p.X ?? p.x);
+              ueY = Number(p.Y ?? p.y);
+            }
+            if (ueX != null && ueY != null && !isNaN(ueX) && !isNaN(ueY)) {
+              path.push({ threeX: (ueX / MAP_EXTENT) * 10, threeZ: (ueY / MAP_EXTENT) * 10 });
+            }
+          }
+          if (path.length > 1) parsed.push(path);
+        }
+        setRoads(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || roads.length === 0) return;
+
+    roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
+    roadLinesRef.current = [];
+
+    const mat = new THREE.LineBasicMaterial({ color: 0x7a5c2e, opacity: 0.5, transparent: true });
+
+    for (const path of roads) {
+      const points = path.map(({ threeX, threeZ }) => {
+        const h = hmDataRef.current ? sampleHmHeight(hmDataRef.current, threeX, threeZ) : 0;
+        return new THREE.Vector3(threeX, h * dispScaleRef.current + 0.02, threeZ);
+      });
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      roadLinesRef.current.push(line);
+    }
+
+    return () => {
+      roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
+      mat.dispose();
+      roadLinesRef.current = [];
+    };
+  }, [roads, hmReady]);
+
+  useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
@@ -463,6 +532,7 @@ export default function ChroniclePage() {
       ctx.drawImage(img, 0, 0, 512, 512);
       const data = ctx.getImageData(0, 0, 512, 512).data;
       hmDataRef.current = data;
+      setHmReady(true);
       if (liveLocsRef.current.length > 0)
         locHeightsRef.current = liveLocsRef.current.map((l) =>
           sampleHmHeight(data, l.threeX, l.threeZ),
