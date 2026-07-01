@@ -352,8 +352,11 @@ export default function ChroniclePage() {
   const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
   const [roads, setRoads] = useState<RoadPath[]>([]);
-  const [hmReady, setHmReady] = useState(false);
-  const roadLinesRef = useRef<THREE.Line[]>([]);
+  const roadsRef = useRef<RoadPath[]>([]);
+  const mapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mapCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mapTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const mapBaseImgRef = useRef<HTMLImageElement | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -381,6 +384,32 @@ export default function ChroniclePage() {
   const specTexRef = useRef<THREE.Texture | null>(null);
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+
+  function drawRoadsOnMap() {
+    const canvas = mapCanvasRef.current;
+    const ctx = mapCtxRef.current;
+    const texture = mapTextureRef.current;
+    const baseImg = mapBaseImgRef.current;
+    if (!canvas || !ctx || !texture || !baseImg || canvas.width < 2) return;
+    const W = canvas.width, H = canvas.height;
+    ctx.drawImage(baseImg, 0, 0, W, H);
+    ctx.save();
+    ctx.strokeStyle = "rgba(210, 160, 60, 0.9)";
+    ctx.lineWidth = Math.max(3, W / 200);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const path of roadsRef.current) {
+      ctx.beginPath();
+      path.forEach(({ threeX, threeZ }, i) => {
+        const cx = (threeX / 20 + 0.5) * W;
+        const cy = (threeZ / 20 + 0.5) * H;
+        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+    }
+    ctx.restore();
+    texture.needsUpdate = true;
+  }
 
   // Lock body scroll and hide footer while this page is mounted
   useEffect(() => {
@@ -487,31 +516,9 @@ export default function ChroniclePage() {
   }, []);
 
   useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene || roads.length === 0) return;
-
-    roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
-    roadLinesRef.current = [];
-
-    const mat = new THREE.LineBasicMaterial({ color: 0x7a5c2e, opacity: 0.5, transparent: true });
-
-    for (const path of roads) {
-      const points = path.map(({ threeX, threeZ }) => {
-        const h = hmDataRef.current ? sampleHmHeight(hmDataRef.current, threeX, threeZ) : 0;
-        return new THREE.Vector3(threeX, h * dispScaleRef.current + 0.02, threeZ);
-      });
-      const geo = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geo, mat);
-      scene.add(line);
-      roadLinesRef.current.push(line);
-    }
-
-    return () => {
-      roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
-      mat.dispose();
-      roadLinesRef.current = [];
-    };
-  }, [roads, hmReady]);
+    roadsRef.current = roads;
+    drawRoadsOnMap();
+  }, [roads]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // useLayoutEffect fires before paint so mobile users never see the desktop panel flash
   useLayoutEffect(() => {
@@ -634,7 +641,6 @@ export default function ChroniclePage() {
       ctx.drawImage(img, 0, 0, 512, 512);
       const data = ctx.getImageData(0, 0, 512, 512).data;
       hmDataRef.current = data;
-      setHmReady(true);
       if (liveLocsRef.current.length > 0)
         locHeightsRef.current = liveLocsRef.current.map((l) =>
           sampleHmHeight(data, l.threeX, l.threeZ),
@@ -749,14 +755,33 @@ export default function ChroniclePage() {
     const segments = 256;
     const geo = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
 
-    // Color texture from world map jpg
-    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
+    // Color texture: canvas so roads can be painted on top at runtime
+    const mapCanvas = document.createElement("canvas");
+    mapCanvas.width = 1;
+    mapCanvas.height = 1;
+    const mapCtx = mapCanvas.getContext("2d")!;
+    mapCanvasRef.current = mapCanvas;
+    mapCtxRef.current = mapCtx;
+    const colorTexture = new THREE.CanvasTexture(mapCanvas);
     colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
     const initMapScale = mapScale;
     const initMapOffset = (1 - initMapScale) / 2;
     colorTexture.repeat.set(initMapScale, initMapScale);
     colorTexture.offset.set(initMapOffset, initMapOffset);
     colorTexRef.current = colorTexture;
+    mapTextureRef.current = colorTexture;
+
+    const baseImg = new Image();
+    baseImg.onload = () => {
+      mapCanvas.width = baseImg.naturalWidth;
+      mapCanvas.height = baseImg.naturalHeight;
+      mapCtx.drawImage(baseImg, 0, 0);
+      mapBaseImgRef.current = baseImg;
+      // Paint roads if they arrived before the image finished loading
+      if (roadsRef.current.length > 0) drawRoadsOnMap();
+      else colorTexture.needsUpdate = true;
+    };
+    baseImg.src = "/worldMap.jpg";
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
     const specTexture = new THREE.TextureLoader().load("/specmap.png");
