@@ -755,33 +755,37 @@ export default function ChroniclePage() {
     const segments = 256;
     const geo = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
 
-    // Color texture: canvas so roads can be painted on top at runtime
-    const mapCanvas = document.createElement("canvas");
-    mapCanvas.width = 1;
-    mapCanvas.height = 1;
-    const mapCtx = mapCanvas.getContext("2d")!;
-    mapCanvasRef.current = mapCanvas;
-    mapCtxRef.current = mapCtx;
-    const colorTexture = new THREE.CanvasTexture(mapCanvas);
-    colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
+    // Color texture: load normally first so the map appears immediately,
+    // then swap to a CanvasTexture once the image is available so roads can be painted on top.
     const initMapScale = mapScale;
     const initMapOffset = (1 - initMapScale) / 2;
+    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg", (tex) => {
+      const img = tex.image as HTMLImageElement;
+      const mapCanvas = document.createElement("canvas");
+      mapCanvas.width = img.naturalWidth || img.width;
+      mapCanvas.height = img.naturalHeight || img.height;
+      const mapCtx = mapCanvas.getContext("2d")!;
+      mapCtx.drawImage(img, 0, 0);
+      mapCanvasRef.current = mapCanvas;
+      mapCtxRef.current = mapCtx;
+      mapBaseImgRef.current = img;
+
+      const canvasTex = new THREE.CanvasTexture(mapCanvas);
+      canvasTex.wrapS = canvasTex.wrapT = THREE.ClampToEdgeWrapping;
+      canvasTex.repeat.set(initMapScale, initMapScale);
+      canvasTex.offset.set(initMapOffset, initMapOffset);
+      mapTextureRef.current = canvasTex;
+      colorTexRef.current = canvasTex;
+      if (terrainMatRef.current) {
+        terrainMatRef.current.map = canvasTex;
+        terrainMatRef.current.needsUpdate = true;
+      }
+      if (roadsRef.current.length > 0) drawRoadsOnMap();
+    });
+    colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
     colorTexture.repeat.set(initMapScale, initMapScale);
     colorTexture.offset.set(initMapOffset, initMapOffset);
     colorTexRef.current = colorTexture;
-    mapTextureRef.current = colorTexture;
-
-    const baseImg = new Image();
-    baseImg.onload = () => {
-      mapCanvas.width = baseImg.naturalWidth;
-      mapCanvas.height = baseImg.naturalHeight;
-      mapCtx.drawImage(baseImg, 0, 0);
-      mapBaseImgRef.current = baseImg;
-      // Paint roads if they arrived before the image finished loading
-      if (roadsRef.current.length > 0) drawRoadsOnMap();
-      else colorTexture.needsUpdate = true;
-    };
-    baseImg.src = "/worldMap.jpg";
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
     const specTexture = new THREE.TextureLoader().load("/specmap.png");
