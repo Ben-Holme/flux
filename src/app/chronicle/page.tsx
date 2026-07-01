@@ -395,7 +395,7 @@ export default function ChroniclePage() {
     ctx.drawImage(baseImg, 0, 0, W, H);
     ctx.save();
     ctx.strokeStyle = "rgba(210, 160, 60, 0.9)";
-    ctx.lineWidth = Math.max(3, W / 200);
+    ctx.lineWidth = Math.max(1.5, W / 400);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (const path of roadsRef.current) {
