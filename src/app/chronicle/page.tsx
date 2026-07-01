@@ -28,6 +28,9 @@ interface ApiSeason {
   start: string | null;
 }
 
+type RoadPoint = { threeX: number; threeZ: number };
+type RoadPath = RoadPoint[];
+
 const GOLD = "#c8923a";
 
 // Hostility tier colors
@@ -348,6 +351,9 @@ export default function ChroniclePage() {
   const [activeTab, setActiveTab] = useState<"events" | "details">("events");
   const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
+  const [roads, setRoads] = useState<RoadPath[]>([]);
+  const [hmReady, setHmReady] = useState(false);
+  const roadLinesRef = useRef<THREE.Line[]>([]);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -462,6 +468,50 @@ export default function ChroniclePage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getRoads-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        const roadsObj = data.roads as Record<string, Array<{ x: number; y: number; z: number }>>;
+        if (!roadsObj || typeof roadsObj !== "object") return;
+        const parsed: RoadPath[] = Object.values(roadsObj)
+          .filter((pts) => Array.isArray(pts) && pts.length > 1)
+          .map((pts) => pts.map(({ x, y }) => ({
+            threeX: (x / MAP_EXTENT) * 10,
+            threeZ: (y / MAP_EXTENT) * 10,
+          })));
+        setRoads(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || roads.length === 0) return;
+
+    roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
+    roadLinesRef.current = [];
+
+    const mat = new THREE.LineBasicMaterial({ color: 0x7a5c2e, opacity: 0.5, transparent: true });
+
+    for (const path of roads) {
+      const points = path.map(({ threeX, threeZ }) => {
+        const h = hmDataRef.current ? sampleHmHeight(hmDataRef.current, threeX, threeZ) : 0;
+        return new THREE.Vector3(threeX, h * dispScaleRef.current + 0.02, threeZ);
+      });
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      roadLinesRef.current.push(line);
+    }
+
+    return () => {
+      roadLinesRef.current.forEach((l) => { scene.remove(l); l.geometry.dispose(); });
+      mat.dispose();
+      roadLinesRef.current = [];
+    };
+  }, [roads, hmReady]);
 
   // useLayoutEffect fires before paint so mobile users never see the desktop panel flash
   useLayoutEffect(() => {
@@ -584,6 +634,7 @@ export default function ChroniclePage() {
       ctx.drawImage(img, 0, 0, 512, 512);
       const data = ctx.getImageData(0, 0, 512, 512).data;
       hmDataRef.current = data;
+      setHmReady(true);
       if (liveLocsRef.current.length > 0)
         locHeightsRef.current = liveLocsRef.current.map((l) =>
           sampleHmHeight(data, l.threeX, l.threeZ),

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import EventCard from "./event-card";
 import { parseSpecial } from "./utils";
 import Stat from "./stat";
-import type { Season } from "./season-utils";
+import type { Season, SeasonDay } from "./season-utils";
 import type { StoryEvent } from "./use-story-events";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -21,10 +21,10 @@ function SeasonHeader({ season }: { season: Season }) {
 
   return (
     <div
-      className="mb-6 rounded-lg border border-white/[0.08] bg-black/70 px-5 py-[18px]"
-      style={{ borderLeft: "3px solid #f4a86a" }}
+      className="mb-6 rounded-lg border border-white/[0.08] bg-black/50 px-5 py-[18px] backdrop-blur-[14px]"
+      style={{ borderLeft: "3px solid var(--gold)" }}
     >
-      <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-[#f4a86a]">
+      <div className="mb-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-gold">
         ◇ Season {season.number} · {fmtDate(season.startDate)} – {fmtDate(season.endDate)}
       </div>
       {sp.seasoncontext && (
@@ -46,8 +46,8 @@ function SeasonFooter({ event }: { event: StoryEvent }) {
   if (!sp.beginning && !sp.middle && !sp.end) return null;
   return (
     <div
-      className="mt-2 rounded-lg border border-white/[0.06] bg-black/65 px-5 py-4"
-      style={{ borderLeft: "3px solid #f4a86a" }}
+      className="mt-2 rounded-lg border border-white/[0.06] bg-black/40 px-5 py-4 backdrop-blur-[14px]"
+      style={{ borderLeft: "3px solid var(--gold)" }}
     >
       <div className="mb-3 text-[0.6rem] uppercase tracking-[0.18em] text-white/[0.28]">
         ◇ Season Summary
@@ -77,8 +77,6 @@ function DayDivider({ dayNum, date, isBossDay }: { dayNum: number; date: Date; i
     </div>
   );
 }
-
-import type { SeasonDay } from "./season-utils";
 
 type DayGroup =
   | { kind: "events"; day: SeasonDay }

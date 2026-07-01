@@ -85,7 +85,7 @@ const EventCard = memo(function EventCard({ event, players, items, onCharClick, 
 
   return (
     <div
-      className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/70"
+      className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/45 backdrop-blur-[14px]"
       style={{ borderLeft: `3px solid ${cfg.color}` }}
     >
       {/* Header */}
