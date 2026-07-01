@@ -353,7 +353,12 @@ export default function ChroniclePage() {
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
   const [roads, setRoads] = useState<RoadPath[]>([]);
   const roadsRef = useRef<RoadPath[]>([]);
-  const roadTexUniformRef = useRef<{ value: THREE.Texture | null }>({ value: null });
+  const mapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mapCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mapTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const mapBaseImgRef = useRef<HTMLImageElement | null>(null);
+  const drawRoadsOnMapRef = useRef<() => void>(() => {});
+  const lastRoadRadiusRef = useRef(-1);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -381,6 +386,35 @@ export default function ChroniclePage() {
   const specTexRef = useRef<THREE.Texture | null>(null);
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+
+  function drawRoadsOnMap() {
+    const canvas = mapCanvasRef.current;
+    const ctx = mapCtxRef.current;
+    const texture = mapTextureRef.current;
+    const baseImg = mapBaseImgRef.current;
+    if (!canvas || !ctx || !texture || !baseImg || canvas.width < 2) return;
+    const W = canvas.width, H = canvas.height;
+    const r = radiusRef.current > 0 ? radiusRef.current : R_MAX;
+    ctx.drawImage(baseImg, 0, 0, W, H);
+    ctx.save();
+    ctx.strokeStyle = "rgba(210, 160, 60, 0.9)";
+    ctx.lineWidth = Math.max(1, (r / R_MAX) * (W / 100));
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const path of roadsRef.current) {
+      ctx.beginPath();
+      path.forEach(({ threeX, threeZ }, i) => {
+        const cx = (threeX / 20 + 0.5) * W;
+        const cy = (threeZ / 20 + 0.5) * H;
+        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+    }
+    ctx.restore();
+    lastRoadRadiusRef.current = r;
+    texture.needsUpdate = true;
+  }
+  drawRoadsOnMapRef.current = drawRoadsOnMap;
 
   // Lock body scroll and hide footer while this page is mounted
   useEffect(() => {
@@ -488,33 +522,8 @@ export default function ChroniclePage() {
 
   useEffect(() => {
     roadsRef.current = roads;
-    if (roads.length === 0) return;
-    const S = 1024;
-    const canvas = document.createElement("canvas");
-    canvas.width = S;
-    canvas.height = S;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, S, S);
-    ctx.filter = "blur(3px)";
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 1.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (const path of roads) {
-      ctx.beginPath();
-      path.forEach(({ threeX, threeZ }, i) => {
-        const cx = (threeX / 20 + 0.5) * S;
-        const cy = (threeZ / 20 + 0.5) * S;
-        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
-      });
-      ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.flipY = false;
-    roadTexUniformRef.current.value = tex;
-    needsRenderRef.current = true;
-  }, [roads]);
+    drawRoadsOnMap();
+  }, [roads]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // useLayoutEffect fires before paint so mobile users never see the desktop panel flash
   useLayoutEffect(() => {
@@ -751,9 +760,33 @@ export default function ChroniclePage() {
     const segments = 256;
     const geo = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
 
+    // Color texture: load normally first so the map appears immediately,
+    // then swap to a CanvasTexture once the image is available so roads can be painted on top.
     const initMapScale = mapScale;
     const initMapOffset = (1 - initMapScale) / 2;
-    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
+    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg", (tex) => {
+      const img = tex.image as HTMLImageElement;
+      const mapCanvas = document.createElement("canvas");
+      mapCanvas.width = img.naturalWidth || img.width;
+      mapCanvas.height = img.naturalHeight || img.height;
+      const mapCtx = mapCanvas.getContext("2d")!;
+      mapCtx.drawImage(img, 0, 0);
+      mapCanvasRef.current = mapCanvas;
+      mapCtxRef.current = mapCtx;
+      mapBaseImgRef.current = img;
+
+      const canvasTex = new THREE.CanvasTexture(mapCanvas);
+      canvasTex.wrapS = canvasTex.wrapT = THREE.ClampToEdgeWrapping;
+      canvasTex.repeat.set(initMapScale, initMapScale);
+      canvasTex.offset.set(initMapOffset, initMapOffset);
+      mapTextureRef.current = canvasTex;
+      colorTexRef.current = canvasTex;
+      if (terrainMatRef.current) {
+        terrainMatRef.current.map = canvasTex;
+        terrainMatRef.current.needsUpdate = true;
+      }
+      if (roadsRef.current.length > 0) drawRoadsOnMap();
+    });
     colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
     colorTexture.repeat.set(initMapScale, initMapScale);
     colorTexture.offset.set(initMapOffset, initMapOffset);
@@ -788,7 +821,6 @@ export default function ChroniclePage() {
       shader.uniforms.uSeaNormalScale = { value: new THREE.Vector2(0.8, 0.8) };
       shader.uniforms.uSeaNormalTiling = { value: new THREE.Vector2(32, 32) };
       shader.uniforms.uSeaSpec = terrainSeaSpecUniformRef.current;
-      shader.uniforms.uRoadTex = roadTexUniformRef.current;
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <fog_pars_vertex>",
@@ -801,23 +833,11 @@ export default function ChroniclePage() {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           "#include <fog_pars_fragment>",
-          "#include <fog_pars_fragment>\nvarying float vWorldY;\nvarying vec2 vWorldXZ;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;\nuniform sampler2D uSpecMask;\nuniform sampler2D uSeaNormalMap;\nuniform vec2 uSeaNormalScale;\nuniform vec2 uSeaNormalTiling;\nuniform float uSeaSpec;\nuniform sampler2D uRoadTex;",
+          "#include <fog_pars_fragment>\nvarying float vWorldY;\nvarying vec2 vWorldXZ;\nuniform float uHeightFogEnabled;\nuniform float uHeightFogDensity;\nuniform float uContrast;\nuniform sampler2D uSpecMask;\nuniform sampler2D uSeaNormalMap;\nuniform vec2 uSeaNormalScale;\nuniform vec2 uSeaNormalTiling;\nuniform float uSeaSpec;",
         )
         .replace(
           "#include <map_fragment>",
-          `#include <map_fragment>
-          diffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;
-          {
-            vec2 roadUv = vec2(vWorldXZ.x / 20.0 + 0.5, vWorldXZ.y / 20.0 + 0.5);
-            float roadVal = texture2D(uRoadTex, roadUv).r;
-            float uvPxSize = max(length(fwidth(roadUv)), 1e-5);
-            float texPxSize = uvPxSize * 1024.0;
-            float threshold = exp(-(texPxSize * 0.75 * texPxSize * 0.75) / 18.0);
-            threshold = clamp(threshold, 0.05, 0.97);
-            float roadFw = max(fwidth(roadVal), 0.001);
-            float road = smoothstep(threshold - roadFw, threshold + roadFw, roadVal);
-            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.78, 0.62, 0.28), road * 0.6);
-          }`,
+          "#include <map_fragment>\ndiffuseColor.rgb = (diffuseColor.rgb - 0.5) * uContrast + 0.5;",
         )
         .replace(
           "#include <normal_fragment_maps>",
@@ -1009,6 +1029,12 @@ export default function ChroniclePage() {
       }
       // Smooth zoom
       radiusRef.current += (targetRadiusRef.current - radiusRef.current) * 0.12;
+
+      // Redraw roads when zoom changes enough (line width scales with radius)
+      if (roadsRef.current.length > 0 && mapTextureRef.current &&
+          Math.abs(radiusRef.current - lastRoadRadiusRef.current) / R_MAX > 0.04) {
+        drawRoadsOnMapRef.current();
+      }
 
       // Detect movement since last frame; skip render entirely when settled
       const moved =
