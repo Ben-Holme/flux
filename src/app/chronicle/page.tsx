@@ -363,35 +363,14 @@ export default function ChroniclePage() {
     fetch("https://api.unyhagame.com/ueserv/getRoads-w.php")
       .then((r) => r.json())
       .then((data) => {
-        console.log("[roads] raw response:", data);
-        const rawRoads: unknown[] = Array.isArray(data.roads) ? data.roads : Array.isArray(data) ? data : [];
-        const parsed: RoadPath[] = [];
-        for (const road of rawRoads) {
-          const pts: unknown[] = Array.isArray(road)
-            ? road
-            : Array.isArray((road as { points?: unknown }).points)
-              ? (road as { points: unknown[] }).points
-              : [];
-          const path: RoadPoint[] = [];
-          for (const pt of pts) {
-            let ueX: number | null = null, ueY: number | null = null;
-            if (typeof pt === "string") {
-              const m = pt.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
-              if (m) { ueX = parseFloat(m[1]); ueY = parseFloat(m[2]); }
-            } else if (Array.isArray(pt) && pt.length >= 2) {
-              ueX = Number(pt[0]); ueY = Number(pt[1]);
-            } else if (pt && typeof pt === "object") {
-              const p = pt as Record<string, unknown>;
-              ueX = Number(p.X ?? p.x);
-              ueY = Number(p.Y ?? p.y);
-            }
-            if (ueX != null && ueY != null && !isNaN(ueX) && !isNaN(ueY)) {
-              path.push({ threeX: (ueX / MAP_EXTENT) * 10, threeZ: (ueY / MAP_EXTENT) * 10 });
-            }
-          }
-          if (path.length > 1) parsed.push(path);
-        }
-        console.log("[roads] parsed paths:", parsed.length, parsed.map(p => p.length + " points"));
+        const roadsObj = data.roads as Record<string, Array<{ x: number; y: number; z: number }>>;
+        if (!roadsObj || typeof roadsObj !== "object") return;
+        const parsed: RoadPath[] = Object.values(roadsObj)
+          .filter((pts) => Array.isArray(pts) && pts.length > 1)
+          .map((pts) => pts.map(({ x, y }) => ({
+            threeX: (x / MAP_EXTENT) * 10,
+            threeZ: (y / MAP_EXTENT) * 10,
+          })));
         setRoads(parsed);
       })
       .catch(() => {});
