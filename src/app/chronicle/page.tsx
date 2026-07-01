@@ -363,6 +363,7 @@ export default function ChroniclePage() {
     fetch("https://api.unyhagame.com/ueserv/getRoads-w.php")
       .then((r) => r.json())
       .then((data) => {
+        console.log("[roads] raw response:", data);
         const rawRoads: unknown[] = Array.isArray(data.roads) ? data.roads : Array.isArray(data) ? data : [];
         const parsed: RoadPath[] = [];
         for (const road of rawRoads) {
@@ -390,6 +391,7 @@ export default function ChroniclePage() {
           }
           if (path.length > 1) parsed.push(path);
         }
+        console.log("[roads] parsed paths:", parsed.length, parsed.map(p => p.length + " points"));
         setRoads(parsed);
       })
       .catch(() => {});
