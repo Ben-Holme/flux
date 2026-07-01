@@ -357,6 +357,8 @@ export default function ChroniclePage() {
   const mapCtxRef = useRef<CanvasRenderingContext2D | null>(null);
   const mapTextureRef = useRef<THREE.CanvasTexture | null>(null);
   const mapBaseImgRef = useRef<HTMLImageElement | null>(null);
+  const drawRoadsOnMapRef = useRef<() => void>(() => {});
+  const lastRoadRadiusRef = useRef(-1);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
@@ -392,10 +394,11 @@ export default function ChroniclePage() {
     const baseImg = mapBaseImgRef.current;
     if (!canvas || !ctx || !texture || !baseImg || canvas.width < 2) return;
     const W = canvas.width, H = canvas.height;
+    const r = radiusRef.current > 0 ? radiusRef.current : R_MAX;
     ctx.drawImage(baseImg, 0, 0, W, H);
     ctx.save();
     ctx.strokeStyle = "rgba(210, 160, 60, 0.9)";
-    ctx.lineWidth = Math.max(3, W / 200);
+    ctx.lineWidth = Math.max(1, (r / R_MAX) * (W / 100));
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (const path of roadsRef.current) {
@@ -408,8 +411,10 @@ export default function ChroniclePage() {
       ctx.stroke();
     }
     ctx.restore();
+    lastRoadRadiusRef.current = r;
     texture.needsUpdate = true;
   }
+  drawRoadsOnMapRef.current = drawRoadsOnMap;
 
   // Lock body scroll and hide footer while this page is mounted
   useEffect(() => {
@@ -1024,6 +1029,12 @@ export default function ChroniclePage() {
       }
       // Smooth zoom
       radiusRef.current += (targetRadiusRef.current - radiusRef.current) * 0.12;
+
+      // Redraw roads when zoom changes enough (line width scales with radius)
+      if (roadsRef.current.length > 0 && mapTextureRef.current &&
+          Math.abs(radiusRef.current - lastRoadRadiusRef.current) / R_MAX > 0.04) {
+        drawRoadsOnMapRef.current();
+      }
 
       // Detect movement since last frame; skip render entirely when settled
       const moved =
