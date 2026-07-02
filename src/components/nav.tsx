@@ -116,7 +116,7 @@ export default function Nav() {
         <div
           className="hidden max-[1248px]:block"
           style={{
-            transition: ".25s",
+            transition: !isFirst || open ? ".25s" : "none",
             position: "absolute",
             left: "-50%",
             width: "200vw",
