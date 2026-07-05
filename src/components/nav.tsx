@@ -112,24 +112,24 @@ export default function Nav() {
       <div
         className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4"
       >
-        {/* Background ball — desktop hidden, mobile shown; not rendered on homepage unless menu is open */}
-        {(!isFirst || open) && (
-          <div
-            className="hidden max-[1248px]:block"
-            style={{
-              transition: ".25s",
-              position: "absolute",
-              left: "-50%",
-              width: "200vw",
-              height: "500px",
-              borderRadius: "100%",
-              transform: active ? "scale(1)" : "scale(0)",
-              transformOrigin: "30% 50%",
-              backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
-              filter: !scrolled && !isChronicle ? "blur(100px)" : "none",
-            }}
-          />
-        )}
+        {/* Background ball — desktop hidden, mobile shown */}
+        <div
+          className="hidden max-[1248px]:block"
+          style={{
+            // No transition when the ball must instantly hide on the homepage at scroll-top —
+            // prevents stale-scrolled state from animating a dark arc on navigation to "/".
+            transition: isFirst && !scrolled && !open ? "none" : ".25s",
+            position: "absolute",
+            left: "-50%",
+            width: "200vw",
+            height: "500px",
+            borderRadius: "100%",
+            transform: active ? "scale(1)" : "scale(0)",
+            transformOrigin: "30% 50%",
+            backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
+            filter: !scrolled && !isChronicle ? "blur(100px)" : "none",
+          }}
+        />
 
         {/* Logo — correct "U" letter SVG from original nav.js */}
         <Link href="/" onClick={() => setOpen(false)} aria-label="Unyha home">
