@@ -139,7 +139,7 @@ export default function Nav() {
             style={{
               width: "50px",
               display: "block",
-              transition: ".5s",
+              transition: isFirst && !scrolled && !open ? "none" : ".5s",
               transform: active ? "scale(0.9)" : "scale(1)",
               opacity: active ? 1 : 0,
             }}
