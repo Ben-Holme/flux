@@ -52,6 +52,7 @@ interface Character {
 interface AccountData {
   email: string;
   house: string;
+  steam_id: string | null;
   characters: Character[];
 }
 
@@ -132,6 +133,8 @@ function AccountContent() {
   const charParam = searchParams.get("char");
   const activeCharId = charParam ? Number(charParam) : null;
 
+  const steamParam = searchParams.get("steam");
+
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,8 +183,15 @@ function AccountContent() {
         </Button>
       </div>
 
+      {steamParam === "linked" && (
+        <Text className="text-[#7ecf7e]">Steam account linked successfully.</Text>
+      )}
+      {steamParam === "error" && (
+        <Text className="text-ember">Steam linking failed. Please try again.</Text>
+      )}
+
       {loading && <Text>Loading…</Text>}
-      {error && <Text className="text-[#e16565]">Error: {error}</Text>}
+      {error && <Text className="text-ember">Error: {error}</Text>}
 
       {/* Character detail view */}
       {account && activeChar && <CharacterDetail char={activeChar} />}
@@ -199,6 +209,25 @@ function AccountContent() {
               <TableRow>
                 <Td variant="heading">House</Td>
                 <Td className="text-right">{account.house || "—"}</Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam</Td>
+                <Td className="text-right">
+                  {account.steam_id ? (
+                    <Text as="span" variant="muted">
+                      Linked ({account.steam_id})
+                    </Text>
+                  ) : (
+                    <Button
+                      href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
+                      external
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Connect Steam
+                    </Button>
+                  )}
+                </Td>
               </TableRow>
             </TableBody>
           </Table>
