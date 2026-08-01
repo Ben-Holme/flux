@@ -45,14 +45,19 @@ export default function Nav() {
   const pathname = usePathname();
   const isFirst = pathname === "/";
   const isChronicle = pathname === "/chronicle";
+  const [prevIsFirst, setPrevIsFirst] = useState(isFirst);
   const [scrolled, setScrolled] = useState(!isFirst);
   const [open, setOpen] = useState(false);
 
+  // Reset scrolled synchronously during render when isFirst changes so there is
+  // never a render with stale state (no effect timing gap, no flash).
+  if (prevIsFirst !== isFirst) {
+    setPrevIsFirst(isFirst);
+    setScrolled(!isFirst);
+  }
+
   useIsomorphicLayoutEffect(() => {
-    if (!isFirst) {
-      setScrolled(true);
-      return;
-    }
+    if (!isFirst) return;
     const onScroll = () => setScrolled(window.scrollY > 300);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
