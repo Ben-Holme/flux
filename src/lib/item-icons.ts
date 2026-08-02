@@ -1,244 +1,212 @@
 export const ICON_BASE_URL = "https://api.unyhagame.com/ueserv/images/icons/icons";
 
 /**
- * Maps item typeId strings (the third segment of the packed item string) to
- * icon names from getIcons-w.php.
+ * Maps item typeId (_asset) strings to icon names from getIcons-w.php.
  *
- * This map only contains entries where the typeId does NOT exactly match an
- * icon name. For direct matches (e.g. typeId "sword" → icon "sword") no entry
- * is needed — getItemIcon() tries the typeId directly first.
+ * Keys come directly from the Unyha Lore item database (_asset field).
+ * Values come from the UE4 texture asset name on each item's Icon path.
  *
- * Icon names come from the `icons` array in the getIcons-w.php response.
+ * Only needed when typeId !== icon name. getItemIcon() tries the typeId
+ * directly first, so items whose typeId already matches an icon name need
+ * no entry here.
  */
 export const ITEM_ICON_MAP: Record<string, string> = {
 
-  // ── Swords — all map to the single "sword" icon ─────────────────────────
-  longsword:          "sword",
-  shortsword:         "sword",
-  broadsword:         "sword",
-  bastardSword:       "sword",
-  greatsword:         "sword",
-  twoHandedSword:     "sword",
-  ironSword:          "sword",
-  steelSword:         "sword",
-  goldSword:          "sword",
-  elvenSword:         "sword",
-  gladius:            "sword",
-  // ms1–ms4 are tiered swords in the icon set — map quality variants here
-  sword1:             "ms1",
-  sword2:             "ms2",
-  sword3:             "ms3",
-  sword4:             "ms4",
-
-  // ── Staves / Wands ──────────────────────────────────────────────────────
-  wepWandFire:        "Staff",
-  wepWandIce:         "Staff",
-  wepWandLightning:   "Staff",
-  wepWandPoison:      "Staff",
-  wepWand:            "Staff",
-  wepStaff:           "Staff",
-  staff:              "Staff",
-  wand:               "Staff",
-  fireStaff:          "Staff",
-  iceStaff:           "Staff",
-  arcaneStaff:        "Staff",
-  oakStaff:           "Staff",
+  // ── Swords ──────────────────────────────────────────────────────────────
+  wepSword:              "sword",
+  wepSwordTraining:      "sword",
+  wepSword2h:            "sword",
 
   // ── Bows ────────────────────────────────────────────────────────────────
-  shortbow:           "bow",
-  huntingBow:         "bow",
-  longbow:            "longBow",
-  // crossbow icon is "Crossbow" (capital C)
-  crossbow:           "Crossbow",
+  wepBow:                "bow",
+  wepBowLong:            "longBow",
+  wepBowTraining:        "bow",
+  wepXbow:               "Crossbow",
+  wepXbowHeavy:          "Crossbow",
+  specialFishBoneBow:    "BowFishBone",
 
-  // ── Shields ─────────────────────────────────────────────────────────────
-  roundShield:        "shield",
-  towerShield:        "shield",
-  buckler:            "shield",
-  // kiteShield matches directly
+  // ── Staves ──────────────────────────────────────────────────────────────
+  wepStaff:              "Staff",
+  wepWandFire:           "Staff",
+  wepWandAir:            "Staff",
+  wepWandEarth:          "Staff",
+  wepWandWater:          "Staff",
+  wepWandFireTraining:   "Staff",
 
-  // ── Axes ────────────────────────────────────────────────────────────────
-  hatchet:            "axe",
-  handAxe:            "axe",
-  battleaxe:          "axe",
-  greatAxe:           "axe",
-  woodcuttingAxe:     "axe",
+  // ── Axes / Picks ─────────────────────────────────────────────────────────
+  wepAxe:                "axe",
+  wepPickaxe:            "pickaxe",
+  wepPickaxeAntons:      "pickaxe",
 
-  // ── Hammers / Maces ─────────────────────────────────────────────────────
-  warhammer:          "hammer",
-  morningstar:        "mace",
-  flail:              "mace",
+  // ── Maces / Daggers ──────────────────────────────────────────────────────
+  wepMace:               "mace",
+  wepDagger:             "dagger",
 
-  // ── Helmets ─────────────────────────────────────────────────────────────
-  // "Helmet" (capital H) is the generic fallback
-  helmet:             "Helmet",
-  ironHelmet:         "Helmet",
-  leatherHelmet:      "helmet_leather",
-  boneHelmet:         "helmet_bone",
-  hood:               "skullCap",
-  cap:                "skullCap",
-  circlet:            "head",
-  greatHelm:          "plateHelmet",
-  barbute:            "plateHelmet",
-  wizardHat:          "wizardsHat",
+  // ── Shields ──────────────────────────────────────────────────────────────
+  shieldWooden:          "shield",
+  shieldKite:            "kiteShield",
 
-  // ── Chest ───────────────────────────────────────────────────────────────
-  // "Chest" (capital C) is the generic fallback
-  chestplate:         "Chest",
-  breastplate:        "plateChest",
-  chainmail:          "chest_bone",
-  leatherArmor:       "chest_leather",
-  studdedLeather:     "chest_leather",
-  tunic:              "shirt",
-  vest:               "doublet",
+  // ── Bone armour ──────────────────────────────────────────────────────────
+  boneHelmet:            "helmet_bone",
+  boneChest:             "chest_bone",
+  boneArms:              "arms_bone",
+  boneGloves:            "gloves_bone",
+  boneLegs:              "leggings_bone",
 
-  // ── Arms / Sleeves ──────────────────────────────────────────────────────
-  // "Arms" (capital A) is the generic fallback
-  arms:               "Arms",
-  ironArms:           "plateArms",
-  leatherArms:        "arms_leather",
-  boneArms:           "arms_bone",
-  vambraces:          "plateArms",
-  bracers:            "arms_leather",
+  // ── Leather armour ───────────────────────────────────────────────────────
+  leatherHelmet:         "helmet_leather",
+  leatherChest:          "chest_leather",
+  leatherArms:           "arms_leather",
+  leatherGloves:         "gloves_leather",
+  leatherLegs:           "leggings_leather",
+  specialWolfGloves:     "gloves_leather",
 
-  // ── Gloves ──────────────────────────────────────────────────────────────
-  gauntlets:          "gloves",
-  ironGauntlets:      "plateGloves",
-  leatherGloves:      "gloves_leather",
-  boneGloves:         "gloves_bone",
+  // ── Plate armour ─────────────────────────────────────────────────────────
+  plateHelmet:           "plateHelmet",
+  plateChest:            "plateChest",
+  plateArms:             "plateArms",
+  plateGloves:           "plateGloves",
+  plateLegs:             "plateLegs",
+  plateChestEarth:       "Chest",
 
-  // ── Leggings ────────────────────────────────────────────────────────────
-  // "Leggings" (capital L) is the generic fallback
-  greaves:            "Leggings",
-  legguards:          "Leggings",
-  chainLeggings:      "leggings_bone",
-  leatherLeggings:    "leggings_leather",
-  plateGreaves:       "plateLegs",
+  // ── Jewellery ────────────────────────────────────────────────────────────
+  Jobnecklace:           "necklace",
 
-  // ── Feet ────────────────────────────────────────────────────────────────
-  leatherBoots:       "boots",
-  ironBoots:          "tightBoots",
-  sabatons:           "tightBoots",
+  // ── Healing potions ──────────────────────────────────────────────────────
+  potionHealing:         "potionHeal",
+  potionHealingLesser:   "potionHeal",
+  potionHealingGreater:  "potionHeal",
+  potionHealingPlacebo:  "potionHeal",
+  potionStorytelling:    "potionHeal",   // inspiring ale
 
-  // ── Accessories ─────────────────────────────────────────────────────────
-  goldRing:           "goldring",
-  amulet:             "necklace",
-  pendant:            "necklace",
+  // ── Mana potions ─────────────────────────────────────────────────────────
+  potionMana:            "potionMana",
+  potionManaLesser:      "potionMana",
+  potionManaGreater:     "potionMana",
+  potionManaPlacebo:     "potionMana",
 
-  // ── Potions ─────────────────────────────────────────────────────────────
-  // Use the generic tier-1 icon for unqualified potion typeIds
-  healthPotion:       "potionHeal",
-  healPotion:         "potionHeal",
-  manaPotion:         "potionMana",
-  curePotion:         "potionCure",
-  antidote:           "potionCure",
-  boostPotion:        "potionBoost",
-  strengthPotion:     "potionBoost",
-  invisPotion:        "potionInvisibility",
-  nightSightPotion:   "potionNightSight",
-  elixir:             "potion1",
-  flask:              "potion1",
-  potion:             "potion1",
+  // ── Cure potions ─────────────────────────────────────────────────────────
+  potionCure:            "potionCure",
+  potionCureLesser:      "potionCure",
+  potionCureGreater:     "potionCure",
+  potionCurePlacebo:     "potionCure",
 
-  // ── Food ────────────────────────────────────────────────────────────────
-  food:               "fishTaco",
-  fishTaco:           "fishTaco",
-  fish:               "fishTaco",
-  potato:             "rottenPotato",
+  // ── Boost / misc potions ─────────────────────────────────────────────────
+  potionBoost:           "potionBoost",
+  potionBoostLesser:     "potion1",
+  potionCrafter:         "potion1",
+  potionMage:            "potion1",
+  potionRanger:          "potion1",
+  potionWarrior:         "potion1",
+  hairDye:               "potion1",
+  hairDyeFacial:         "potion1",
 
-  // ── Scrolls ─────────────────────────────────────────────────────────────
-  scroll:             "scroll1",
-  enchantScroll:      "scrollGood1",
-  goodScroll:         "scrollGood1",
-  badScroll:          "scrollBad1",
-  skillScroll:        "scroll2",
+  // ── Empty bottles ────────────────────────────────────────────────────────
+  emptyBottle:           "potion1",
+  emptyBottlePack5:      "potion1",
+  emptyBottlePack10:     "potion1",
+  emptyBottlesPack50:    "potion1",
+  emptyBottlesPack100:   "potion1",
 
-  // ── Books / Tomes ───────────────────────────────────────────────────────
-  tome:               "book",
-  grimoire:           "spellbook",
-  spellBook:          "spellbook",
+  // ── Ore & ingots ─────────────────────────────────────────────────────────
+  ore:                   "ores1",
+  ingot:                 "ingots1",
+  repairIngot:           "ingots1",
 
-  // ── Keys ────────────────────────────────────────────────────────────────
-  skeletonKey:        "keyring",
-  rustedKey:          "key",
+  // ── Arrows & bolts ───────────────────────────────────────────────────────
+  arrow:                 "arrows",
+  arrow5:                "arrows",
+  arrow10:               "arrows",
+  arrow50:               "arrows",
+  arrow100:              "arrows",
+  arrow500:              "arrows",
+  arrowshaft:            "arrowShaft",
 
-  // ── Gems ────────────────────────────────────────────────────────────────
-  airGem:             "airgem1",
-  earthGem:           "earthgem1",
-  fireGem:            "firegem1",
-  waterGem:           "watergem1",
-  gem:                "rock-crystal",
-  crystal:            "rock-crystal",
-  pearl:              "beautifulPearl",
-  amber:              "blueAmber",
+  // ── Fabric & fibre ───────────────────────────────────────────────────────
+  flax:                  "flax",
+  cloth:                 "fabric",
+  fabricLinen:           "fabric",
+  cotton:                "cotton1",
 
-  // ── Materials / Resources ───────────────────────────────────────────────
-  log:                "log1",
-  oakLog:             "log1",
-  hardwood:           "log3",
-  ore:                "ores1",
-  ironOre:            "ores1",
-  goldOre:            "ores3",
-  silverOre:          "ores2",
-  coal:               "ores1",
-  ingot:              "ingots1",
-  ironIngot:          "ingots1",
-  goldIngot:          "ingots3",
-  silverIngot:        "ingots2",
-  hide:               "hide1",
-  leather:            "hide2",
-  cotton:             "cotton1",
-  thread:             "flax1",
-  cloth:              "fabric",
-  arrow:              "arrows",
-  ironArrow:          "arrows1",
-  poisonArrow:        "arrows2",
-  bolt:               "arrows",
-  arrowShaft:         "arrowShaft",
-  arrowhead:          "arrowhead",
+  // ── Crafting reagents ────────────────────────────────────────────────────
+  feather:               "feather",
+  dreadFern:             "bms1",
+  elderRoot:             "ms1",
+  forestDust:            "gms1",
 
-  // ── Herbs / Plants ──────────────────────────────────────────────────────
-  herb:               "brownwort",
-  mushroom:           "raskovnik",
-  flower:             "fern-flower",
-  clover:             "four-clover",
-  pineNeedle:         "goldenPineNeedle",
-  pineCone:           "rockPineCone",
-  acorn:              "starAcorn",
+  // ── Consumable resources ─────────────────────────────────────────────────
+  kindling10:            "kindling1",
 
-  // ── Tools ───────────────────────────────────────────────────────────────
-  miningPickaxe:      "pickaxe",
-  smithingHammer:     "smithshammer",
-  craftingHammer:     "hammer",
-  harvestSickle:      "sickle",
-  tailoringKit:       "sewingkit",
-  alchemyKit:         "mortarAndPestle",
-  fishingNet:         "fishingnet",
+  // ── Monster drops / trophies ─────────────────────────────────────────────
+  jobBoarsTusk:          "tusk",
+  birdsBeak:             "birdsbeak",
+  jobBeautifulPearl:     "beautifulPearl",
+  head:                  "head",
 
-  // ── Currency ────────────────────────────────────────────────────────────
-  goldCoin:           "gold_coins",
-  silverCoin:         "gold_coins",
-  coinPurse:          "gold_coins1",
+  // ── Food ─────────────────────────────────────────────────────────────────
+  jobFishTaco:           "fishTaco",
+  jobRottenPotato:       "rottenPotato",
 
-  // ── Misc ────────────────────────────────────────────────────────────────
-  heirloom:           "ring",           // placeholder until a dedicated heirloom icon exists
-  relic:              "ring",
-  artifact:           "rune",
-  trapItem:           "trap",
-  ratTail:            "ratsTail",
-  bone:               "tusk",
-  skull:              "tusk",
-  undeadDust:         "undeadDust",
+  // ── Books ────────────────────────────────────────────────────────────────
+  book:                  "book2",
+  historyBook1:          "book",
+  historyBook2:          "book",
+  historyBook3:          "book",
+  historyBook4:          "book2",
+  historyBook5:          "book2",
+  historyBook6:          "book2",
+  bookAlchemy30:         "book",
+  bookAlchemy40:         "book",
+  bookAlchemy50:         "book",
+  bookAlchemy60:         "book",
+  bookAlchemy70:         "book",
+  bookAlchemy80:         "book",
+  bookAlchemy90:         "book",
+  bookAlchemy100:        "book2",
+  bookArmsLore30:        "book",
+  bookArmsLore40:        "book",
+  bookArmsLore50:        "book",
+  bookArmsLore60:        "book",
+  bookArmsLore70:        "book",
+  bookArmsLore80:        "book",
+  bookArmsLore90:        "book",
+  bookArmsLore100:       "book2",
+  bookHealing1:          "book",
+  bookHealing2:          "book",
+  bookTaming1:           "book",
+  jobBookFishing:        "spellbook",
+
+  // ── Scrolls ──────────────────────────────────────────────────────────────
+  spellmagicArrow:       "scroll1",
+
+  // ── Keys ─────────────────────────────────────────────────────────────────
+  key:                   "key",
+  keyBlank:              "key",
+  keyRing:               "keyring",
+
+  // ── Tools & crafting equipment ───────────────────────────────────────────
+  dyeingTub:             "dyeingTub",
+  dyes:                  "dyes",
+  colorTool:             "dyes",
+  enchantingTool:        "leatherworkersbox",
+  alchemicalInfusionTool: "alchemicalInfusionKit",
+  scissors:              "scissors",
+  jobNewFishingNet:      "fishingnet",
+
+  // ── Documents & research ─────────────────────────────────────────────────
+  clue:                  "letterOpen",
+  heirloomClue:          "letterOpen",
+  tomeCollection:        "letterOpen",
+  jobDescription:        "letterOpen",
+  jobCompleted:          "letter",
+  locationClue:          "note2",
+  researchJournal:       "researchBook",
 };
 
 /**
- * Returns the URL for the icon image matching the given typeId, or undefined
- * if no icon is available.
- *
+ * Returns the icon URL for the given typeId, or undefined if none is available.
  * Tries a direct match (typeId === icon name) first, then falls back to
- * ITEM_ICON_MAP, then returns undefined.
- *
- * `availableIcons` is the Set built from the `icons` array in getIcons-w.php.
+ * ITEM_ICON_MAP for divergent names.
  */
 export function getItemIcon(
   typeId: string | null | undefined,
@@ -246,12 +214,10 @@ export function getItemIcon(
 ): string | undefined {
   if (!typeId) return undefined;
 
-  // Direct match — most typeIds will already equal an icon name
   if (availableIcons.has(typeId)) {
     return `${ICON_BASE_URL}/${typeId}.png`;
   }
 
-  // Map-based fallback for divergent names
   const mapped = ITEM_ICON_MAP[typeId];
   if (mapped && availableIcons.has(mapped)) {
     return `${ICON_BASE_URL}/${mapped}.png`;
