@@ -69,8 +69,13 @@ export const ITEM_ICON_MAP: Record<string, string> = {
   plateLegs:             "plateLegs",
   plateChestEarth:       "Chest",
 
+  // ── Clothes ──────────────────────────────────────────────────────────────
+  clothPantsShort:       "pants",
+  tunicDoublet:          "cloak",
+
   // ── Jewellery ────────────────────────────────────────────────────────────
   Jobnecklace:           "necklace",
+  earRings:              "earrings",
 
   // ── Healing potions ──────────────────────────────────────────────────────
   potionHealing:         "potionHeal",
