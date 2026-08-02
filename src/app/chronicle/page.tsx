@@ -275,9 +275,9 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
     ...season,
     contextEvent: undefined,
     summaryEvent: undefined,
-    days: season.days.map((day) => ({
+    days: (season.days ?? []).map((day) => ({
       ...day,
-      events: day.events.filter((e) => {
+      events: (day.events ?? []).filter((e) => {
         if (nav.kind === "location") return e.location === nav.locName;
         if (nav.kind === "character") {
           const char2 = e.char2 as number | undefined;
@@ -1911,7 +1911,7 @@ export default function ChroniclePage() {
               <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
                 {viewingSeasonIdx === 0 ? (
                   seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
-                    if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
+                    if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
                     return (
                       <div key={season.number} style={{ marginBottom: "32px" }}>
                         <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
@@ -2057,7 +2057,7 @@ export default function ChroniclePage() {
               <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
                 {viewingSeasonIdx === 0 ? (
                   seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
-                    if (currentNav && !filtered.days.some((d) => d.events.length > 0)) return null;
+                    if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
                     return (
                       <div key={season.number} style={{ marginBottom: "32px" }}>
                         <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
