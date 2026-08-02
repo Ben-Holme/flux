@@ -118,7 +118,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
           style={{ cursor: onCharClick ? "pointer" : "default" }}
           onClick={() => onCharClick?.(event.primary_char)}
         >
-          <PlayerDisplay player={player} />
+          <PlayerDisplay player={player} charId={event.primary_char || undefined} />
         </div>
       )}
 
@@ -203,7 +203,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
                   onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
                 >
                   <div className="mb-1 text-[0.58rem] uppercase tracking-[0.1em] text-white/[0.18]">vs.</div>
-                  <PlayerDisplay player={char2} />
+                  <PlayerDisplay player={char2} charId={char2Id} />
                 </div>
               )}
             </div>

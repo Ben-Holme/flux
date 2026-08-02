@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { itemAccentColor } from "./utils";
+import { Portrait } from "@/components/portrait";
 
 interface Player {
   name?: string;
@@ -37,7 +38,7 @@ function playerColor(player: Player): string {
   return nameToColor(player.name ?? "");
 }
 
-export default function PlayerDisplay({ player }: { player: Player }) {
+export default function PlayerDisplay({ player, charId }: { player: Player; charId?: number }) {
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
 
@@ -71,15 +72,20 @@ export default function PlayerDisplay({ player }: { player: Player }) {
           padding: "8px 14px",
         }}
       >
-        <div style={{
-          width: "28px", height: "28px", borderRadius: "50%",
-          background: `rgba(${c},0.13)`, border: `1px solid rgba(${c},0.4)`,
-          boxShadow: `0 0 10px rgba(${c},0.33)`, flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "0.75rem", color: `rgba(${c},0.9)`, fontFamily: "var(--font-heading)",
-        }}>
-          {parsed.name[0]?.toUpperCase()}
-        </div>
+        {charId != null
+          ? <Portrait charId={charId} name={parsed.name} size={28} />
+          : (
+            <div style={{
+              width: "28px", height: "28px", borderRadius: "50%",
+              background: `rgba(${c},0.13)`, border: `1px solid rgba(${c},0.4)`,
+              boxShadow: `0 0 10px rgba(${c},0.33)`, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "0.75rem", color: `rgba(${c},0.9)`, fontFamily: "var(--font-heading)",
+            }}>
+              {parsed.name[0]?.toUpperCase()}
+            </div>
+          )
+        }
         <div>
           <div style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>
             {parsed.name}
