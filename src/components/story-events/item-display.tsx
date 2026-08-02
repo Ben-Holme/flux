@@ -30,15 +30,23 @@ export default function ItemDisplay({
       marginTop: "4px",
     }}>
       {iconUrl && !imgFailed ? (
-        <img
-          src={iconUrl}
-          alt=""
-          aria-hidden
-          width={28}
-          height={28}
-          onError={() => setImgFailed(true)}
-          style={{ flexShrink: 0, objectFit: "contain" }}
-        />
+        <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+          <img
+            src={iconUrl}
+            alt=""
+            aria-hidden
+            width={28}
+            height={28}
+            onError={() => setImgFailed(true)}
+            style={{ display: "block", objectFit: "contain" }}
+          />
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: `rgba(${c},0.75)`,
+            mixBlendMode: "multiply",
+          }} />
+        </div>
       ) : (
         <div style={{
           width: "28px",
