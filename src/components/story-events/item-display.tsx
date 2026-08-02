@@ -27,6 +27,12 @@ export default function ItemDisplay({
           onError={() => setImgFailed(true)}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", objectFit: "scale-down", zIndex: 0 }}
         />
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: `rgba(${c},0.7)`,
+          mixBlendMode: "multiply",
+          zIndex: 1,
+        }} />
       </div>
     </div>
   ) : (
