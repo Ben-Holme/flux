@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 // useLayoutEffect on client (synchronous, no flash); useEffect on server (avoids SSR warning)
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -47,38 +47,15 @@ export default function Nav() {
   const isChronicle = pathname === "/chronicle";
   const [scrolled, setScrolled] = useState(!isFirst);
   const [open, setOpen] = useState(false);
-  const logoRef = useRef<SVGSVGElement>(null);
-  const ballRef = useRef<HTMLDivElement>(null);
-
-  // Direct DOM correction before paint — runs synchronously after every commit
-  // where isFirst changes, overwriting whatever stale React state got committed.
-  // useLayoutEffect fires before the browser paints, so the stale frame is
-  // never visible regardless of what the concurrent scheduler committed.
-  useIsomorphicLayoutEffect(() => {
-    const logo = logoRef.current;
-    const ball = ballRef.current;
-    if (!logo || !ball) return;
-    const shouldShow = !isFirst || window.scrollY > 300;
-    // Snap to correct state with no transition so there is zero visible change.
-    logo.style.transition = "none";
-    logo.style.opacity = shouldShow ? "1" : "0";
-    logo.style.transform = shouldShow ? "scale(0.9)" : "scale(1)";
-    ball.style.transition = "none";
-    ball.style.transform = shouldShow ? "scale(1)" : "scale(0)";
-    // Also align React state so future renders are consistent.
-    setScrolled(shouldShow);
-    // Re-enable CSS transitions on the next frame, after the snap has painted.
-    const id = requestAnimationFrame(() => {
-      if (logoRef.current) logoRef.current.style.transition = "";
-      if (ballRef.current) ballRef.current.style.transition = "";
-    });
-    return () => cancelAnimationFrame(id);
-  }, [isFirst]);
 
   useIsomorphicLayoutEffect(() => {
-    if (!isFirst) return;
+    if (!isFirst) {
+      setScrolled(true);
+      return;
+    }
     const onScroll = () => setScrolled(window.scrollY > 300);
     window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, [isFirst]);
 
@@ -137,15 +114,15 @@ export default function Nav() {
       >
         {/* Background ball — desktop hidden, mobile shown */}
         <div
-          ref={ballRef}
           className="hidden max-[1248px]:block"
           style={{
+            transition: ".25s opacity",
+            opacity: active ? 1 : 0,
             position: "absolute",
             left: "-50%",
             width: "200vw",
             height: "500px",
             borderRadius: "100%",
-            transform: active ? "scale(1)" : "scale(0)",
             transformOrigin: "30% 50%",
             backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
             filter: !scrolled && !isChronicle ? "blur(100px)" : "none",
@@ -155,14 +132,12 @@ export default function Nav() {
         {/* Logo — correct "U" letter SVG from original nav.js */}
         <Link href="/" onClick={() => setOpen(false)} aria-label="Unyha home">
           <svg
-            ref={logoRef}
             viewBox="0 0 171 185"
             fill="none"
             style={{
               width: "50px",
               display: "block",
-              transition: ".5s",
-              transform: active ? "scale(0.9)" : "scale(1)",
+              transition: ".5s opacity",
               opacity: active ? 1 : 0,
             }}
           >
