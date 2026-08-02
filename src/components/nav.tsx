@@ -116,14 +116,14 @@ export default function Nav() {
         <div
           className="hidden max-[1248px]:block"
           style={{
-            transition: ".25s opacity",
-            opacity: active ? 1 : 0,
+            transition: ".25s",
+            transform: active ? "scale(1)" : "scale(0)",
+            transformOrigin: "30% 50%",
             position: "absolute",
             left: "-50%",
             width: "200vw",
             height: "500px",
             borderRadius: "100%",
-            transformOrigin: "30% 50%",
             backgroundColor: scrolled && !isChronicle ? "#000" : "transparent",
             filter: !scrolled && !isChronicle ? "blur(100px)" : "none",
           }}
@@ -137,7 +137,8 @@ export default function Nav() {
             style={{
               width: "50px",
               display: "block",
-              transition: ".5s opacity",
+              transition: ".5s",
+              transform: active ? "scale(0.9)" : "scale(1)",
               opacity: active ? 1 : 0,
             }}
           >
