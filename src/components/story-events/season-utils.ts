@@ -17,7 +17,8 @@ export interface Season {
   days: SeasonDay[];
 }
 
-function parseEventDate(dateStr: string): Date {
+function parseEventDate(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date(0);
   const [year, month, day, hour, min] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day, hour, min);
 }

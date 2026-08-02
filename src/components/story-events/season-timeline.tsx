@@ -11,6 +11,7 @@ import type { StoryEvent } from "./use-story-events";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function fmtDate(d: Date) {
+  if (!d || isNaN(d.getTime())) return "?";
   return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
@@ -83,14 +84,15 @@ type DayGroup =
   | { kind: "empty"; start: SeasonDay; end: SeasonDay };
 
 function groupDays(days: SeasonDay[]): DayGroup[] {
+  if (!days?.length) return [];
   const groups: DayGroup[] = [];
   let i = 0;
   while (i < days.length) {
-    if (days[i].events.length > 0) {
+    if ((days[i].events ?? []).length > 0) {
       groups.push({ kind: "events", day: days[i++] });
     } else {
       let j = i;
-      while (j < days.length && days[j].events.length === 0) j++;
+      while (j < days.length && (days[j].events ?? []).length === 0) j++;
       groups.push({ kind: "empty", start: days[i], end: days[j - 1] });
       i = j;
     }
