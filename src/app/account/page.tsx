@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
@@ -138,6 +138,7 @@ function AccountContent() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -207,6 +208,18 @@ function AccountContent() {
                 <Td className="text-right">{account.email}</Td>
               </TableRow>
               <TableRow>
+                <Td variant="heading">Password</Td>
+                <Td className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPasswordOpen((v) => !v)}
+                  >
+                    {passwordOpen ? "Cancel" : "Change"}
+                  </Button>
+                </Td>
+              </TableRow>
+              <TableRow>
                 <Td variant="heading">House</Td>
                 <Td className="text-right">{account.house || "—"}</Td>
               </TableRow>
@@ -232,7 +245,12 @@ function AccountContent() {
             </TableBody>
           </Table>
 
-          <ChangePassword sessionkey={session.sessionkey} />
+          {passwordOpen && (
+            <ChangePasswordForm
+              sessionkey={session.sessionkey}
+              onSuccess={() => setPasswordOpen(false)}
+            />
+          )}
 
           {account.characters.length > 0 && (
             <>
@@ -401,21 +419,18 @@ const inputClass =
 const labelClass =
   "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
-function ChangePassword({ sessionkey }: { sessionkey: string }) {
-  const [open, setOpen] = useState(false);
+function ChangePasswordForm({
+  sessionkey,
+  onSuccess,
+}: {
+  sessionkey: string;
+  onSuccess: () => void;
+}) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const firstField = useRef<HTMLInputElement>(null);
-
-  function toggle() {
-    setOpen((v) => !v);
-    setError(null);
-    setSuccess(false);
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -436,11 +451,7 @@ function ChangePassword({ sessionkey }: { sessionkey: string }) {
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setSuccess(true);
-      setOpen(false);
-      setCurrent("");
-      setNext("");
-      setConfirm("");
+      onSuccess();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -449,65 +460,49 @@ function ChangePassword({ sessionkey }: { sessionkey: string }) {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <Heading level="h2">Password</Heading>
-        <Button variant="ghost" size="sm" onClick={toggle}>
-          {open ? "Cancel" : "Change"}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div>
+        <label className={labelClass}>Current Password</label>
+        <input
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          autoComplete="current-password"
+          required
+          className={inputClass}
+          autoFocus
+        />
+      </div>
+      <div>
+        <label className={labelClass}>New Password</label>
+        <input
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          autoComplete="new-password"
+          required
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Confirm New Password</label>
+        <input
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
+          required
+          className={inputClass}
+        />
+      </div>
+      {error && (
+        <Text as="p" className="mt-0 text-[0.85rem] text-ember">{error}</Text>
+      )}
+      <div>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving…" : "Save Password"}
         </Button>
       </div>
-
-      {success && !open && (
-        <Text className="text-[#7ecf7e]">Password changed successfully.</Text>
-      )}
-
-      {open && (
-        <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-4">
-          <div>
-            <label className={labelClass}>Current Password</label>
-            <input
-              ref={firstField}
-              type="password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              autoComplete="current-password"
-              required
-              className={inputClass}
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className={labelClass}>New Password</label>
-            <input
-              type="password"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              autoComplete="new-password"
-              required
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Confirm New Password</label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              autoComplete="new-password"
-              required
-              className={inputClass}
-            />
-          </div>
-          {error && (
-            <Text as="p" className="mt-0 text-[0.85rem] text-ember">{error}</Text>
-          )}
-          <div>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving…" : "Save Password"}
-            </Button>
-          </div>
-        </form>
-      )}
-    </div>
+    </form>
   );
 }
