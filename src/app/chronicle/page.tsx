@@ -360,6 +360,7 @@ export default function ChroniclePage() {
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
+  const [icons, setIcons] = useState<Record<string, string>>({});
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [apiSeasons, setApiSeasons] = useState<ApiSeason[]>([]);
@@ -468,8 +469,11 @@ export default function ChroniclePage() {
     const namesReq = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php")
       .then((r) => r.json())
       .catch(() => null);
-    Promise.all([eventsReq, namesReq])
-      .then(([evData, namesData]) => {
+    const iconsReq = fetch("https://api.unyhagame.com/ueserv/getIcons-w.php")
+      .then((r) => r.json())
+      .catch(() => null);
+    Promise.all([eventsReq, namesReq, iconsReq])
+      .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
         setEvents([...arr].reverse());
         if (namesData) {
@@ -483,6 +487,10 @@ export default function ChroniclePage() {
             setPlayers(map);
           }
           setItems(buildLookup(namesData.items ?? {}));
+        }
+        if (iconsData?.icons) setIcons(iconsData.icons);
+        else if (iconsData && typeof iconsData === "object" && iconsData.status !== "OK") {
+          setIcons(iconsData as Record<string, string>);
         }
       })
       .catch(() => {})
@@ -1910,7 +1918,7 @@ export default function ChroniclePage() {
                         <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                           {getSeasonLabel(season.number + seasonOffset)}
                         </div>
-                        <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                        <SeasonTimeline season={filtered} players={players} items={items} icons={icons} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
                     );
                   }) : eventsLoading ? (
@@ -1923,6 +1931,7 @@ export default function ChroniclePage() {
                     season={displaySeason}
                     players={players}
                     items={items}
+                    icons={icons}
                     onCharClick={handleCharClick}
                     onItemClick={handleItemClick}
                     onLocClick={handleLocClick}
@@ -2055,7 +2064,7 @@ export default function ChroniclePage() {
                         <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                           {getSeasonLabel(season.number + seasonOffset)}
                         </div>
-                        <SeasonTimeline season={filtered} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
+                        <SeasonTimeline season={filtered} players={players} items={items} icons={icons} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
                     );
                   }) : eventsLoading ? (
@@ -2068,6 +2077,7 @@ export default function ChroniclePage() {
                     season={displaySeason}
                     players={players}
                     items={items}
+                    icons={icons}
                     onCharClick={handleCharClick}
                     onItemClick={handleItemClick}
                     onLocClick={handleLocClick}

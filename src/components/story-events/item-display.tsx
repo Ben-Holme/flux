@@ -1,9 +1,18 @@
 import { parseItemString, formatTypeId } from "./utils";
+import { getItemIcon } from "@/lib/item-icons";
 
-export default function ItemDisplay({ itemStr }: { itemStr: string }) {
+export default function ItemDisplay({
+  itemStr,
+  icons = {},
+}: {
+  itemStr: string;
+  icons?: Record<string, string>;
+}) {
   const item = parseItemString(itemStr);
   if (!item.name) return null;
   const c = item.color || "136,136,136";
+  const iconUrl = getItemIcon(item.typeId, icons);
+
   return (
     <div style={{
       display: "inline-flex",
@@ -16,15 +25,26 @@ export default function ItemDisplay({ itemStr }: { itemStr: string }) {
       padding: "8px 14px",
       marginTop: "4px",
     }}>
-      <div style={{
-        width: "28px",
-        height: "28px",
-        borderRadius: "4px",
-        background: `rgba(${c},0.13)`,
-        border: `1px solid rgba(${c},0.4)`,
-        boxShadow: `0 0 10px rgba(${c},0.33)`,
-        flexShrink: 0,
-      }} />
+      {iconUrl ? (
+        <img
+          src={iconUrl}
+          alt=""
+          aria-hidden
+          width={28}
+          height={28}
+          style={{ flexShrink: 0, objectFit: "contain" }}
+        />
+      ) : (
+        <div style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "4px",
+          background: `rgba(${c},0.13)`,
+          border: `1px solid rgba(${c},0.4)`,
+          boxShadow: `0 0 10px rgba(${c},0.33)`,
+          flexShrink: 0,
+        }} />
+      )}
       <div>
         <div style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.85)", textTransform: "capitalize", lineHeight: 1.3 }}>
           {item.name}

@@ -19,6 +19,7 @@ export default function useStoryEvents(sessionkey: string | undefined) {
   const [events, setEvents]   = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string; [key: string]: unknown }>>({});
   const [items, setItems]     = useState<Record<string | number, string>>({});
+  const [icons, setIcons]     = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -29,9 +30,10 @@ export default function useStoryEvents(sessionkey: string | undefined) {
 
     const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php", { headers }).then((r) => r.json());
     const namesReq  = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php", { headers }).then((r) => r.json()).catch(() => null);
+    const iconsReq  = fetch("https://api.unyhagame.com/ueserv/getIcons-w.php", { headers }).then((r) => r.json()).catch(() => null);
 
-    Promise.all([eventsReq, namesReq])
-      .then(([evData, namesData]) => {
+    Promise.all([eventsReq, namesReq, iconsReq])
+      .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events || [evData]);
         setEvents([...arr].reverse());
 
@@ -51,6 +53,12 @@ export default function useStoryEvents(sessionkey: string | undefined) {
           setItems(buildLookup(itemList));
         }
 
+        if (iconsData?.icons) setIcons(iconsData.icons);
+        else if (iconsData && typeof iconsData === "object" && iconsData.status !== "OK") {
+          // flat map with no wrapper
+          setIcons(iconsData as Record<string, string>);
+        }
+
         setLoading(false);
       })
       .catch((err: Error) => {
@@ -60,5 +68,5 @@ export default function useStoryEvents(sessionkey: string | undefined) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { events, players, items, loading, error };
+  return { events, players, items, icons, loading, error };
 }
