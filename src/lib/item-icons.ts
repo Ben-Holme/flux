@@ -30,6 +30,20 @@ export const ITEM_ICON_MAP: Record<string, string> = {
   sword3:             "ms3",
   sword4:             "ms4",
 
+  // ── Staves / Wands ──────────────────────────────────────────────────────
+  wepWandFire:        "Staff",
+  wepWandIce:         "Staff",
+  wepWandLightning:   "Staff",
+  wepWandPoison:      "Staff",
+  wepWand:            "Staff",
+  wepStaff:           "Staff",
+  staff:              "Staff",
+  wand:               "Staff",
+  fireStaff:          "Staff",
+  iceStaff:           "Staff",
+  arcaneStaff:        "Staff",
+  oakStaff:           "Staff",
+
   // ── Bows ────────────────────────────────────────────────────────────────
   shortbow:           "bow",
   huntingBow:         "bow",
