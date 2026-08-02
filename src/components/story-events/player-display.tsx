@@ -64,29 +64,29 @@ export default function PlayerDisplay({ player, charId }: { player: Player; char
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: "10px",
           background: "rgba(0,0,0,0.4)",
           border: `1px solid rgba(${c},0.27)`,
           borderLeft: `3px solid rgba(${c},1)`,
           borderRadius: "6px",
-          padding: "8px 14px",
         }}
       >
-        {charId != null
-          ? <Portrait charId={charId} name={parsed.name} size={44} />
-          : (
-            <div style={{
-              width: "28px", height: "28px", borderRadius: "50%",
-              background: `rgba(${c},0.13)`, border: `1px solid rgba(${c},0.4)`,
-              boxShadow: `0 0 10px rgba(${c},0.33)`, flexShrink: 0,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "0.75rem", color: `rgba(${c},0.9)`, fontFamily: "var(--font-heading)",
-            }}>
-              {parsed.name[0]?.toUpperCase()}
-            </div>
-          )
-        }
-        <div>
+        <div style={{ padding: "0 8px 0 4px" }}>
+          {charId != null
+            ? <Portrait charId={charId} name={parsed.name} size={44} />
+            : (
+              <div style={{
+                width: "44px", height: "44px", borderRadius: "50%",
+                background: `rgba(${c},0.13)`, border: `1px solid rgba(${c},0.4)`,
+                boxShadow: `0 0 10px rgba(${c},0.33)`, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "0.9rem", color: `rgba(${c},0.9)`, fontFamily: "var(--font-heading)",
+              }}>
+                {parsed.name[0]?.toUpperCase()}
+              </div>
+            )
+          }
+        </div>
+        <div style={{ padding: "8px 14px 8px 0" }}>
           <div style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>
             {parsed.name}
           </div>
@@ -97,7 +97,7 @@ export default function PlayerDisplay({ player, charId }: { player: Player; char
             </div>
           )}
         </div>
-        {summary && <span style={{ fontSize: "0.6rem", color: `rgba(${c},0.5)`, marginLeft: "4px" }}>?</span>}
+        {summary && <span style={{ fontSize: "0.6rem", color: `rgba(${c},0.5)`, paddingRight: "14px" }}>?</span>}
       </div>
 
       {tooltipPos && summary && createPortal(
