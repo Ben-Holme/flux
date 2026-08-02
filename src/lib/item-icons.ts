@@ -223,8 +223,8 @@ export function getItemIcon(
     return `${ICON_BASE_URL}/${mapped}.png`;
   }
 
-  // Direct match: typeId itself is the icon name (only when list is known)
-  if (iconsKnown && availableIcons.has(typeId)) {
+  // Direct match: typeId itself is the icon name
+  if (!iconsKnown || availableIcons.has(typeId)) {
     return `${ICON_BASE_URL}/${typeId}.png`;
   }
 
