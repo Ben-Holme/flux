@@ -73,7 +73,7 @@ export default function PlayerDisplay({ player, charId }: { player: Player; char
         }}
       >
         {charId != null
-          ? <Portrait charId={charId} name={parsed.name} size={28} />
+          ? <Portrait charId={charId} name={parsed.name} size={44} />
           : (
             <div style={{
               width: "28px", height: "28px", borderRadius: "50%",
