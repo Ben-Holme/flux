@@ -19,7 +19,7 @@ export default function ItemDisplay({
 
   const iconSlot = iconUrl && !imgFailed ? (
     <div style={{ padding: "0 8px 0 4px" }}>
-      <div style={{ position: "relative", width: 44, height: 44, background: "white", borderRadius: 3, flexShrink: 0 }}>
+      <div style={{ width: 44, height: 44, background: "black", borderRadius: 3, flexShrink: 0 }}>
         <img
           src={iconUrl}
           alt=""
@@ -29,13 +29,6 @@ export default function ItemDisplay({
           onError={() => setImgFailed(true)}
           style={{ display: "block", objectFit: "contain" }}
         />
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: `rgba(${c},0.7)`,
-          mixBlendMode: "multiply",
-          borderRadius: 3,
-        }} />
       </div>
     </div>
   ) : (
