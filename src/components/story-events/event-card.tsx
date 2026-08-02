@@ -12,7 +12,7 @@ interface Props {
   event: StoryEvent;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
   items: Record<string | number, string>;
-  icons?: Record<string, string>;
+  icons?: Set<string>;
   onCharClick?: (charId: number) => void;
   onItemClick?: (itemId: string | number) => void;
   onLocClick?: (locName: string) => void;
@@ -64,7 +64,7 @@ function SpecialDisclosure({
   );
 }
 
-const EventCard = memo(function EventCard({ event, players, items, icons = {}, onCharClick, onItemClick, onLocClick }: Props) {
+const EventCard = memo(function EventCard({ event, players, items, icons, onCharClick, onItemClick, onLocClick }: Props) {
   const displayType = (event.type === "seasonContext" || event.type === "seasonSummary") ? "season" : event.type;
   const cfg    = EVENT_TYPES[displayType] || { label: event.type, symbol: "○", color: "#888" };
   const sp     = parseSpecial(event.special);

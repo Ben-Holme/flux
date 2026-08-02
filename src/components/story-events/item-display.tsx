@@ -3,10 +3,10 @@ import { getItemIcon } from "@/lib/item-icons";
 
 export default function ItemDisplay({
   itemStr,
-  icons = {},
+  icons = new Set<string>(),
 }: {
   itemStr: string;
-  icons?: Record<string, string>;
+  icons?: Set<string>;
 }) {
   const item = parseItemString(itemStr);
   if (!item.name) return null;

@@ -360,7 +360,7 @@ export default function ChroniclePage() {
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
-  const [icons, setIcons] = useState<Record<string, string>>({});
+  const [icons, setIcons] = useState<Set<string>>(new Set());
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [apiSeasons, setApiSeasons] = useState<ApiSeason[]>([]);
@@ -488,9 +488,8 @@ export default function ChroniclePage() {
           }
           setItems(buildLookup(namesData.items ?? {}));
         }
-        if (iconsData?.icons) setIcons(iconsData.icons);
-        else if (iconsData && typeof iconsData === "object" && iconsData.status !== "OK") {
-          setIcons(iconsData as Record<string, string>);
+        if (Array.isArray(iconsData?.icons)) {
+          setIcons(new Set<string>(iconsData.icons));
         }
       })
       .catch(() => {})

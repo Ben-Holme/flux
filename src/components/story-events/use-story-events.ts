@@ -19,7 +19,7 @@ export default function useStoryEvents(sessionkey: string | undefined) {
   const [events, setEvents]   = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string; [key: string]: unknown }>>({});
   const [items, setItems]     = useState<Record<string | number, string>>({});
-  const [icons, setIcons]     = useState<Record<string, string>>({});
+  const [icons, setIcons]     = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -53,10 +53,8 @@ export default function useStoryEvents(sessionkey: string | undefined) {
           setItems(buildLookup(itemList));
         }
 
-        if (iconsData?.icons) setIcons(iconsData.icons);
-        else if (iconsData && typeof iconsData === "object" && iconsData.status !== "OK") {
-          // flat map with no wrapper
-          setIcons(iconsData as Record<string, string>);
+        if (Array.isArray(iconsData?.icons)) {
+          setIcons(new Set<string>(iconsData.icons));
         }
 
         setLoading(false);

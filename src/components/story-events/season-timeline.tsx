@@ -102,13 +102,13 @@ interface Props {
   season: Season;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
   items: Record<string | number, string>;
-  icons?: Record<string, string>;
+  icons?: Set<string>;
   onCharClick?: (charId: number) => void;
   onItemClick?: (itemId: string | number) => void;
   onLocClick?: (locName: string) => void;
 }
 
-const SeasonTimeline = memo(function SeasonTimeline({ season, players, items, icons = {}, onCharClick, onItemClick, onLocClick }: Props) {
+const SeasonTimeline = memo(function SeasonTimeline({ season, players, items, icons, onCharClick, onItemClick, onLocClick }: Props) {
   const groups = groupDays(season.days);
   return (
     <div>
