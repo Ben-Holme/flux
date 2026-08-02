@@ -26,12 +26,12 @@ export const ITEM_ICON_MAP: Record<string, string> = {
   specialFishBoneBow:    "BowFishBone",
 
   // ── Staves ──────────────────────────────────────────────────────────────
-  wepStaff:              "Staff",
-  wepWandFire:           "Staff",
-  wepWandAir:            "Staff",
-  wepWandEarth:          "Staff",
-  wepWandWater:          "Staff",
-  wepWandFireTraining:   "Staff",
+  wepStaff:              "staff",
+  wepWandFire:           "staff",
+  wepWandAir:            "staff",
+  wepWandEarth:          "staff",
+  wepWandWater:          "staff",
+  wepWandFireTraining:   "staff",
 
   // ── Axes / Picks ─────────────────────────────────────────────────────────
   wepAxe:                "axe",
