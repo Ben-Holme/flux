@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eyebrow, Heading, Text } from "@/components/ui";
+import { Alert, Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 const inputClass =
@@ -49,7 +49,7 @@ function ResetForm() {
   if (!token) {
     return (
       <div className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 text-center backdrop-blur-[14px]">
-        <Text className="mb-5 text-ember">Invalid or missing reset token.</Text>
+        <Alert className="mb-5">Invalid or missing reset token.</Alert>
         <Link href="/forgot-password" className="text-[0.8rem] tracking-[0.08em] text-white/35">
           Request a new link
         </Link>
@@ -86,9 +86,7 @@ function ResetForm() {
         />
       </div>
 
-      {error && (
-        <Text as="p" className="mb-[18px] mt-0 text-[0.85rem] text-ember">{error}</Text>
-      )}
+      {error && <Alert className="mb-[18px]">{error}</Alert>}
 
       <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
         {loading ? "Resetting…" : "Reset Password"}

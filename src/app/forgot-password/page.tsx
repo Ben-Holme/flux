@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eyebrow, Heading, Text } from "@/components/ui";
+import { Alert, Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 const inputClass =
@@ -67,9 +67,7 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
-            {error && (
-              <Text as="p" className="mb-[18px] mt-0 text-[0.85rem] text-ember">{error}</Text>
-            )}
+            {error && <Alert className="mb-[18px]">{error}</Alert>}
 
             <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
               {loading ? "Sending…" : "Send Reset Link"}

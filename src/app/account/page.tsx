@@ -7,6 +7,7 @@ import { useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { Portrait } from "@/components/portrait";
 import {
+  Alert,
   Badge,
   Card,
   Eyebrow,
@@ -185,14 +186,14 @@ function AccountContent() {
       </div>
 
       {steamParam === "linked" && (
-        <Text className="text-[#7ecf7e]">Steam account linked successfully.</Text>
+        <Alert variant="success">Steam account linked successfully.</Alert>
       )}
       {steamParam === "error" && (
-        <Text className="text-ember">Steam linking failed. Please try again.</Text>
+        <Alert>Steam linking failed. Please try again.</Alert>
       )}
 
       {loading && <Text>Loading…</Text>}
-      {error && <Text className="text-ember">Error: {error}</Text>}
+      {error && <Alert>Error: {error}</Alert>}
 
       {/* Character detail view */}
       {account && activeChar && <CharacterDetail char={activeChar} />}
@@ -495,9 +496,7 @@ function ChangePasswordForm({
           className={inputClass}
         />
       </div>
-      {error && (
-        <Text as="p" className="mt-0 text-[0.85rem] text-ember">{error}</Text>
-      )}
+      {error && <Alert>{error}</Alert>}
       <div>
         <Button type="submit" disabled={loading}>
           {loading ? "Saving…" : "Save Password"}

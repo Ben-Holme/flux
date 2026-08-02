@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { Eyebrow, Heading, Text } from "@/components/ui";
+import { Alert, Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 const inputClass =
@@ -75,7 +75,7 @@ function LoginForm() {
       </div>
 
       {error && (
-        <Text className="mb-[18px] mt-0 text-[0.85rem] text-ember">{error}</Text>
+        <Alert className="mb-[18px]">{error}</Alert>
       )}
 
       <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
