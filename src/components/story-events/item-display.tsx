@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { parseItemString, formatTypeId } from "./utils";
 import { getItemIcon } from "@/lib/item-icons";
 
@@ -8,6 +11,7 @@ export default function ItemDisplay({
   itemStr: string;
   icons?: Set<string>;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const item = parseItemString(itemStr);
   if (!item.name) return null;
   const c = item.color || "136,136,136";
@@ -25,13 +29,14 @@ export default function ItemDisplay({
       padding: "8px 14px",
       marginTop: "4px",
     }}>
-      {iconUrl ? (
+      {iconUrl && !imgFailed ? (
         <img
           src={iconUrl}
           alt=""
           aria-hidden
           width={28}
           height={28}
+          onError={() => setImgFailed(true)}
           style={{ flexShrink: 0, objectFit: "contain" }}
         />
       ) : (

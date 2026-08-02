@@ -205,8 +205,9 @@ export const ITEM_ICON_MAP: Record<string, string> = {
 
 /**
  * Returns the icon URL for the given typeId, or undefined if none is available.
- * Tries a direct match (typeId === icon name) first, then falls back to
- * ITEM_ICON_MAP for divergent names.
+ * When availableIcons is populated (from getIcons-w.php), it's used to validate
+ * the icon name exists before returning a URL. When it's empty (API unavailable),
+ * ITEM_ICON_MAP entries are trusted directly so icons still render.
  */
 export function getItemIcon(
   typeId: string | null | undefined,
@@ -214,13 +215,17 @@ export function getItemIcon(
 ): string | undefined {
   if (!typeId) return undefined;
 
-  if (availableIcons.has(typeId)) {
-    return `${ICON_BASE_URL}/${typeId}.png`;
+  const iconsKnown = availableIcons.size > 0;
+  const mapped = ITEM_ICON_MAP[typeId];
+
+  // Prefer an explicit map entry
+  if (mapped && (!iconsKnown || availableIcons.has(mapped))) {
+    return `${ICON_BASE_URL}/${mapped}.png`;
   }
 
-  const mapped = ITEM_ICON_MAP[typeId];
-  if (mapped && availableIcons.has(mapped)) {
-    return `${ICON_BASE_URL}/${mapped}.png`;
+  // Direct match: typeId itself is the icon name (only when list is known)
+  if (iconsKnown && availableIcons.has(typeId)) {
+    return `${ICON_BASE_URL}/${typeId}.png`;
   }
 
   return undefined;

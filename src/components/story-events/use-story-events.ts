@@ -53,8 +53,9 @@ export default function useStoryEvents(sessionkey: string | undefined) {
           setItems(buildLookup(itemList));
         }
 
-        if (Array.isArray(iconsData?.icons)) {
-          setIcons(new Set<string>(iconsData.icons));
+        const rawIcons = iconsData?.icons ?? iconsData?.data ?? (Array.isArray(iconsData) ? iconsData : null);
+        if (Array.isArray(rawIcons)) {
+          setIcons(new Set<string>(rawIcons));
         }
 
         setLoading(false);
