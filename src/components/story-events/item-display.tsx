@@ -17,49 +17,53 @@ export default function ItemDisplay({
   const c = item.color || "136,136,136";
   const iconUrl = getItemIcon(item.typeId, icons);
 
+  const iconSlot = iconUrl && !imgFailed ? (
+    <div style={{ padding: "0 8px 0 4px" }}>
+      <div style={{ position: "relative", width: 44, height: 44, background: "white", borderRadius: 3, flexShrink: 0 }}>
+        <img
+          src={iconUrl}
+          alt=""
+          aria-hidden
+          width={44}
+          height={44}
+          onError={() => setImgFailed(true)}
+          style={{ display: "block", objectFit: "contain" }}
+        />
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: `rgba(${c},0.7)`,
+          mixBlendMode: "multiply",
+          borderRadius: 3,
+        }} />
+      </div>
+    </div>
+  ) : (
+    <div style={{ padding: "0 8px 0 4px" }}>
+      <div style={{
+        width: 44,
+        height: 44,
+        borderRadius: 4,
+        background: `rgba(${c},0.13)`,
+        border: `1px solid rgba(${c},0.4)`,
+        boxShadow: `0 0 10px rgba(${c},0.33)`,
+        flexShrink: 0,
+      }} />
+    </div>
+  );
+
   return (
     <div style={{
       display: "inline-flex",
-      alignItems: "center",
-      gap: "10px",
+      alignItems: "flex-end",
       background: "rgba(0,0,0,0.4)",
       border: `1px solid rgba(${c},0.27)`,
       borderLeft: `3px solid rgba(${c},1)`,
       borderRadius: "6px",
-      padding: "8px 14px",
       marginTop: "4px",
     }}>
-      {iconUrl && !imgFailed ? (
-        <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, background: "white", borderRadius: 3 }}>
-          <img
-            src={iconUrl}
-            alt=""
-            aria-hidden
-            width={28}
-            height={28}
-            onError={() => setImgFailed(true)}
-            style={{ display: "block", objectFit: "contain" }}
-          />
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: `rgba(${c},0.7)`,
-            mixBlendMode: "multiply",
-            borderRadius: 3,
-          }} />
-        </div>
-      ) : (
-        <div style={{
-          width: "28px",
-          height: "28px",
-          borderRadius: "4px",
-          background: `rgba(${c},0.13)`,
-          border: `1px solid rgba(${c},0.4)`,
-          boxShadow: `0 0 10px rgba(${c},0.33)`,
-          flexShrink: 0,
-        }} />
-      )}
-      <div>
+      {iconSlot}
+      <div style={{ padding: "8px 14px 8px 0" }}>
         <div style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.85)", textTransform: "capitalize", lineHeight: 1.3 }}>
           {item.name}
         </div>
