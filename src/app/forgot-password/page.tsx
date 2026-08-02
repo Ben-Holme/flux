@@ -2,30 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Eyebrow, Heading, Text } from "@/components/ui";
+import Button from "@/components/button";
 
-const inputStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  boxSizing: "border-box",
-  background: "rgba(0,0,0,0.4)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "6px",
-  color: "rgba(255,255,255,0.85)",
-  fontFamily: "inherit",
-  fontSize: "1rem",
-  padding: "10px 14px",
-  outline: "none",
-  marginTop: "6px",
-};
+const inputClass =
+  "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: "0.62rem",
-  textTransform: "uppercase",
-  letterSpacing: ".12em",
-  color: "rgba(255,255,255,0.35)",
-  marginBottom: "2px",
-};
+const labelClass =
+  "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -54,111 +38,45 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px",
-    }}>
-      <div style={{ width: "100%", maxWidth: "380px" }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: "1rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.2em",
-          color: "#c8923a",
-          textShadow: "#c8923a 0px 0px 6px, #c8923a 0px 0px 12px, #c8923a 0px 0px 32px",
-          display: "flex",
-          justifyContent: "center",
-          marginBottom: "12px",
-        }}>
-          Play Test
-        </div>
-        <h1 style={{ textAlign: "center", marginBottom: "32px", fontSize: "3rem" }}>
-          Forgot Password
-        </h1>
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="w-full max-w-[380px]">
+        <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
+        <Heading level="h1" className="mb-8 text-center text-[3rem]">Forgot Password</Heading>
 
         {sent ? (
-          <div style={{
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(14px)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: "10px",
-            padding: "28px",
-            textAlign: "center",
-          }}>
-            <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: "20px" }}>
-              If that email is registered, you'll receive a reset link shortly.
-            </p>
-            <Link href="/login" style={{
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "0.8rem",
-              letterSpacing: ".08em",
-              textDecoration: "none",
-            }}>
+          <div className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 text-center backdrop-blur-[14px]">
+            <Text className="mb-5">If that email is registered, you&apos;ll receive a reset link shortly.</Text>
+            <Link href="/login" className="text-[0.8rem] tracking-[0.08em] text-white/35">
               ← Back to sign in
             </Link>
           </div>
         ) : (
           <form
             onSubmit={handleSubmit}
-            style={{
-              background: "rgba(0,0,0,0.45)",
-              backdropFilter: "blur(14px)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: "10px",
-              padding: "28px",
-            }}
+            className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 backdrop-blur-[14px]"
           >
-            <div style={{ marginBottom: "24px" }}>
-              <label style={labelStyle}>Email</label>
+            <div className="mb-6">
+              <label className={labelClass}>Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                style={inputStyle}
+                className={inputClass}
               />
             </div>
 
             {error && (
-              <p style={{ margin: "0 0 18px", fontSize: "0.85rem", color: "#e16565" }}>
-                {error}
-              </p>
+              <Text as="p" className="mb-[18px] mt-0 text-[0.85rem] text-ember">{error}</Text>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "11px",
-                background: loading ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: "6px",
-                color: loading ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.85)",
-                fontFamily: "var(--font-heading)",
-                fontSize: "0.85rem",
-                letterSpacing: ".15em",
-                textTransform: "uppercase",
-                cursor: loading ? "not-allowed" : "pointer",
-                transition: "all 0.15s",
-                marginBottom: "16px",
-              }}
-            >
+            <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
               {loading ? "Sending…" : "Send Reset Link"}
-            </button>
+            </Button>
 
-            <div style={{ textAlign: "center" }}>
-              <Link href="/login" style={{
-                color: "rgba(255,255,255,0.35)",
-                fontSize: "0.8rem",
-                letterSpacing: ".08em",
-                textDecoration: "none",
-              }}>
+            <div className="mt-4 text-center">
+              <Link href="/login" className="text-[0.8rem] tracking-[0.06em] text-white/30">
                 ← Back to sign in
               </Link>
             </div>

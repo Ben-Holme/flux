@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eyebrow } from "@/components/ui";
+import { Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 function VerifiedContent() {
@@ -12,11 +12,11 @@ function VerifiedContent() {
 
   return (
     <div className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 text-center backdrop-blur-[14px]">
-      <p className="mb-5 text-white/70">
+      <Text className="mb-5">
         {invalid
           ? "Verification link invalid or expired."
           : "Email verified! You can now sign in."}
-      </p>
+      </Text>
       {!invalid && (
         <Button href="/login" className="w-full justify-center max-[768px]:min-w-0">
           Sign In
@@ -36,7 +36,7 @@ export default function VerifiedPage() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
         <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
-        <h1 className="mb-8 text-center text-[3rem]">Verify Email</h1>
+        <Heading level="h1" className="mb-8 text-center text-[3rem]">Verify Email</Heading>
         <Suspense>
           <VerifiedContent />
         </Suspense>

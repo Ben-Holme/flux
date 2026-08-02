@@ -75,7 +75,7 @@ function LoginForm() {
       </div>
 
       {error && (
-        <Text className="mb-[18px] mt-0 text-[0.85rem] text-[#e16565]">{error}</Text>
+        <Text className="mb-[18px] mt-0 text-[0.85rem] text-ember">{error}</Text>
       )}
 
       <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">

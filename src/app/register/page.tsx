@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { Eyebrow } from "@/components/ui";
+import { Eyebrow, Heading, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 const inputClass =
@@ -49,9 +49,9 @@ function RegisterForm() {
   if (sent) {
     return (
       <div className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 text-center backdrop-blur-[14px]">
-        <p className="mb-5 text-white/70">
+        <Text className="mb-5">
           Check your email to verify your account.
-        </p>
+        </Text>
         <Link href="/login" className="text-[0.8rem] tracking-[0.08em] text-white/35">
           ← Back to sign in
         </Link>
@@ -113,9 +113,9 @@ function RegisterForm() {
       </div>
 
       {error && (
-        <p className="mb-[18px] mt-0 text-[0.85rem] text-[#e16565]">
+        <Text as="p" className="mb-[18px] mt-0 text-[0.85rem] text-ember">
           {error}
-        </p>
+        </Text>
       )}
 
       <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
@@ -136,7 +136,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
         <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
-        <h1 className="mb-8 text-center text-[3rem]">Create Account</h1>
+        <Heading level="h1" className="mb-8 text-center text-[3rem]">Create Account</Heading>
         <Suspense>
           <RegisterForm />
         </Suspense>
