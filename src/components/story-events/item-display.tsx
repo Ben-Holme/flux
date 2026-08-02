@@ -30,7 +30,7 @@ export default function ItemDisplay({
       marginTop: "4px",
     }}>
       {iconUrl && !imgFailed ? (
-        <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+        <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, background: "white", borderRadius: 3 }}>
           <img
             src={iconUrl}
             alt=""
@@ -43,8 +43,9 @@ export default function ItemDisplay({
           <div style={{
             position: "absolute",
             inset: 0,
-            background: `rgba(${c},0.75)`,
+            background: `rgba(${c},0.7)`,
             mixBlendMode: "multiply",
+            borderRadius: 3,
           }} />
         </div>
       ) : (
