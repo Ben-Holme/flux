@@ -9,8 +9,7 @@ import Button from "@/components/button";
 const inputClass =
   "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
 
-const labelClass =
-  "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
+const labelClass = "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
 function ResetForm() {
   const router = useRouter();
@@ -88,7 +87,11 @@ function ResetForm() {
 
       {error && <Alert className="mb-[18px]">{error}</Alert>}
 
-      <Button type="submit" disabled={loading} className="w-full justify-center max-[768px]:min-w-0">
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full justify-center max-[768px]:min-w-0"
+      >
         {loading ? "Resetting…" : "Reset Password"}
       </Button>
     </form>
@@ -99,8 +102,9 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[380px]">
-        <Eyebrow className="mb-3 text-center">Play Test</Eyebrow>
-        <Heading level="h1" className="mb-8 text-center text-[3rem]">Reset Password</Heading>
+        <Heading level="h1" className="mb-8 text-center text-[3rem]">
+          Reset Password
+        </Heading>
         <Suspense>
           <ResetForm />
         </Suspense>

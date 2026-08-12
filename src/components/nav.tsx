@@ -73,7 +73,7 @@ export default function Nav() {
     <>
       {/* Full-screen menu overlay */}
       <div
-        className={`fixed inset-0 z-[5] flex flex-col items-center justify-center bg-black transition-[opacity,visibility] duration-[400ms] ${
+        className={`fixed inset-0 z-[105] flex flex-col items-center justify-center bg-black transition-[opacity,visibility] duration-[400ms] ${
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
@@ -97,7 +97,13 @@ export default function Nav() {
             label
           );
           return external ? (
-            <a key={href} href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClass}
+            >
               {inner}
             </a>
           ) : (
@@ -109,9 +115,7 @@ export default function Nav() {
       </div>
 
       {/* Nav bar */}
-      <div
-        className="fixed top-0 left-[calc((100vw-1200px)/2)] z-10 flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:box-border max-[1248px]:px-6 max-[1248px]:py-4"
-      >
+      <div className="fixed top-0 left-[calc((100vw-1200px)/2)] z-[106] flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:box-border max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:px-6 max-[1248px]:py-4">
         {/* Background ball — desktop hidden, mobile shown */}
         <div
           className="hidden max-[1248px]:block"
