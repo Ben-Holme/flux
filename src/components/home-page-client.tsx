@@ -4,12 +4,12 @@ import { useState } from "react";
 import type { Entry } from "contentful";
 import type { HeroSkeleton, SectionSkeleton } from "@/types/contentful";
 import type { Document } from "@contentful/rich-text-types";
-import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/button";
 import VideoModal from "@/components/video-modal";
 import HeroScene from "@/components/hero-scene";
 import RichText from "@/components/rich-text";
+import { PostCard } from "@/components/post-card";
 import { Eyebrow, Heading } from "./ui";
 
 const VIDEOS = [
@@ -227,60 +227,9 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           </Eyebrow>
           <Heading level="h2">News</Heading>
           <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
-            {posts.map((post) => {
-              const thumb = getAssetUrl(post.fields?.image);
-              const thumbAlt = getAssetTitle(post.fields?.image);
-              return (
-                <div key={post.sys.id} className="relative">
-                  <Link href={`/devlog/${post.fields?.slug}`} className="group">
-                    <p className="font-heading mt-0 mb-2 text-xs tracking-[0.1em] text-[#c8923a] uppercase">
-                      {post.fields?.categry?.fields?.name ?? "news"}
-                    </p>
-                    <div className="relative overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-1 after:rounded after:border after:border-white/10 after:content-['']">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={thumbAlt}
-                          width={600}
-                          height={300}
-                          style={{ width: "100%", height: "auto", display: "block" }}
-                          className="aspect-16/9 object-cover"
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            aspectRatio: "2",
-                            backgroundColor: "#000",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          <svg
-                            width="20%"
-                            viewBox="0 0 240 245"
-                            fill="white"
-                            style={{ opacity: 0.2 }}
-                          >
-                            <path
-                              fillRule="evenodd"
-                              clipRule="evenodd"
-                              d="M112.407 240.037V0.310547L127.767 14.7955V82.2457L140.335 70.3944V26.6468L155.696 41.1318V76.3942L127.767 102.731V131.992C127.271 132.131 126.793 132.29 126.356 132.466C123.05 133.797 122.791 134.342 123.885 137.633C124.674 140.005 125.866 141.273 127.242 141.204C127.424 141.195 127.6 141.189 127.767 141.187V179.86C126.397 192.946 125.307 205.024 125.289 207.403C125.228 215.738 123.249 228.365 121.861 229.28C121.112 229.774 119.074 229.937 117.331 229.643C114.456 229.156 114.129 229.591 113.785 234.361C113.617 236.71 113.043 238.99 112.407 240.037Z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="font-heading mt-3 -mb-[0.25em] text-[1.7rem] leading-[1.1] font-normal tracking-[0.1em] text-white uppercase group-hover:underline">
-                      {post.fields?.title}
-                    </h3>
-                    {post.fields?.short && (
-                      <p className="mt-2 text-white/60">{post.fields.short}</p>
-                    )}
-                  </Link>
-                </div>
-              );
-            })}
+            {posts.map((post) => (
+              <PostCard key={post.sys.id} post={post} />
+            ))}
           </div>
 
           <div className="mt-8 flex items-center justify-center">

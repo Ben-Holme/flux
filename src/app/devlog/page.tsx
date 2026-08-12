@@ -1,13 +1,6 @@
-import Image from "next/image";
-import Link from "next/link";
-import { getAllPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
-import { Heading } from "@/components/ui";
-
-function formatDate(dateStr: string | undefined) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
-}
+import { getAllPosts } from "@/lib/contentful";
+import { Flow, Heading, Text } from "@/components/ui";
+import { PostCard } from "@/components/post-card";
 
 export const metadata = {
   title: "Devlog",
@@ -23,58 +16,16 @@ export default async function DevlogPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-24">
-      <div className="mb-16">
-        <Heading level="h1">Devlog</Heading>
-      </div>
+    <Flow className="mx-auto box-content max-w-[1200px] px-6 py-24">
+      <Heading level="h1">Devlog</Heading>
 
-      {news.length === 0 && <p className="text-ash">No posts yet. Check back soon.</p>}
+      {news.length === 0 && <Text variant="muted">No posts yet. Check back soon.</Text>}
 
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        {news.map((post) => {
-          const thumb = getAssetUrl(post.fields.image);
-          const thumbAlt = getAssetTitle(post.fields.image);
-          const category = (post.fields.categry as { fields?: { name?: string } } | undefined)
-            ?.fields?.name;
-
-          return (
-            <Link
-              key={post.sys.id}
-              href={`/devlog/${post.fields.slug}`}
-              className="group border-border bg-surface-raised hover:border-gold/40 flex flex-col border transition-colors"
-            >
-              {thumb && (
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={thumb}
-                    alt={thumbAlt}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-              )}
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-2 flex items-center gap-3">
-                  {category && (
-                    <span className="font-heading text-gold text-xs tracking-wider uppercase">
-                      {category}
-                    </span>
-                  )}
-                  <span className="text-ash text-xs">{formatDate(post.fields.date)}</span>
-                </div>
-                <h2 className="font-heading text-parchment mb-2 text-lg leading-snug">
-                  {post.fields.title}
-                </h2>
-                {post.fields.short && (
-                  <p className="text-ash mt-auto line-clamp-3 text-sm leading-6">
-                    {post.fields.short}
-                  </p>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+        {news.map((post) => (
+          <PostCard key={post.sys.id} post={post} />
+        ))}
       </div>
-    </div>
+    </Flow>
   );
 }

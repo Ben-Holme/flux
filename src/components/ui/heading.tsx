@@ -13,8 +13,8 @@ interface HeadingProps {
 const styles: Record<HeadingLevel, string> = {
   h1: "font-heading text-[4.3rem] leading-[0.95] tracking-[0.1em] font-normal uppercase text-white",
   h2: "font-heading text-[2.85rem] leading-[0.95] tracking-[0.1em] font-normal uppercase text-white",
-  h3: "font-heading text-[2rem] leading-tight tracking-[0.1em] font-normal uppercase text-white",
-  h4: "font-heading text-[1.5rem] tracking-[0.1em] font-normal uppercase text-white",
+  h3: "font-heading text-[2rem] leading-[0.95] tracking-[0.1em] font-normal uppercase text-white",
+  h4: "font-heading text-[1.5rem] tracking-[0.1em] leading-tight font-normal uppercase text-white",
   h5: "font-heading text-[1.2rem] tracking-[0.1em] font-normal uppercase text-white",
   h6: "font-heading text-base tracking-[0.1em] font-normal uppercase text-white",
 };

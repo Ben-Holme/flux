@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { getAllPages, getAssetUrl } from "@/lib/contentful";
 import type { PageSkeleton } from "@/types/contentful";
 import type { Entry } from "contentful";
+import { Flow } from "@/components/ui/flow";
+import { Heading } from "@/components/ui/heading";
 
 export const metadata: Metadata = {
   title: "Screenshots",
@@ -11,22 +13,20 @@ export const metadata: Metadata = {
 
 async function ScreenshotsContent() {
   const pages = await getAllPages();
-  const page = pages.find(
-    (p) => (p.fields.slug as string) === "screenshots"
-  ) as Entry<PageSkeleton> | undefined;
+  const page = pages.find((p) => (p.fields.slug as string) === "screenshots") as
+    | Entry<PageSkeleton>
+    | undefined;
 
-  const assets = page?.fields.pageContent
-    ? extractImages(page.fields.pageContent)
-    : [];
+  const assets = page?.fields.pageContent ? extractImages(page.fields.pageContent) : [];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-20">
-      <h1 className="mb-12 text-[3em]">Screenshots</h1>
+    <Flow className="mx-auto box-content max-w-[1200px] px-6 py-24">
+      <Heading level="h1">Screenshots</Heading>
 
       {assets.length === 0 ? (
         <p className="text-white/40">No screenshots yet.</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {assets.map((url, i) => (
             <a
               key={i}
@@ -39,13 +39,13 @@ async function ScreenshotsContent() {
               <img
                 src={url}
                 alt={`Screenshot ${i + 1}`}
-                className="block h-full w-full object-cover transition-transform duration-[400ms] group-hover:scale-[1.04]"
+                className="block h-full w-full object-cover transition-transform duration-[400ms]"
               />
             </a>
           ))}
         </div>
       )}
-    </div>
+    </Flow>
   );
 }
 
