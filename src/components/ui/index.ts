@@ -1,3 +1,4 @@
+export { Alert } from "./alert";
 export { Eyebrow } from "./eyebrow";
 export { Heading } from "./heading";
 export { Text } from "./text";

@@ -17,7 +17,8 @@ export interface Season {
   days: SeasonDay[];
 }
 
-function parseEventDate(dateStr: string): Date {
+function parseEventDate(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date(0);
   const [year, month, day, hour, min] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day, hour, min);
 }
@@ -42,9 +43,10 @@ function buildSeason(number: number, startDate: Date, events: StoryEvent[]): Sea
   const bossDay = rawBossDay ? Number(rawBossDay) : 5;
 
   // Build day map dynamically — seasons can exceed 7 days.
+  // Skip events with null/missing dates to avoid epoch-relative dayNums blowing up totalDays.
   const dayMap = new Map<number, StoryEvent[]>();
   events
-    .filter((e) => e.type !== "seasonContext" && e.type !== "seasonSummary")
+    .filter((e) => e.type !== "seasonContext" && e.type !== "seasonSummary" && e.date)
     .forEach((e) => {
       const ms = parseEventDate(e.date).getTime() - startDate.getTime();
       const dayNum = Math.max(1, Math.floor(ms / 86_400_000) + 1);
@@ -75,9 +77,9 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
   if (ctxIndices.length === 0) {
     if (chrono.length === 0) return [];
     const firstReg = chrono.find(
-      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary" && e.date,
     );
-    const startDate = parseEventDate((firstReg ?? chrono[0]).date);
+    const startDate = parseEventDate((firstReg ?? chrono.find((e) => e.date) ?? chrono[0]).date);
     return [buildSeason(1, startDate, chrono)];
   }
 
@@ -92,11 +94,11 @@ export function buildSeasons(events: StoryEvent[]): Season[] {
   }
 
   const seasons: Season[] = slices.map((slice, i) => {
-    // Use the first regular event as the season start date.
+    // Use the first regular event with a valid date as the season start date.
     const firstReg = slice.find(
-      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary",
+      (e) => e.type !== "seasonContext" && e.type !== "seasonSummary" && e.date,
     );
-    const startDate = parseEventDate((firstReg ?? slice[slice.length - 1]).date);
+    const startDate = parseEventDate((firstReg ?? slice.find((e) => e.date) ?? slice[slice.length - 1]).date);
     return buildSeason(i + 1, startDate, slice);
   });
 

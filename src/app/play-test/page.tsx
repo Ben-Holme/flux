@@ -12,7 +12,7 @@ import { Eyebrow, Flow, Heading, Text } from "@/components/ui";
 export default function PlayTestPage() {
   const { session, logout } = useAuth();
   const router = useRouter();
-  const { events, players, items, loading, error } = useStoryEvents(session?.sessionkey);
+  const { events, players, items, icons, loading, error } = useStoryEvents(session?.sessionkey);
 
   useEffect(() => {
     if (!session) router.push("/login");
@@ -38,13 +38,13 @@ export default function PlayTestPage() {
       <Heading level="h1">Story Events</Heading>
 
       {loading && <Text className="mt-8">Loading events…</Text>}
-      {error && <Text className="mt-8 text-[#e16565]">Error: {error}</Text>}
+      {error && <Text className="mt-8 text-ember">Error: {error}</Text>}
 
       {!loading && !error && !currentSeason && <Text className="mt-8">No events found.</Text>}
 
       {!loading && !error && currentSeason && (
         <div className="mt-8">
-          <SeasonTimeline season={currentSeason} players={players} items={items} />
+          <SeasonTimeline season={currentSeason} players={players} items={items} icons={icons} />
         </div>
       )}
     </Flow>

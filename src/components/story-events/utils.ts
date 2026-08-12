@@ -8,7 +8,8 @@ export function parseSpecial(special: string | undefined | null): Record<string,
   return result;
 }
 
-export function formatDate(str: string): string {
+export function formatDate(str: string | null | undefined): string {
+  if (!str) return "–";
   const [year, month, day, hour, min] = str.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${months[+month - 1]} ${day}, ${year} · ${hour}:${(min || "0").padStart(2, "0")}`;

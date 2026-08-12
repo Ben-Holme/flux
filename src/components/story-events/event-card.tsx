@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import EVENT_TYPES from "./event-types";
 import { parseSpecial, formatDate } from "./utils";
 import Stat from "./stat";
@@ -12,6 +12,7 @@ interface Props {
   event: StoryEvent;
   players: Record<string | number, { name: string; [key: string]: unknown }>;
   items: Record<string | number, string>;
+  icons?: Set<string>;
   onCharClick?: (charId: number) => void;
   onItemClick?: (itemId: string | number) => void;
   onLocClick?: (locName: string) => void;
@@ -28,38 +29,42 @@ function SpecialDisclosure({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: hasBody ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+    <div className={hasBody ? "border-t border-white/[0.05]" : undefined}>
       <button
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: "flex", alignItems: "center", gap: "6px",
-          width: "100%", padding: "10px 18px",
-          background: "none", border: "none", cursor: "pointer", textAlign: "left",
-        }}
+        className="flex w-full cursor-pointer items-center gap-1.5 border-none bg-transparent px-[18px] py-2.5 text-left"
       >
-        <span style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: ".12em", color: "rgba(255,255,255,0.28)" }}>
+        <span className="text-[0.6rem] uppercase tracking-[0.12em] text-white/[0.28]">
           Special
         </span>
-        <span style={{
-          marginLeft: "auto", fontSize: "0.6rem", color: "rgba(255,255,255,0.28)",
-          transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s", display: "inline-block",
-        }}>▾</span>
+        <span
+          className="ml-auto inline-block text-[0.6rem] text-white/[0.28] transition-transform duration-150"
+          style={{ transform: open ? "rotate(180deg)" : "none" }}
+        >
+          ▾
+        </span>
       </button>
       {open && (
-        <div style={{ padding: "0 18px 10px" }}>
-          {Object.entries(sp).filter(([key]) => !exclude.includes(key)).map(([key, val]) => (
-            <div key={key} style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.7, wordBreak: "break-all" }}>
-              <span style={{ color: "rgba(255,255,255,0.22)" }}>{key}</span>
-              {val !== true && <>: <span style={{ color: "rgba(255,255,255,0.5)" }}>{val}</span></>}
-            </div>
-          ))}
+        <div className="px-[18px] pb-2.5">
+          {Object.entries(sp)
+            .filter(([key]) => !exclude.includes(key))
+            .map(([key, val]) => (
+              <div key={key} className="break-all text-[0.68rem] leading-[1.7] text-white/35">
+                <span className="text-white/[0.22]">{key}</span>
+                {val !== true && (
+                  <>
+                    : <span className="text-white/50">{val}</span>
+                  </>
+                )}
+              </div>
+            ))}
         </div>
       )}
     </div>
   );
 }
 
-export default function EventCard({ event, players, items, onCharClick, onItemClick, onLocClick }: Props) {
+const EventCard = memo(function EventCard({ event, players, items, icons, onCharClick, onItemClick, onLocClick }: Props) {
   const displayType = (event.type === "seasonContext" || event.type === "seasonSummary") ? "season" : event.type;
   const cfg    = EVENT_TYPES[displayType] || { label: event.type, symbol: "○", color: "#888" };
   const sp     = parseSpecial(event.special);
@@ -80,29 +85,28 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
   );
 
   return (
-    <div style={{
-      background: "rgba(0,0,0,0.45)", backdropFilter: "blur(14px)",
-      borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)",
-      borderLeft: `3px solid ${cfg.color}`, marginBottom: "10px", overflow: "hidden",
-    }}>
+    <div
+      className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/45 backdrop-blur-[14px]"
+      style={{ borderLeft: `3px solid ${cfg.color}` }}
+    >
       {/* Header */}
-      <div style={{
-        padding: "11px 18px", display: "flex", alignItems: "center", gap: "10px",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-      }}>
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.68rem", letterSpacing: ".18em", textTransform: "uppercase", color: cfg.color }}>
+      <div className="flex items-center gap-2.5 border-b border-white/[0.05] px-[18px] py-[11px]">
+        <span className="font-heading text-[0.68rem] uppercase tracking-[0.18em]" style={{ color: cfg.color }}>
           {event.type}
         </span>
         <span
-          style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem", marginLeft: "auto", cursor: onLocClick && event.location ? "pointer" : "default" }}
+          className="ml-auto text-[0.72rem] text-white/[0.22]"
+          style={{ cursor: onLocClick && event.location ? "pointer" : "default" }}
           onClick={() => event.location && onLocClick?.(event.location)}
-        >{event.location}</span>
-        <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.72rem" }}>·</span>
-        <span style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.72rem" }}>{formatDate(event.date)}</span>
+        >
+          {event.location}
+        </span>
+        <span className="text-[0.72rem] text-white/[0.15]">·</span>
+        <span className="text-[0.72rem] text-white/[0.22]">{formatDate(event.date)}</span>
         {(event.story_points ?? 0) > 0 && (
           <>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "0.72rem" }}>·</span>
-            <span style={{ color: "#c8923a", fontSize: "0.68rem", opacity: 0.65 }}>{event.story_points} sp</span>
+            <span className="text-[0.72rem] text-white/[0.15]">·</span>
+            <span className="text-[0.68rem] text-[#c8923a] opacity-65">{event.story_points} sp</span>
           </>
         )}
       </div>
@@ -110,28 +114,29 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
       {/* Player */}
       {event.primary_char !== 0 && (
         <div
-          style={{ padding: "10px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onCharClick ? "pointer" : "default" }}
+          className="border-b border-white/[0.05] px-[18px] py-2.5"
+          style={{ cursor: onCharClick ? "pointer" : "default" }}
           onClick={() => onCharClick?.(event.primary_char)}
         >
-          <PlayerDisplay player={player} />
+          <PlayerDisplay player={player} charId={event.primary_char || undefined} />
         </div>
       )}
 
       {/* Body */}
       {hasBody && (
-        <div style={{ padding: "14px 18px" }}>
+        <div className="px-[18px] py-3.5">
           {event.type === "trip" && (
             <>
               {sp.openai && (
-                <p style={{ margin: "0 0 14px", lineHeight: 1.75, color: "rgba(255,255,255,0.72)", fontStyle: "italic" }}>
+                <p className="mb-3.5 leading-[1.75] text-white/70 italic">
                   &ldquo;{sp.openai}&rdquo;
                 </p>
               )}
-              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-                {sp.distance        && <Stat label="Distance"   value={`${Number(sp.distance).toLocaleString()} m`} />}
-                {sp.duration        && <Stat label="Duration"   value={`${sp.duration} min`} />}
-                {sp.kills           && <Stat label="Kills"      value={sp.kills as string} />}
-                {sp.antaName        && <Stat label="Target"     value={sp.antaName as string} color="#e1a965" />}
+              <div className="flex flex-wrap gap-6">
+                {sp.distance        && <Stat label="Distance"    value={`${Number(sp.distance).toLocaleString()} m`} />}
+                {sp.duration        && <Stat label="Duration"    value={`${sp.duration} min`} />}
+                {sp.kills           && <Stat label="Kills"       value={sp.kills as string} />}
+                {sp.antaName        && <Stat label="Target"      value={sp.antaName as string} color="#e1a965" />}
                 {sp.conflictLocationID && <Stat label="Battle site" value={sp.conflictLocationID as string} />}
                 {sp.underground !== undefined && <Stat label="Terrain" value="Underground" />}
               </div>
@@ -141,11 +146,11 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
           {event.type === "seasonContext" && (
             <>
               {sp.seasoncontext && (
-                <p style={{ margin: "0 0 16px", lineHeight: 1.75, color: "rgba(255,255,255,0.82)" }}>
+                <p className="mb-4 leading-[1.75] text-white/[0.82]">
                   {sp.seasoncontext as string}
                 </p>
               )}
-              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex flex-wrap gap-5 border-t border-white/[0.06] pt-3">
                 {Object.entries(sp)
                   .filter(([k, v]) => k !== "seasoncontext" && v !== true)
                   .map(([k, v]) => <Stat key={k} label={k} value={v as string} />)}
@@ -155,21 +160,21 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
 
           {event.type === "seasonSummary" && (
             <>
-              {sp.beginning && <p style={{ margin: "0 0 16px", lineHeight: 1.75, color: "rgba(255,255,255,0.82)" }}>{sp.beginning as string}</p>}
-              {sp.middle    && <p style={{ margin: "0 0 16px", lineHeight: 1.75, color: "rgba(255,255,255,0.82)" }}>{sp.middle as string}</p>}
-              {sp.end       && <p style={{ margin: "0 0 16px", lineHeight: 1.75, color: "rgba(255,255,255,0.82)" }}>{sp.end as string}</p>}
+              {sp.beginning && <p className="mb-4 leading-[1.75] text-white/[0.82]">{sp.beginning as string}</p>}
+              {sp.middle    && <p className="mb-4 leading-[1.75] text-white/[0.82]">{sp.middle as string}</p>}
+              {sp.end       && <p className="leading-[1.75] text-white/[0.82]">{sp.end as string}</p>}
             </>
           )}
 
           {event.type === "introStory" && (
-            <p style={{ margin: 0, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>
+            <p className="text-white/40 italic">
               {sp.house ? `House ${sp.house as string}` : "Origin story"}
               {sp.openaierror ? " — narrative pending" : ""}
             </p>
           )}
 
           {(event.type === "tome" || event.type === "ench") && (
-            <div style={{ display: "flex", gap: "24px" }}>
+            <div className="flex gap-6">
               {sp.type && <Stat label="Type"  value={sp.type as string} />}
               {sp.lvl  && <Stat label="Level" value={sp.lvl as string} />}
             </div>
@@ -179,24 +184,26 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
             <div>
               {itemName && (
                 <div
-                  style={{ display: "inline-block", cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  className="inline-block"
+                  style={{ cursor: onItemClick && event.item != null ? "pointer" : "default" }}
                   onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
                 >
-                  <ItemDisplay itemStr={itemName as string} />
+                  <ItemDisplay itemStr={itemName as string} icons={icons} />
                 </div>
               )}
               {sp.context && sp.context !== "0" && (
-                <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "rgba(255,255,255,0.35)", textTransform: "capitalize" }}>
+                <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
                   {sp.context as string}
                 </p>
               )}
               {char2 && (
                 <div
-                  style={{ marginTop: "10px", cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
+                  className="mt-2.5"
+                  style={{ cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
                   onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
                 >
-                  <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: ".1em", color: "rgba(255,255,255,0.18)", marginBottom: "4px" }}>vs.</div>
-                  <PlayerDisplay player={char2} />
+                  <div className="mb-1 text-[0.58rem] uppercase tracking-[0.1em] text-white/[0.18]">vs.</div>
+                  <PlayerDisplay player={char2} charId={char2Id} />
                 </div>
               )}
             </div>
@@ -215,4 +222,6 @@ export default function EventCard({ event, players, items, onCharClick, onItemCl
       />
     </div>
   );
-}
+});
+
+export default EventCard;

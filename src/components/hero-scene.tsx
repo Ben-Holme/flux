@@ -95,7 +95,7 @@ export default function HeroScene({ scene, preHeading, copy, onShowLoreVideo }: 
 
           {/* Content zone — no z-index so no stacking context; sf img blends through */}
           <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center gap-24 px-6 max-[768px]:min-h-0 max-[768px]:flex-col max-[768px]:px-6 max-[768px]:pt-16 max-[768px]:pb-20 [&>div]:grow [&>div]:basis-0">
-            <div className="z-2 max-[768px]:order-2">
+            <div className="z-2 max-[768px]:order-2 max-[768px]:w-full">
               {preHeading && (
                 <Eyebrow className="mb-6" deco>
                   {preHeading}

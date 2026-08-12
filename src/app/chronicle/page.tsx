@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo, startTransition } from "react";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
@@ -27,6 +27,9 @@ interface ApiSeason {
   days: number;
   start: string | null;
 }
+
+type RoadPoint = { threeX: number; threeZ: number };
+type RoadPath = RoadPoint[];
 
 const GOLD = "#c8923a";
 
@@ -70,12 +73,109 @@ const HEIGHT_FOG_DENSITY = 2.5; // controls how quickly fog thins above sea leve
 const PAN_LIMIT = 10;
 
 // Orbit constants
-const R_MIN = 4,
+const R_MIN = 1,
   R_MAX = 35;
 const ELEV_NEAR = Math.PI * (30 / 180); // camera elevation when close (30° from horizontal)
 const ELEV_FAR = Math.PI / 2; // camera elevation when far (straight down)
 
 const MAP_EXTENT = 406400; // fixed coordinate bounds — matches heightmap grid ±406400
+
+function buildCloudTexture(): THREE.DataTexture {
+  // DataTexture writes raw RGBA bytes — no HTML5 canvas premultiplied-alpha issues.
+  const S = 512;
+  const data = new Uint8ClampedArray(S * S * 4); // all zeros = fully transparent
+  // Pre-fill RGB to white so blur-spread pixels are never black
+  for (let i = 0; i < S * S; i++) { data[i * 4] = 255; data[i * 4 + 1] = 255; data[i * 4 + 2] = 255; }
+
+  let seed = 99991;
+  const rnd = () => {
+    seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 0xffffffff;
+  };
+
+  const addPuff = (cx: number, cy: number, rx: number, ry: number, cos: number, sin: number, maxA: number) => {
+    const r = Math.max(rx, ry);
+    const x0 = Math.max(0, Math.floor(cx - r));
+    const x1 = Math.min(S - 1, Math.ceil(cx + r));
+    const y0 = Math.max(0, Math.floor(cy - r));
+    const y1 = Math.min(S - 1, Math.ceil(cy + r));
+    const contrib = Math.round(maxA * 255);
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - cx, dy = y - cy;
+        const lx = dx * cos + dy * sin;
+        const ly = -dx * sin + dy * cos;
+        const t = (lx / rx) ** 2 + (ly / ry) ** 2;
+        if (t >= 1) continue;
+        const idx = (y * S + x) * 4;
+        data[idx] = 255;
+        data[idx + 1] = 255;
+        data[idx + 2] = 255;
+        data[idx + 3] += Math.round(contrib * (1 - t)); // Uint8ClampedArray auto-clamps to 255
+      }
+    }
+  };
+
+  // Large elongated masses give the base cloud forms
+  for (let k = 0; k < 70; k++) {
+    const cx = rnd() * S, cy = rnd() * S;
+    const rx = 35 + rnd() * 90;
+    const ry = rx * (0.3 + rnd() * 0.35);
+    const angle = rnd() * Math.PI;
+    addPuff(cx, cy, rx, ry, Math.cos(angle), Math.sin(angle), 0.04 + rnd() * 0.11);
+  }
+  // Smaller puffs add detail and break up edge silhouettes
+  for (let k = 0; k < 140; k++) {
+    const cx = rnd() * S, cy = rnd() * S;
+    const r = 6 + rnd() * 27;
+    addPuff(cx, cy, r, r, 1, 0, 0.03 + rnd() * 0.09);
+  }
+
+  // Separable box blur on alpha only — 3 passes approximate Gaussian, one-time CPU cost ~5ms
+  const blurAlpha = (radius: number) => {
+    const a = new Float32Array(S * S);
+    for (let i = 0; i < S * S; i++) a[i] = data[i * 4 + 3];
+    const tmp = new Float32Array(S * S);
+    const inv = 1 / (2 * radius + 1);
+    for (let y = 0; y < S; y++) {
+      let sum = 0;
+      for (let x = 0; x < radius; x++) sum += a[y * S + x];
+      for (let x = 0; x < S; x++) {
+        sum += a[y * S + Math.min(S - 1, x + radius)];
+        sum -= a[y * S + Math.max(0, x - radius - 1)];
+        tmp[y * S + x] = sum * inv;
+      }
+    }
+    for (let x = 0; x < S; x++) {
+      let sum = 0;
+      for (let y = 0; y < radius; y++) sum += tmp[y * S + x];
+      for (let y = 0; y < S; y++) {
+        sum += tmp[Math.min(S - 1, y + radius) * S + x];
+        sum -= tmp[Math.max(0, y - radius - 1) * S + x];
+        a[y * S + x] = sum * inv;
+      }
+    }
+    for (let i = 0; i < S * S; i++) data[i * 4 + 3] = Math.round(a[i]);
+  };
+  blurAlpha(8);
+
+  // Fade alpha to zero near all four edges so the plane boundary is never visible
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const nx = (x / (S - 1)) * 2 - 1; // -1 to 1
+      const ny = (y / (S - 1)) * 2 - 1;
+      const edge = Math.sqrt(nx * nx + ny * ny); // radial distance from centre
+      const u = Math.min(1, Math.max(0, (edge - 0.52) / 0.28)); // ramp 52%→80%; clamped so smoothstep never overshoots
+      const fade = 1 - u * u * (3 - 2 * u);        // smoothstep
+      const idx = (y * S + x) * 4;
+      data[idx + 3] = Math.round(data[idx + 3] * fade);
+    }
+  }
+
+  const tex = new THREE.DataTexture(new Uint8Array(data.buffer), S, S, THREE.RGBAFormat);
+  tex.needsUpdate = true;
+  return tex;
+}
 
 function sampleHmHeight(data: Uint8ClampedArray, threeX: number, threeZ: number): number {
   const nx = threeX / 20 + 0.5;
@@ -175,9 +275,9 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
     ...season,
     contextEvent: undefined,
     summaryEvent: undefined,
-    days: season.days.map((day) => ({
+    days: (season.days ?? []).map((day) => ({
       ...day,
-      events: day.events.filter((e) => {
+      events: (day.events ?? []).filter((e) => {
         if (nav.kind === "location") return e.location === nav.locName;
         if (nav.kind === "character") {
           const char2 = e.char2 as number | undefined;
@@ -208,6 +308,7 @@ export default function ChroniclePage() {
   const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
   const leftLightRef = useRef<THREE.DirectionalLight | null>(null);
   const seaMatRef = useRef<THREE.MeshPhongMaterial | null>(null);
+  const cloudMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const terrainMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
   const heightFogUniformRef = useRef<{ value: number }>({ value: 1.0 });
   const heightFogDensityRef = useRef<{ value: number }>({ value: HEIGHT_FOG_DENSITY });
@@ -217,6 +318,11 @@ export default function ChroniclePage() {
   const revealAtRef = useRef<number[]>([]); // per-liveLocsRef index reveal threshold
   const hmDataRef = useRef<Uint8ClampedArray | null>(null); // decoded heightmap pixel data
   const locHeightsRef = useRef<number[]>([]); // terrain Y (0-1) per liveLoc index
+  // Reusable Vector3 instances for the animation loop — avoids per-frame GC pressure
+  const _v3a = useRef(new THREE.Vector3());
+  const _v3b = useRef(new THREE.Vector3());
+  const mountSizeRef = useRef({ w: 0, h: 0 });
+  const needsRenderRef = useRef(true); // set true any time the scene must redraw
 
   // Interaction state
   const draggingRef = useRef(false);
@@ -230,21 +336,31 @@ export default function ChroniclePage() {
   const sheetDragStartYRef = useRef(0);
   const sheetDraggedRef = useRef(false);
   const sheetExpandedRef = useRef(false);
+  const navStackLengthRef = useRef(0);
   const sheetElRef = useRef<HTMLDivElement | null>(null);
+  const desktopAnimRef = useRef<HTMLDivElement | null>(null);
+  const mobileAnimRef = useRef<HTMLDivElement | null>(null);
+  const prevContentKeyRef = useRef<string>("root");
   const portraitGroupRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [liveLocs, setLiveLocs] = useState<LiveLoc[]>([]);
   const liveLocsRef = useRef<LiveLoc[]>([]);
   const locOverlayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const locRingSvgRefs = useRef<Map<number, SVGSVGElement>>(new Map());
-  const locRingCircleRefs = useRef<Map<number, SVGCircleElement>>(new Map());
 
   const [navStack, setNavStack] = useState<NavEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"events" | "details">("events");
   const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
+  const [roads, setRoads] = useState<RoadPath[]>([]);
+  const roadsRef = useRef<RoadPath[]>([]);
+  const mapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mapCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mapTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const mapBaseImgRef = useRef<HTMLImageElement | null>(null);
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [players, setPlayers] = useState<Record<string | number, { name: string }>>({});
   const [items, setItems] = useState<Record<string | number, string>>({});
+  const [icons, setIcons] = useState<Set<string>>(new Set());
   const [eventsLoading, setEventsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [apiSeasons, setApiSeasons] = useState<ApiSeason[]>([]);
@@ -264,8 +380,37 @@ export default function ChroniclePage() {
   const [heightScale, setHeightScale] = useState(1.8);
   const [contrast, setContrast] = useState(1.5);
   const [fogNear, setFogNear] = useState(R_MIN + 0.9 * (R_MAX - R_MIN));
+  const [mapScale, setMapScale] = useState(1.015);
+  const colorTexRef = useRef<THREE.Texture | null>(null);
+  const specTexRef = useRef<THREE.Texture | null>(null);
   const fogNearRef = useRef(fogNear);
   const dbgRef = useRef(dbg); // mutable mirror — read by animate loop without triggering renders
+
+  function drawRoadsOnMap() {
+    const canvas = mapCanvasRef.current;
+    const ctx = mapCtxRef.current;
+    const texture = mapTextureRef.current;
+    const baseImg = mapBaseImgRef.current;
+    if (!canvas || !ctx || !texture || !baseImg || canvas.width < 2) return;
+    const W = canvas.width, H = canvas.height;
+    ctx.drawImage(baseImg, 0, 0, W, H);
+    ctx.save();
+    ctx.strokeStyle = "rgba(210, 160, 60, 0.9)";
+    ctx.lineWidth = Math.max(1.5, W / 400);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    for (const path of roadsRef.current) {
+      ctx.beginPath();
+      path.forEach(({ threeX, threeZ }, i) => {
+        const cx = (threeX / 20 + 0.5) * W;
+        const cy = (threeZ / 20 + 0.5) * H;
+        if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+    }
+    ctx.restore();
+    texture.needsUpdate = true;
+  }
 
   // Lock body scroll and hide footer while this page is mounted
   useEffect(() => {
@@ -297,6 +442,7 @@ export default function ChroniclePage() {
           >,
         )) {
           if (loc.underground === "true") continue;
+          if (name === "Star room") continue;
           const match = loc.location.match(/X=([-\d.]+)\s+Y=([-\d.]+)/);
           if (!match) continue;
           const ueX = parseFloat(match[1]);
@@ -323,8 +469,11 @@ export default function ChroniclePage() {
     const namesReq = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php")
       .then((r) => r.json())
       .catch(() => null);
-    Promise.all([eventsReq, namesReq])
-      .then(([evData, namesData]) => {
+    const iconsReq = fetch("https://api.unyhagame.com/ueserv/getIcons-w.php")
+      .then((r) => r.json())
+      .catch(() => null);
+    Promise.all([eventsReq, namesReq, iconsReq])
+      .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
         setEvents([...arr].reverse());
         if (namesData) {
@@ -338,6 +487,9 @@ export default function ChroniclePage() {
             setPlayers(map);
           }
           setItems(buildLookup(namesData.items ?? {}));
+        }
+        if (Array.isArray(iconsData?.icons)) {
+          setIcons(new Set<string>(iconsData.icons));
         }
       })
       .catch(() => {})
@@ -354,6 +506,29 @@ export default function ChroniclePage() {
   }, []);
 
   useEffect(() => {
+    fetch("https://api.unyhagame.com/ueserv/getRoads-w.php")
+      .then((r) => r.json())
+      .then((data) => {
+        const roadsObj = data.roads as Record<string, Array<{ x: number; y: number; z: number }>>;
+        if (!roadsObj || typeof roadsObj !== "object") return;
+        const parsed: RoadPath[] = Object.values(roadsObj)
+          .filter((pts) => Array.isArray(pts) && pts.length > 1)
+          .map((pts) => pts.map(({ x, y }) => ({
+            threeX: (x / MAP_EXTENT) * 10,
+            threeZ: (y / MAP_EXTENT) * 10,
+          })));
+        setRoads(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    roadsRef.current = roads;
+    drawRoadsOnMap();
+  }, [roads]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // useLayoutEffect fires before paint so mobile users never see the desktop panel flash
+  useLayoutEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
@@ -419,6 +594,17 @@ export default function ChroniclePage() {
   }, [fogNear]);
 
   useEffect(() => {
+    const off = (1 - mapScale) / 2;
+    [colorTexRef.current, specTexRef.current].forEach((t) => {
+      if (!t) return;
+      t.repeat.set(mapScale, mapScale);
+      t.offset.set(off, off);
+      t.needsUpdate = true;
+    });
+    needsRenderRef.current = true;
+  }, [mapScale]);
+
+  useEffect(() => {
     dispScaleRef.current = heightScale;
     if (terrainMatRef.current) terrainMatRef.current.displacementScale = heightScale;
     heightFogDensityRef.current.value =
@@ -429,26 +615,25 @@ export default function ChroniclePage() {
     sheetExpandedRef.current = sheetExpanded;
   }, [sheetExpanded]);
   useEffect(() => {
+    navStackLengthRef.current = navStack.length;
+  }, [navStack]);
+  useEffect(() => {
     liveLocsRef.current = liveLocs;
-    // Rank by radiusWorld: top 3 largest get revealAt above R_MAX so they're fully
-    // opaque at maximum zoom-out; the rest spread linearly down to R_MIN+2
-    const K = 3;
-    const sorted = liveLocs.map((l, i) => ({ i, r: l.radiusWorld })).sort((a, b) => a.r - b.r);
-    const N = sorted.length;
-    const out = new Array(N).fill(R_MIN + 2);
-    sorted.forEach(({ i }, rank) => {
-      if (rank >= N - K) {
-        out[i] = R_MAX + 3; // fully visible at max zoom-out
-      } else {
-        const t = N > K ? rank / (N - K) : 0;
-        out[i] = R_MIN + 2 + t * (R_MAX - R_MIN - 2);
-      }
+    // revealAt tied directly to radiusWorld: small locations disappear as soon as you
+    // zoom out past their natural scale; big-text locations (radiusWorld >= 0.66, matching
+    // the label size threshold) are pinned above R_MAX so they're fully visible at max zoom-out.
+    const out: number[] = new Array(liveLocs.length);
+    liveLocs.forEach((l, i) => {
+      // Continuous scale: larger radius = visible from further out. Factor 20 puts a
+      // radiusWorld ~1.9 location at R_MAX; anything bigger is always visible.
+      out[i] = Math.min(R_MAX + 3, Math.max(R_MIN + 3, l.radiusWorld * 20));
     });
     revealAtRef.current = out;
     if (hmDataRef.current)
       locHeightsRef.current = liveLocs.map((l) =>
         sampleHmHeight(hmDataRef.current!, l.threeX, l.threeZ),
       );
+    needsRenderRef.current = true;
   }, [liveLocs]);
 
   // Decode heightmap once; re-sample loc heights if liveLocs already loaded
@@ -479,18 +664,28 @@ export default function ChroniclePage() {
   const seasonOffset = apiSeasons.length > 0 ? apiSeasons.length - seasons.length : 0;
   const resolveSeasonNum = (viewingSeasonIdx ?? apiSeasons.length) - seasonOffset;
   const viewingSeason = resolveSeasonNum >= 1 ? (seasons.find((s) => s.number === resolveSeasonNum) ?? null) : null;
-  const seasonEvents = currentSeason ? currentSeason.days.flatMap((d) => d.events) : [];
-  const eventLocNames = new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]);
-  const viewingSeasonEvents = viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : [];
+  const seasonEvents = useMemo(
+    () => (currentSeason ? currentSeason.days.flatMap((d) => d.events) : []),
+    [currentSeason],
+  );
+  const eventLocNames = useMemo(
+    () => new Set(seasonEvents.map((e) => e.location).filter(Boolean) as string[]),
+    [seasonEvents],
+  );
+  const viewingSeasonEvents = useMemo(
+    () => (viewingSeason ? viewingSeason.days.flatMap((d) => d.events) : []),
+    [viewingSeason],
+  );
 
   // Per-location top-3 characters by fame within the viewing season only.
   const locPortraits = useMemo(() => {
+    const locIdxByName = new Map(liveLocs.map((l, i) => [l.name, i]));
     const charToLocIdx = new Map<number, number>();
     for (const ev of viewingSeasonEvents) {
       if (!ev.location || ev.primary_char == null) continue;
       if (charToLocIdx.has(ev.primary_char)) continue;
-      const locIdx = liveLocs.findIndex((l) => l.name === ev.location);
-      if (locIdx !== -1) charToLocIdx.set(ev.primary_char, locIdx);
+      const locIdx = locIdxByName.get(ev.location);
+      if (locIdx !== undefined) charToLocIdx.set(ev.primary_char, locIdx);
     }
     const data: Record<number, Array<{ charId: number; fame: number }>> = {};
     for (const [cid, locIdx] of charToLocIdx) {
@@ -513,6 +708,7 @@ export default function ChroniclePage() {
 
     const W = mount.clientWidth;
     const H = mount.clientHeight;
+    mountSizeRef.current = { w: W, h: H };
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -566,19 +762,44 @@ export default function ChroniclePage() {
     const segments = 256;
     const geo = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
 
-    // Color texture from world map jpg
-    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg");
+    // Color texture: load normally first so the map appears immediately,
+    // then swap to a CanvasTexture once the image is available so roads can be painted on top.
+    const initMapScale = mapScale;
+    const initMapOffset = (1 - initMapScale) / 2;
+    const colorTexture = new THREE.TextureLoader().load("/worldMap.jpg", (tex) => {
+      const img = tex.image as HTMLImageElement;
+      const mapCanvas = document.createElement("canvas");
+      mapCanvas.width = img.naturalWidth || img.width;
+      mapCanvas.height = img.naturalHeight || img.height;
+      const mapCtx = mapCanvas.getContext("2d")!;
+      mapCtx.drawImage(img, 0, 0);
+      mapCanvasRef.current = mapCanvas;
+      mapCtxRef.current = mapCtx;
+      mapBaseImgRef.current = img;
+
+      const canvasTex = new THREE.CanvasTexture(mapCanvas);
+      canvasTex.wrapS = canvasTex.wrapT = THREE.ClampToEdgeWrapping;
+      canvasTex.repeat.set(initMapScale, initMapScale);
+      canvasTex.offset.set(initMapOffset, initMapOffset);
+      mapTextureRef.current = canvasTex;
+      colorTexRef.current = canvasTex;
+      if (terrainMatRef.current) {
+        terrainMatRef.current.map = canvasTex;
+        terrainMatRef.current.needsUpdate = true;
+      }
+      if (roadsRef.current.length > 0) drawRoadsOnMap();
+    });
     colorTexture.wrapS = colorTexture.wrapT = THREE.ClampToEdgeWrapping;
-    const mapScale = 1.015;
-    const mapOffset = (1 - mapScale) / 2;
-    colorTexture.repeat.set(mapScale, mapScale);
-    colorTexture.offset.set(mapOffset, mapOffset);
+    colorTexture.repeat.set(initMapScale, initMapScale);
+    colorTexture.offset.set(initMapOffset, initMapOffset);
+    colorTexRef.current = colorTexture;
 
     const normalTexture = new THREE.TextureLoader().load("/normalmap.png");
     const specTexture = new THREE.TextureLoader().load("/specmap.png");
     specTexture.wrapS = specTexture.wrapT = THREE.ClampToEdgeWrapping;
-    specTexture.repeat.set(mapScale, mapScale);
-    specTexture.offset.set(mapOffset, mapOffset);
+    specTexture.repeat.set(initMapScale, initMapScale);
+    specTexture.offset.set(initMapOffset, initMapOffset);
+    specTexRef.current = specTexture;
 
     const seaNormalTexture = buildSeaNormalMap();
 
@@ -767,6 +988,7 @@ export default function ChroniclePage() {
         gl_FragColor.rgb = mix(gl_FragColor.rgb, heightFogColor, seaFog);`,
         );
     };
+    seaMat.customProgramCacheKey = () => "sea-height-fog";
     seaMatRef.current = seaMat;
     const sea = new THREE.Mesh(seaGeo, seaMat);
     sea.rotation.x = -Math.PI / 2;
@@ -774,10 +996,30 @@ export default function ChroniclePage() {
     sea.renderOrder = 0;
     scene.add(sea);
 
+    // Cloud layer — flat plane well above peaks, fades out as camera zooms in
+    const cloudMat = new THREE.MeshBasicMaterial({
+      map: buildCloudTexture(),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+    cloudMatRef.current = cloudMat;
+    const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), cloudMat);
+    cloudMesh.rotation.x = -Math.PI / 2;
+    cloudMesh.position.y = 5.7;
+    scene.add(cloudMesh);
+
     scene.add(camera);
     updateCameraFromOrbit(); // set initial position + lookAt from orbit state
 
-    // Animation loop
+    // Force-compile all shader programs upfront so the first interaction doesn't stall
+    renderer.compile(scene, camera);
+
+    // Animation loop — idle state tracking to skip composer.render() when nothing moves
+    let prevRadius = radiusRef.current;
+    let prevTargetX = targetRef.current.x;
+    let prevTargetZ = targetRef.current.z;
+
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
       if (focusTargetRef.current) {
@@ -789,25 +1031,33 @@ export default function ChroniclePage() {
       }
       // Smooth zoom
       radiusRef.current += (targetRadiusRef.current - radiusRef.current) * 0.12;
+
+      // Detect movement since last frame; skip render entirely when settled
+      const moved =
+        Math.abs(radiusRef.current - prevRadius) > 0.0001 ||
+        Math.abs(targetRef.current.x - prevTargetX) > 0.0001 ||
+        Math.abs(targetRef.current.z - prevTargetZ) > 0.0001;
+      prevRadius = radiusRef.current;
+      prevTargetX = targetRef.current.x;
+      prevTargetZ = targetRef.current.z;
+
+      if (!moved && !draggingRef.current && !needsRenderRef.current) return;
+      needsRenderRef.current = false;
+
       updateCameraFromOrbit();
       if (debugRef.current) debugRef.current.textContent = `r: ${radiusRef.current.toFixed(2)}`;
 
       // Portrait overlays: project world positions to screen coords
       if (portraitGroupRefs.current.size > 0 && mount) {
         const portraitOpacity = Math.max(0, Math.min(1, (15 - radiusRef.current) / 3));
-        const W = mount.clientWidth;
-        const H = mount.clientHeight;
+        const { w: W, h: H } = mountSizeRef.current;
         portraitGroupRefs.current.forEach((el, locIdx) => {
           const liveLoc = liveLocsRef.current[locIdx];
           if (!liveLoc) return;
           const h = locHeightsRef.current[locIdx] ?? 0;
-          const pos = new THREE.Vector3(
-            liveLoc.threeX,
-            h * dispScaleRef.current + 0.08,
-            liveLoc.threeZ,
-          ).project(camera);
-          const sx = ((pos.x + 1) / 2) * W;
-          const sy = ((-pos.y + 1) / 2) * H;
+          _v3a.current.set(liveLoc.threeX, h * dispScaleRef.current + 0.08, liveLoc.threeZ).project(camera);
+          const sx = ((_v3a.current.x + 1) / 2) * W;
+          const sy = ((-_v3a.current.y + 1) / 2) * H;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
           el.style.opacity = portraitOpacity.toFixed(3);
         });
@@ -815,56 +1065,51 @@ export default function ChroniclePage() {
 
       // Location overlays: project world positions to screen coords
       if (locOverlayRefs.current.size > 0 && mount) {
-        const locW = mount.clientWidth;
-        const locH = mount.clientHeight;
+        const { w: locW, h: locH } = mountSizeRef.current;
         locOverlayRefs.current.forEach((el, i) => {
           const loc = liveLocsRef.current[i];
           if (!loc) return;
           const revealAt = revealAtRef.current[i] ?? R_MAX;
           const zoomOutOpacity = Math.max(0, Math.min(1, (revealAt - radiusRef.current) / 3));
-          // Large-radius locations fade out when zoomed in close (you're "inside" their area)
-          const fadeOutAt = Math.max(0, (loc.radiusWorld - 1.0) * 5);
-          const zoomInOpacity = Math.max(0, Math.min(1, (radiusRef.current - fadeOutAt) / 3));
+          // Fully solid at focus zoom (radiusWorld*10), fade over 5 units when zooming in further
+          const focusZoom = loc.radiusWorld * 10;
+          const zoomInOpacity = Math.max(0, Math.min(1, (radiusRef.current - focusZoom + 5) / 5));
           const zoomOpacity = zoomOutOpacity * zoomInOpacity;
           // Fade locations that are far from the camera orbit target
           const dx = loc.threeX - targetRef.current.x;
           const dz = loc.threeZ - targetRef.current.z;
           const distFromTarget = Math.sqrt(dx * dx + dz * dz);
           const visR = radiusRef.current * 0.55;
-          const fadeW = Math.max(2.5, visR * 0.4);
+          const fadeW = visR * 0.4;
           const distOpacity = Math.max(0, Math.min(1, (visR - distFromTarget) / fadeW));
-          const locOpacity = zoomOpacity * distOpacity;
+          const minOpacity = loc.radiusWorld >= 1.0 ? 0.2 : 0;
+          const locOpacity = Math.min(1, Math.max(minOpacity, zoomOpacity * distOpacity * (loc.type === "city" ? 1.2 : 1)));
           el.style.pointerEvents = locOpacity > 0 ? "auto" : "none";
           const worldY = (locHeightsRef.current[i] ?? 0.5) * dispScaleRef.current + 0.08;
-          const pos = new THREE.Vector3(loc.threeX, worldY, loc.threeZ).project(camera);
-          if (pos.z > 1) {
+          _v3a.current.set(loc.threeX, worldY, loc.threeZ).project(camera);
+          if (_v3a.current.z > 1) {
             el.style.opacity = "0";
             return;
           }
-          const sx = ((pos.x + 1) / 2) * locW;
-          const sy = ((-pos.y + 1) / 2) * locH;
+          const sx = ((_v3a.current.x + 1) / 2) * locW;
+          const sy = ((-_v3a.current.y + 1) / 2) * locH;
           el.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
           el.style.opacity = locOpacity.toFixed(3);
           const svg = locRingSvgRefs.current.get(i);
-          const circle = locRingCircleRefs.current.get(i);
-          if (svg && circle && loc.radiusWorld > 0) {
-            const offsetPos = new THREE.Vector3(
-              loc.threeX + loc.radiusWorld,
-              worldY,
-              loc.threeZ,
-            ).project(camera);
-            const ox = ((offsetPos.x + 1) / 2) * locW;
-            const oy = ((-offsetPos.y + 1) / 2) * locH;
+          if (svg && loc.radiusWorld > 0) {
+            _v3b.current.set(loc.threeX + loc.radiusWorld, worldY, loc.threeZ).project(camera);
+            const ox = ((_v3b.current.x + 1) / 2) * locW;
+            const oy = ((-_v3b.current.y + 1) / 2) * locH;
             const pr = Math.max(0, Math.sqrt((ox - sx) ** 2 + (oy - sy) ** 2));
-            svg.setAttribute("width", String(Math.ceil(pr * 2 + 2)));
-            svg.setAttribute("height", String(Math.ceil(pr * 2 + 2)));
-            svg.style.left = `${-(pr + 1)}px`;
-            svg.style.top = `${-(pr + 1)}px`;
-            circle.setAttribute("cx", String(pr + 1));
-            circle.setAttribute("cy", String(pr + 1));
-            circle.setAttribute("r", String(pr));
+            // scale() is compositor-only — no layout reflow, unlike setAttribute on width/height
+            svg.style.transform = `scale(${pr.toFixed(2)})`;
           }
         });
+      }
+
+      // Clouds fade in as camera pulls back (radius 10 → 20); max opacity 0.75
+      if (cloudMatRef.current) {
+        cloudMatRef.current.opacity = Math.max(0, Math.min(1, (radiusRef.current - 10) / 10)) * 0.75;
       }
 
       // Fog ramps in over the last 15% of [R_MIN, FOG_THRESHOLD]; threshold set by fogNearRef
@@ -879,11 +1124,12 @@ export default function ChroniclePage() {
     }
     animate();
 
-    // Resize handler
+    // Resize handler — also caches dimensions so animate loop avoids layout reads
     function onResize() {
       if (!mount) return;
       const w = mount.clientWidth,
         h = mount.clientHeight;
+      mountSizeRef.current = { w, h };
       renderer.setSize(w, h);
       composer.setSize(w, h);
       camera.aspect = w / h;
@@ -1085,9 +1331,9 @@ export default function ChroniclePage() {
       return;
     }
 
-    if (!draggingRef.current) {
-      // Tapping empty canvas deselects; location selection is handled by overlay onClick
-      setNavStack([]);
+    if (!draggingRef.current && mountRef.current?.contains(e.target as Node)) {
+      // Only deselect when tapping the canvas itself — overlay taps are handled by their own onClick
+      startTransition(() => setNavStack([]));
     }
     lastDragStateRef.current = draggingRef.current;
     draggingRef.current = false;
@@ -1135,11 +1381,23 @@ export default function ChroniclePage() {
     const raw = e.clientY - sheetDragStartYRef.current;
     if (Math.abs(raw) > 5) sheetDraggedRef.current = true;
     const isExpanded = sheetExpandedRef.current;
+    const hasNav = navStackLengthRef.current > 0;
+    const isHalf = isExpanded && !hasNav;
     const delta = Math.max(!isExpanded ? -150 : 0, Math.min(200, raw));
     const el = sheetElRef.current;
     if (!el) return;
-    if (isExpanded) el.style.transform = `translateY(${delta}px)`;
-    else el.style.transform = `translateY(calc(100% - 120px + ${delta}px))`;
+    const peekPx = navStackLengthRef.current > 0 ? 175 : 120;
+    if (!isExpanded) el.style.transform = `translateY(calc(100% - ${peekPx}px + ${delta}px))`;
+    else if (isHalf) el.style.transform = `translateY(calc(50% + ${delta}px))`;
+    else el.style.transform = `translateY(${delta}px)`;
+  }, []);
+
+  const sheetSnapTransform = useCallback((expanded: boolean) => {
+    if (!expanded) {
+      const peekPx = navStackLengthRef.current > 0 ? 175 : 120;
+      return `translateY(calc(100% - ${peekPx}px))`;
+    }
+    return navStackLengthRef.current > 0 ? "translateY(0px)" : "translateY(50%)";
   }, []);
 
   const onSheetHandlePointerUp = useCallback((e: React.PointerEvent) => {
@@ -1158,12 +1416,11 @@ export default function ChroniclePage() {
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (newExpanded) el.style.transform = "translateY(0px)";
-      else el.style.transform = "translateY(calc(100% - 120px))";
+      el.style.transform = sheetSnapTransform(newExpanded);
     }
 
     if (newExpanded !== isExpanded) setSheetExpanded(newExpanded);
-  }, []);
+  }, [sheetSnapTransform]);
 
   const onSheetHandlePointerCancel = useCallback(() => {
     if (!sheetDragActiveRef.current) return;
@@ -1173,10 +1430,9 @@ export default function ChroniclePage() {
     const el = sheetElRef.current;
     if (el) {
       el.style.transition = "transform 0.3s ease";
-      if (isExpanded) el.style.transform = "translateY(0px)";
-      else el.style.transform = "translateY(calc(100% - 120px))";
+      el.style.transform = sheetSnapTransform(isExpanded);
     }
-  }, []);
+  }, [sheetSnapTransform]);
 
   const getSeasonLabel = (n: number) => {
     const api = apiSeasons[n - 1];
@@ -1189,33 +1445,44 @@ export default function ChroniclePage() {
 
   const clearNav = useCallback(() => {
     setSlideDir("back");
-    setNavStack([]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack([]);
+      setActiveTab("events");
+    });
+    setSheetExpanded(true); // show half-state (no nav → sheet sits at 50%)
   }, []);
 
   const popNav = useCallback(() => {
     setSlideDir("back");
-    setNavStack((prev) => prev.slice(0, -1));
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => prev.slice(0, -1));
+      setActiveTab("events");
+    });
   }, []);
 
   const handleCharClick = useCallback((charId: number) => {
     setSlideDir("forward");
-    setNavStack((prev) => [...prev, { kind: "character", charId }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => [...prev, { kind: "character", charId }]);
+      setActiveTab("events");
+    });
   }, []);
 
   const handleItemClick = useCallback((itemId: string | number) => {
     setSlideDir("forward");
-    setNavStack((prev) => [...prev, { kind: "item", itemId }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack((prev) => [...prev, { kind: "item", itemId }]);
+      setActiveTab("events");
+    });
   }, []);
 
   const handleLocClick = useCallback((locName: string) => {
     const locIdx = liveLocs.findIndex((l) => l.name === locName);
     setSlideDir("forward");
-    setNavStack([{ kind: "location", locName }]);
-    setActiveTab("events");
+    startTransition(() => {
+      setNavStack([{ kind: "location", locName }]);
+      setActiveTab("events");
+    });
     if (locIdx !== -1) {
       const loc = liveLocs[locIdx];
       focusTargetRef.current = new THREE.Vector3(
@@ -1233,21 +1500,39 @@ export default function ChroniclePage() {
 
   const currentNav = navStack[navStack.length - 1] ?? null;
 
-  // Unique key for animated content — changes on every navigation
+  // Slide animation — triggered imperatively so React can reuse EventCard DOM
+  // instead of destroying + recreating it (which key= would force).
   const contentKey = navStack.map((e) =>
     e.kind === "location" ? `L:${e.locName}` : e.kind === "character" ? `C:${e.charId}` : `I:${String(e.itemId)}`
   ).join(">") || "root";
+
+  useEffect(() => {
+    if (contentKey === prevContentKeyRef.current) return;
+    prevContentKeyRef.current = contentKey;
+    if (contentKey === "root") return;
+    const anim = `chronicle-${slideDir} 0.22s ease both`;
+    [desktopAnimRef.current, mobileAnimRef.current].forEach((el) => {
+      if (!el) return;
+      el.style.animation = "none";
+      void el.offsetHeight; // force reflow so browser registers the reset
+      el.style.animation = anim;
+    });
+  }, [contentKey, slideDir]);
 
   const displaySeason = useMemo(
     () => (viewingSeason ? filterSeasonByNav(viewingSeason, currentNav) : null),
     [viewingSeason, currentNav],
   );
 
-  const prevNavLabel = navStack.length === 0
-    ? null
-    : navStack.length === 1
-      ? (viewingSeasonIdx === 0 ? "All seasons" : getSeasonLabel(displaySeasonNum))
-      : getBreadcrumbLabel(navStack[navStack.length - 2], players, items);
+  // Pre-filter all seasons for the "all seasons" view so filterSeasonByNav isn't called
+  // per-season inside the JSX render (which would re-run on every unrelated re-render).
+  const filteredSeasons = useMemo(
+    () => [...seasons].reverse().map((season) => ({
+      season,
+      filtered: filterSeasonByNav(season, currentNav),
+    })),
+    [seasons, currentNav],
+  );
 
   const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
 
@@ -1292,8 +1577,10 @@ export default function ChroniclePage() {
             onClick={() => {
               if (lastDragStateRef.current) return;
               setSlideDir("forward");
-              setNavStack([{ kind: "location", locName: loc.name }]);
-              setActiveTab("events");
+              startTransition(() => {
+                setNavStack([{ kind: "location", locName: loc.name }]);
+                setActiveTab("events");
+              });
               focusTargetRef.current = new THREE.Vector3(
                 Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, loc.threeX)),
                 (locHeightsRef.current[i] ?? 0) * dispScaleRef.current,
@@ -1302,29 +1589,20 @@ export default function ChroniclePage() {
               targetRadiusRef.current = Math.max(R_MIN, Math.min(R_MAX, loc.radiusWorld * 10));
             }}
           >
-            {/* Radius ring */}
+            {/* Radius ring — fixed 2×2 SVG scaled via transform; avoids layout reflow on every frame */}
             {selectedIdx === i && (
               <svg
                 ref={(el) => {
-                  if (el) locRingSvgRefs.current.set(i, el);
+                  if (el) { locRingSvgRefs.current.set(i, el); needsRenderRef.current = true; }
                   else locRingSvgRefs.current.delete(i);
                 }}
-                className="pointer-events-none absolute"
-                width="0"
-                height="0"
+                className="pointer-events-none absolute overflow-visible"
+                width="2"
+                height="2"
+                viewBox="-1 -1 2 2"
+                style={{ left: "-1px", top: "-1px", transformOrigin: "1px 1px" }}
               >
-                <circle
-                  ref={(el) => {
-                    if (el) locRingCircleRefs.current.set(i, el);
-                    else locRingCircleRefs.current.delete(i);
-                  }}
-                  cx="0"
-                  cy="0"
-                  r="0"
-                  fill="none"
-                  stroke="#fff3"
-                  strokeWidth="2"
-                />
+                <circle cx="0" cy="0" r="1" fill="none" stroke="#fff3" strokeWidth="2" vectorEffect="non-scaling-stroke" />
               </svg>
             )}
             <div
@@ -1484,7 +1762,7 @@ export default function ChroniclePage() {
               </div>
             );
             return (
-              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-[var(--tooltip-bg)] px-3 py-2.5 backdrop-blur">
+              <div className="mt-1 min-w-[180px] rounded-md border border-white/8 bg-black/85 px-3 py-2.5">
                 {sec("Lights", true)}
                 {row("ambient", "Ambient")}
                 {row("dirLight", "Dir light")}
@@ -1497,6 +1775,7 @@ export default function ChroniclePage() {
                 {sliderRow("Normals", terrainNormal, 0, 3, 0.05, setTerrainNormal)}
                 {sliderRow("Height scale", heightScale, 0, 5, 0.1, setHeightScale)}
                 {sliderRow("Contrast", contrast, 0.5, 4, 0.05, setContrast)}
+                {sliderRow("UV scale", mapScale, 0.99, 1.03, 0.001, setMapScale)}
                 {sec("Sea")}
                 {sliderRow("Specular", seaSpec, 0, 0.2, 0.005, setSeaSpec)}
                 {sec("Effects")}
@@ -1506,6 +1785,40 @@ export default function ChroniclePage() {
             );
           })()}
       </div>
+
+      {/* Season selector — eyebrow overlay at top-center of map */}
+      {apiSeasons.length > 0 && (
+        <div
+          className="pointer-events-none absolute z-10 -translate-x-1/2"
+          style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "46px" : "38px" }}
+        >
+          <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-3 py-1.5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
+            <span className="pointer-events-none select-none font-heading text-[0.6rem] tracking-[0.14em] uppercase text-white/55">
+              {viewingSeasonIdx === 0
+                ? "All seasons"
+                : getSeasonLabel(displaySeasonNum) + (displaySeasonNum === apiSeasons.length ? " · Current" : "")}
+            </span>
+            <span className="pointer-events-none select-none text-[0.65rem] text-white/35">⚙</span>
+            <select
+              value={viewingSeasonIdx ?? apiSeasons.length}
+              onChange={(e) => {
+                const num = Number(e.target.value);
+                setViewingSeasonIdx(num === apiSeasons.length ? null : num);
+                setNavStack([]);
+                setSlideDir("back");
+              }}
+              className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+            >
+              <option value={0}>All seasons</option>
+              {apiSeasons.map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current season" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Legend */}
       <div className="pointer-events-none absolute bottom-6 left-6 z-10 flex flex-col gap-1.5">
@@ -1527,52 +1840,41 @@ export default function ChroniclePage() {
 
       {/* Desktop side panel — always visible, shows season timeline */}
       {!isMobile && (
-        <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)] backdrop-blur-lg">
+        <div className="absolute top-0 right-0 bottom-0 z-20 flex w-[min(340px,90vw)] flex-col border-l border-white/7 bg-[var(--panel-bg)]">
           {/* Sticky header */}
           <div className="shrink-0 px-4 pt-20 pb-2">
-            {/* Season selector */}
-            {apiSeasons.length > 0 && (
-              <div className="mb-4">
-                <select
-                  value={viewingSeasonIdx ?? apiSeasons.length}
-                  onChange={(e) => {
-                    const num = Number(e.target.value);
-                    setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                    setNavStack([]);
-                    setSlideDir("back");
-                  }}
-                  className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-                >
-                  <option value={0}>All seasons</option>
-                  {apiSeasons.map((_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
             {/* iOS-style nav bar */}
             {navStack.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "32px" }}>
-                <button
-                  onClick={popNav}
-                  style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                >
-                  <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-                </button>
-                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "14px", minHeight: "36px" }}>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-start", flexShrink: 0 }}>
+                  {navStack.length > 1 && (
+                    <button
+                      onClick={popNav}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px", lineHeight: 1 }}
+                    >
+                      <span style={{ fontSize: "1.3rem", lineHeight: 1, display: "block" }}>‹</span>
+                    </button>
+                  )}
+                </div>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.9rem", letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", padding: "0 4px" }}>
                   {navBarTitle}
                 </div>
-                <button
-                  onClick={clearNav}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+                  <button
+                    onClick={clearNav}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", lineHeight: 1, padding: "4px" }}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
+            )}
+            {/* Location description */}
+            {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
+              <p style={{ margin: "0 0 10px", fontSize: "0.75rem", lineHeight: 1.6, color: "rgba(255,255,255,0.45)" }}>
+                {liveLocs[selectedIdx].description}
+              </p>
             )}
             {/* Tab bar */}
             {navStack.length > 0 && (
@@ -1598,40 +1900,47 @@ export default function ChroniclePage() {
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
-            <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
-              {activeTab === "details" && currentNav ? (
-                <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
-              ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? [...seasons].reverse().map((season) => {
-                  const fs = filterSeasonByNav(season, currentNav);
-                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
-                  return (
-                    <div key={season.number} style={{ marginBottom: "32px" }}>
-                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                        {getSeasonLabel(season.number + seasonOffset)}
+            <div ref={desktopAnimRef}>
+              {/* Details — always mounted when nav active; shown/hidden via CSS to avoid remounting events */}
+              {currentNav && (
+                <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+                  <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+                </div>
+              )}
+              {/* Events — hidden when details tab is active */}
+              <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
+                {viewingSeasonIdx === 0 ? (
+                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                    if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
+                    return (
+                      <div key={season.number} style={{ marginBottom: "32px" }}>
+                        <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                          {getSeasonLabel(season.number + seasonOffset)}
+                        </div>
+                        <SeasonTimeline season={filtered} players={players} items={items} icons={icons} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
-                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
-                    </div>
-                  );
-                }) : eventsLoading ? (
+                    );
+                  }) : eventsLoading ? (
+                    <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                  ) : (
+                    <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                  )
+                ) : displaySeason ? (
+                  <SeasonTimeline
+                    season={displaySeason}
+                    players={players}
+                    items={items}
+                    icons={icons}
+                    onCharClick={handleCharClick}
+                    onItemClick={handleItemClick}
+                    onLocClick={handleLocClick}
+                  />
+                ) : eventsLoading ? (
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-                )
-              ) : displaySeason ? (
-                <SeasonTimeline
-                  season={displaySeason}
-                  players={players}
-                  items={items}
-                  onCharClick={handleCharClick}
-                  onItemClick={handleItemClick}
-                  onLocClick={handleLocClick}
-                />
-              ) : eventsLoading ? (
-                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-              ) : (
-                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1641,9 +1950,11 @@ export default function ChroniclePage() {
       {isMobile && (
         <div
           ref={sheetElRef}
-          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)] backdrop-blur-lg"
+          className="fixed right-0 bottom-0 left-0 z-20 flex h-[80vh] flex-col overflow-hidden rounded-t-2xl bg-[var(--sheet-bg)]"
           style={{
-            transform: sheetExpanded ? "translateY(0px)" : "translateY(calc(100% - 120px))",
+            transform: !sheetExpanded
+              ? navStack.length > 0 ? "translateY(calc(100% - 175px))" : "translateY(calc(100% - 120px))"
+              : navStack.length > 0 ? "translateY(0px)" : "translateY(50%)",
             transition: "transform 0.3s ease",
           }}
         >
@@ -1659,76 +1970,43 @@ export default function ChroniclePage() {
             <div className="h-1 w-9 rounded-sm bg-white/25" />
           </div>
 
-          {/* Peek header — only visible when collapsed */}
-          {!sheetExpanded && (
-            <div
-              className="flex shrink-0 cursor-pointer items-center px-5 pt-1 pb-3"
-              onClick={() => !sheetDraggedRef.current && setSheetExpanded(true)}
-            >
-              {currentNav ? (
-                <div className="font-heading text-[0.9rem] tracking-[0.12em] uppercase" style={{ color: GOLD }}>
-                  {getBreadcrumbLabel(currentNav, players, items)}
-                </div>
-              ) : viewingSeason ? (
-                <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
-                  {getSeasonLabel(displaySeasonNum)}
-                </div>
-              ) : (
-                <div className="text-[0.8rem] text-white/30">Story Events</div>
-              )}
-            </div>
-          )}
-
-          {/* Sticky controls — season selector, iOS nav, tabs */}
-          {sheetExpanded && (
-            <div className="shrink-0 border-b border-white/5 px-4 pt-2 pb-0">
-              {/* Season selector */}
-              {apiSeasons.length > 0 && (
-                <div className="mb-3">
-                  <select
-                    value={viewingSeasonIdx ?? apiSeasons.length}
-                    onChange={(e) => {
-                      const num = Number(e.target.value);
-                      setViewingSeasonIdx(num === apiSeasons.length ? null : num);
-                      setNavStack([]);
-                      setSlideDir("back");
-                    }}
-                    className="w-full cursor-pointer rounded border border-white/10 bg-black/40 px-3 py-1.5 font-heading text-[0.65rem] tracking-[0.1em] uppercase text-white/60"
-                  >
-                    <option value={0}>All seasons</option>
-                    {apiSeasons.map((_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {getSeasonLabel(i + 1)}{i === apiSeasons.length - 1 ? " — Current" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {/* Nav controls — always visible when a location/char/item is selected */}
+          {navStack.length > 0 && (
+            <div className="shrink-0 px-4 pt-1 pb-0">
               {/* iOS-style nav bar */}
-              {navStack.length > 0 && (
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "32px" }}>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "10px", minHeight: "36px" }}>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-start", flexShrink: 0 }}>
+                  {navStack.length > 1 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); popNav(); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px", lineHeight: 1 }}
+                    >
+                      <span style={{ fontSize: "1.3rem", lineHeight: 1, display: "block" }}>‹</span>
+                    </button>
+                  )}
+                </div>
+                <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.9rem", letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)", padding: "0 4px" }}>
+                  {navBarTitle}
+                </div>
+                <div style={{ width: "32px", display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
                   <button
-                    onClick={popNav}
-                    style={{ display: "flex", alignItems: "center", gap: "3px", background: "none", border: "none", cursor: "pointer", color: GOLD, padding: "4px 0", flexShrink: 0 }}
-                  >
-                    <span style={{ fontSize: "1.15rem", lineHeight: 1, marginTop: "-1px" }}>‹</span>
-                    <span style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".1em", textTransform: "uppercase" }}>{prevNavLabel}</span>
-                  </button>
-                  <div style={{ flex: 1, textAlign: "center", fontFamily: "var(--font-heading)", fontSize: "0.65rem", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", padding: "0 8px" }}>
-                    {navBarTitle}
-                  </div>
-                  <button
-                    onClick={clearNav}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.28)", fontSize: "1.1rem", lineHeight: 1, padding: "4px 0", flexShrink: 0 }}
+                    onClick={(e) => { e.stopPropagation(); clearNav(); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: "1.2rem", lineHeight: 1, padding: "4px" }}
                     aria-label="Close"
                   >
                     ×
                   </button>
                 </div>
+              </div>
+              {/* Location description */}
+              {currentNav?.kind === "location" && selectedIdx !== -1 && liveLocs[selectedIdx]?.description && (
+                <p style={{ margin: "0 0 10px", fontSize: "0.75rem", lineHeight: 1.6, color: "rgba(255,255,255,0.45)" }}>
+                  {liveLocs[selectedIdx].description}
+                </p>
               )}
-              {/* Tab bar */}
-              {navStack.length > 0 && (
-                <div style={{ display: "flex" }}>
+              {/* Tab bar — only visible when expanded */}
+              {sheetExpanded && (
+                <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                   {(["events", "details"] as const).map((tab) => (
                     <button
                       key={tab}
@@ -1749,45 +2027,66 @@ export default function ChroniclePage() {
             </div>
           )}
 
+          {/* No-nav peek — collapsed season name (no location selected) */}
+          {navStack.length === 0 && !sheetExpanded && (
+            <div
+              className="flex shrink-0 cursor-pointer items-center px-5 pt-1 pb-3"
+              onClick={() => !sheetDraggedRef.current && setSheetExpanded(true)}
+            >
+              {viewingSeason ? (
+                <div className="font-heading text-[0.9rem] tracking-[0.15em] uppercase text-white/60">
+                  {getSeasonLabel(displaySeasonNum)}
+                </div>
+              ) : (
+                <div className="text-[0.8rem] text-white/30">Story Events</div>
+              )}
+            </div>
+          )}
+
           {/* Scrollable content */}
           <div
             className="flex-1 overflow-y-auto px-4 pt-3 pb-8"
             style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
           >
-            <div key={contentKey} style={{ animation: contentKey !== "root" ? `chronicle-${slideDir} 0.22s ease both` : undefined }}>
-              {activeTab === "details" && currentNav ? (
-                <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
-              ) : viewingSeasonIdx === 0 ? (
-                seasons.length > 0 ? [...seasons].reverse().map((season) => {
-                  const fs = filterSeasonByNav(season, currentNav);
-                  if (currentNav && !fs.days.some((d) => d.events.length > 0)) return null;
-                  return (
-                    <div key={season.number} style={{ marginBottom: "32px" }}>
-                      <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                        {getSeasonLabel(season.number + seasonOffset)}
+            <div ref={mobileAnimRef}>
+              {currentNav && (
+                <div style={{ display: activeTab === "details" ? "block" : "none" }}>
+                  <DetailPane nav={currentNav} liveLocs={liveLocs} players={players} items={items} />
+                </div>
+              )}
+              <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
+                {viewingSeasonIdx === 0 ? (
+                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                    if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
+                    return (
+                      <div key={season.number} style={{ marginBottom: "32px" }}>
+                        <div style={{ fontFamily: "var(--font-heading)", fontSize: "0.6rem", letterSpacing: ".2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "14px", paddingBottom: "8px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                          {getSeasonLabel(season.number + seasonOffset)}
+                        </div>
+                        <SeasonTimeline season={filtered} players={players} items={items} icons={icons} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
                       </div>
-                      <SeasonTimeline season={fs} players={players} items={items} onCharClick={handleCharClick} onItemClick={handleItemClick} onLocClick={handleLocClick} />
-                    </div>
-                  );
-                }) : eventsLoading ? (
+                    );
+                  }) : eventsLoading ? (
+                    <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
+                  ) : (
+                    <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                  )
+                ) : displaySeason ? (
+                  <SeasonTimeline
+                    season={displaySeason}
+                    players={players}
+                    items={items}
+                    icons={icons}
+                    onCharClick={handleCharClick}
+                    onItemClick={handleItemClick}
+                    onLocClick={handleLocClick}
+                  />
+                ) : eventsLoading ? (
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-                )
-              ) : displaySeason ? (
-                <SeasonTimeline
-                  season={displaySeason}
-                  players={players}
-                  items={items}
-                  onCharClick={handleCharClick}
-                  onItemClick={handleItemClick}
-                  onLocClick={handleLocClick}
-                />
-              ) : eventsLoading ? (
-                <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
-              ) : (
-                <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

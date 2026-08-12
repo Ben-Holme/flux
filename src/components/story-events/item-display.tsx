@@ -1,31 +1,66 @@
-import { parseItemString, formatTypeId } from "./utils";
+"use client";
 
-export default function ItemDisplay({ itemStr }: { itemStr: string }) {
+import { useState } from "react";
+import { parseItemString, formatTypeId } from "./utils";
+import { getItemIcon } from "@/lib/item-icons";
+
+export default function ItemDisplay({
+  itemStr,
+  icons = new Set<string>(),
+}: {
+  itemStr: string;
+  icons?: Set<string>;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
   const item = parseItemString(itemStr);
   if (!item.name) return null;
   const c = item.color || "136,136,136";
-  return (
-    <div style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "10px",
-      background: "rgba(0,0,0,0.4)",
-      border: `1px solid rgba(${c},0.27)`,
-      borderLeft: `3px solid rgba(${c},1)`,
-      borderRadius: "6px",
-      padding: "8px 14px",
-      marginTop: "4px",
-    }}>
+  const iconUrl = getItemIcon(item.typeId, icons);
+
+  const iconSlot = iconUrl && !imgFailed ? (
+    <div style={{ padding: "0 8px 0 4px" }}>
+      <div style={{ position: "relative", width: 44, height: 44, background: "black", borderRadius: 3, flexShrink: 0, overflow: "hidden" }}>
+        <img
+          src={iconUrl}
+          alt=""
+          aria-hidden
+          onError={() => setImgFailed(true)}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", objectFit: "scale-down", zIndex: 0 }}
+        />
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: `rgba(${c},0.7)`,
+          mixBlendMode: "multiply",
+          zIndex: 1,
+        }} />
+      </div>
+    </div>
+  ) : (
+    <div style={{ padding: "0 8px 0 4px" }}>
       <div style={{
-        width: "28px",
-        height: "28px",
-        borderRadius: "4px",
+        width: 44,
+        height: 44,
+        borderRadius: 4,
         background: `rgba(${c},0.13)`,
         border: `1px solid rgba(${c},0.4)`,
         boxShadow: `0 0 10px rgba(${c},0.33)`,
         flexShrink: 0,
       }} />
-      <div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      display: "inline-flex",
+      alignItems: "flex-end",
+      background: "rgba(0,0,0,0.4)",
+      border: `1px solid rgba(${c},0.27)`,
+      borderLeft: `3px solid rgba(${c},1)`,
+      borderRadius: "6px",
+      marginTop: "4px",
+    }}>
+      {iconSlot}
+      <div style={{ padding: "8px 14px 8px 0" }}>
         <div style={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.85)", textTransform: "capitalize", lineHeight: 1.3 }}>
           {item.name}
         </div>

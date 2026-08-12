@@ -73,18 +73,29 @@ function flattenChildren(children: ReactNode): ReactNode[] {
 
 export function Flow({ children, as: Tag = "div", className }: FlowProps) {
   let elementIndex = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let prevType: any = null;
 
   const mapped = flattenChildren(children).map((child, index) => {
     if (!React.isValidElement(child)) return child;
 
     const isFirst = elementIndex === 0;
+    const currentType = child.type;
     elementIndex++;
 
-    if (isFirst) return child;
+    if (isFirst) {
+      prevType = currentType;
+      return child;
+    }
+
+    const afterEyebrow = prevType === Eyebrow;
+    prevType = currentType;
 
     const spacing =
       (child.type === Heading
-        ? HEADING_LEVEL_SPACING.get((child.props as { level?: string }).level ?? "h2")
+        ? afterEyebrow
+          ? "mt-4" // Eyebrow + Heading always 16px
+          : HEADING_LEVEL_SPACING.get((child.props as { level?: string }).level ?? "h2")
         : undefined) ??
       FLOW_SPACING.get(child.type as React.ComponentType<any>) ?? // eslint-disable-line @typescript-eslint/no-explicit-any
       (child.type as { flowSpacing?: string }).flowSpacing ??

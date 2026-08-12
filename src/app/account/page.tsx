@@ -7,6 +7,7 @@ import { useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { Portrait } from "@/components/portrait";
 import {
+  Alert,
   Badge,
   Card,
   Eyebrow,
@@ -52,6 +53,7 @@ interface Character {
 interface AccountData {
   email: string;
   house: string;
+  steam_id: string | null;
   characters: Character[];
 }
 
@@ -132,9 +134,12 @@ function AccountContent() {
   const charParam = searchParams.get("char");
   const activeCharId = charParam ? Number(charParam) : null;
 
+  const steamParam = searchParams.get("steam");
+
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -180,8 +185,15 @@ function AccountContent() {
         </Button>
       </div>
 
+      {steamParam === "linked" && (
+        <Alert variant="success">Steam account linked successfully.</Alert>
+      )}
+      {steamParam === "error" && (
+        <Alert>Steam linking failed. Please try again.</Alert>
+      )}
+
       {loading && <Text>Loading…</Text>}
-      {error && <Text className="text-[#e16565]">Error: {error}</Text>}
+      {error && <Alert>Error: {error}</Alert>}
 
       {/* Character detail view */}
       {account && activeChar && <CharacterDetail char={activeChar} />}
@@ -197,11 +209,49 @@ function AccountContent() {
                 <Td className="text-right">{account.email}</Td>
               </TableRow>
               <TableRow>
+                <Td variant="heading">Password</Td>
+                <Td className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPasswordOpen((v) => !v)}
+                  >
+                    {passwordOpen ? "Cancel" : "Change"}
+                  </Button>
+                </Td>
+              </TableRow>
+              <TableRow>
                 <Td variant="heading">House</Td>
                 <Td className="text-right">{account.house || "—"}</Td>
               </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam</Td>
+                <Td className="text-right">
+                  {account.steam_id ? (
+                    <Text as="span" variant="muted">
+                      Linked ({account.steam_id})
+                    </Text>
+                  ) : (
+                    <Button
+                      href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
+                      external
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Connect Steam
+                    </Button>
+                  )}
+                </Td>
+              </TableRow>
             </TableBody>
           </Table>
+
+          {passwordOpen && (
+            <ChangePasswordForm
+              sessionkey={session.sessionkey}
+              onSuccess={() => setPasswordOpen(false)}
+            />
+          )}
 
           {account.characters.length > 0 && (
             <>
@@ -362,5 +412,96 @@ function CharacterDetail({ char }: { char: Character }) {
         ))}
       </div>
     </Flow>
+  );
+}
+
+const inputClass =
+  "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
+const labelClass =
+  "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
+
+function ChangePasswordForm({
+  sessionkey,
+  onSuccess,
+}: {
+  sessionkey: string;
+  onSuccess: () => void;
+}) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (next !== confirm) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("https://api.unyhagame.com/ueserv/changePassword-w.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionkey}`,
+        },
+        body: JSON.stringify({ current_password: current, new_password: next }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      onSuccess();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div>
+        <label className={labelClass}>Current Password</label>
+        <input
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          autoComplete="current-password"
+          required
+          className={inputClass}
+          autoFocus
+        />
+      </div>
+      <div>
+        <label className={labelClass}>New Password</label>
+        <input
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          autoComplete="new-password"
+          required
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Confirm New Password</label>
+        <input
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
+          required
+          className={inputClass}
+        />
+      </div>
+      {error && <Alert>{error}</Alert>}
+      <div>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving…" : "Save Password"}
+        </Button>
+      </div>
+    </form>
   );
 }
