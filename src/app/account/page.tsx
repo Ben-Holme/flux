@@ -135,6 +135,7 @@ function AccountContent() {
   const activeCharId = charParam ? Number(charParam) : null;
 
   const steamParam = searchParams.get("steam");
+  const steamReason = searchParams.get("reason");
 
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -189,7 +190,15 @@ function AccountContent() {
         <Alert variant="success">Steam account linked successfully.</Alert>
       )}
       {steamParam === "error" && (
-        <Alert>Steam linking failed. Please try again.</Alert>
+        <Alert>
+          {steamReason === "steam_already_linked"
+            ? "That Steam account is already linked to a different Unyha account."
+            : steamReason === "steam_verification_failed"
+              ? "Steam couldn't verify your identity. Please try again."
+              : steamReason === "invalid_session" || steamReason === "missing_session"
+                ? "Your session expired. Please sign in again and retry."
+                : "Steam linking failed. Please try again."}
+        </Alert>
       )}
 
       {loading && <Text>Loading…</Text>}
