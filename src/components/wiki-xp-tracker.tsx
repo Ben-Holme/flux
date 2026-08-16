@@ -8,7 +8,7 @@ import { useAuth } from "@/context/auth-context";
  * fires a one-shot POST to award +1 spirit_xp. Unauthenticated visitors are
  * silently ignored.
  */
-export function WikiXpTracker() {
+export function WikiXpTracker({ slug }: { slug: string }) {
   const { session } = useAuth();
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function WikiXpTracker() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
-      body: JSON.stringify({ amount: 1 }),
+      body: JSON.stringify({ amount: 1, slug: `wiki:${slug}` }),
     }).catch(() => {
       // Silently ignore — XP is best-effort
     });

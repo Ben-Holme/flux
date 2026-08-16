@@ -48,6 +48,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(loadSession());
   }, []);
 
+  // After session is available (fresh login or restored from storage),
+  // fire a background check for Steam wishlist XP. Best-effort — never throws.
+  useEffect(() => {
+    if (!session?.sessionkey) return;
+    fetch("https://api.unyhagame.com/ueserv/check-steam-wishlist-w.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
+    }).catch(() => {});
+  }, [session?.sessionkey]);
+
   async function login(username: string, password: string) {
     const res = await fetch("https://api.unyhagame.com/ueserv/mmologin-w.php", {
       method: "POST",
