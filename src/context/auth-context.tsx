@@ -15,6 +15,7 @@ interface Session {
 
 interface AuthContextValue {
   session: Session | null;
+  ready: boolean; // true once localStorage has been read
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -43,9 +44,11 @@ function clearSession() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setSession(loadSession());
+    setReady(true);
   }, []);
 
   // After session is available (fresh login or restored from storage),
@@ -80,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, login, logout }}>
+    <AuthContext.Provider value={{ session, ready, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

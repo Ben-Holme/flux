@@ -33,7 +33,7 @@ interface User {
 type Filter = "all" | "approved" | "unapproved" | "steam";
 
 function AdminContent() {
-  const { session } = useAuth();
+  const { session, ready } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,9 +56,10 @@ function AdminContent() {
   }, [session]);
 
   useEffect(() => {
+    if (!ready) return;
     if (!session) { router.push("/login?redirect=/admin"); return; }
     fetchUsers();
-  }, [session, router, fetchUsers]);
+  }, [session, ready, router, fetchUsers]);
 
   const setApproved = async (userId: number, approved: boolean) => {
     if (!session) return;
