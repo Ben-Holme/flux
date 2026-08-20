@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Swords, Scroll, Crown, Zap, Shield } from "lucide-react";
 import { Eyebrow, Heading, Text, Flow, Card, Badge } from "@/components/ui";
 import Button from "@/components/button";
@@ -14,12 +13,13 @@ export default function SeasonXPage() {
       {/* ── Section 1: Full-screen hero ──────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <Image
-            src="/orc-image-4x.png"
-            alt=""
-            fill
-            className="object-cover object-center"
-            priority
+          <video
+            src="/hero.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="h-full w-full object-cover object-center"
           />
         </div>
         <div
