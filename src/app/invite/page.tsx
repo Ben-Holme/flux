@@ -1,6 +1,7 @@
 import { Swords, Scroll, Crown, Zap, Shield } from "lucide-react";
 import { Eyebrow, Heading, Text, Flow, Card, Badge } from "@/components/ui";
 import Button from "@/components/button";
+import { HeroVideo } from "@/components/hero-video";
 
 export const metadata = {
   title: "Season X — Unyha",
@@ -12,16 +13,7 @@ export default function SeasonXPage() {
     <>
       {/* ── Section 1: Full-screen hero ──────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <video
-            src="/hero.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="h-full w-full object-cover object-center"
-          />
-        </div>
+        <HeroVideo />
         <div
           className="pointer-events-none absolute inset-0"
           style={{ background: "#000", opacity: 0.35 }}
