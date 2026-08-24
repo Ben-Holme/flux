@@ -1,11 +1,20 @@
 "use client";
 import { useRef, useEffect } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 export function HeroVideo() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const aRef = useRef<HTMLVideoElement>(null);
   const bRef = useRef<HTMLVideoElement>(null);
   const activeRef = useRef<"a" | "b">("a");
   const crossfadingRef = useRef(false);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "75%"]);
+  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
 
   useEffect(() => {
     const a = aRef.current!;
@@ -47,7 +56,11 @@ export function HeroVideo() {
   }, []);
 
   return (
-    <div className="absolute inset-0">
+    <motion.div
+      ref={containerRef}
+      className="absolute inset-0 scale-110"
+      style={{ y, opacity: opacity, willChange: "transform" }}
+    >
       <video
         ref={aRef}
         src="/hero.mp4"
@@ -66,6 +79,6 @@ export function HeroVideo() {
         className="absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[2000ms]"
         style={{ opacity: 0 }}
       />
-    </div>
+    </motion.div>
   );
 }
