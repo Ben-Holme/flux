@@ -94,7 +94,7 @@ export default function InvitePage() {
       <section className="flex min-h-[560px] flex-col overflow-hidden lg:flex-row lg:items-stretch">
         {/* text: left-padded to align with the 1200px grid */}
         <div
-          className="flex flex-col justify-center py-16 pr-12 lg:w-[45%] lg:shrink-0 lg:py-24 lg:pr-20"
+          className="flex flex-col justify-center bg-surface py-16 pr-12 lg:w-[45%] lg:shrink-0 lg:py-24 lg:pr-20"
           style={{ paddingLeft: "max(24px, calc((100vw - 1200px) / 2))" }}
         >
           <Flow>
