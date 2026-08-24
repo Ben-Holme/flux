@@ -3,7 +3,6 @@ import {
   Heading,
   Text,
   Flow,
-  Card,
   Badge,
   Table,
   TableHead,
@@ -87,13 +86,15 @@ export default function InvitePage() {
         </Flow>
       </section>
 
-      {/* ── 3 · What You'll Actually Do ──────────────────────────── */}
-      <Card className="p-0">
-        <section className="mx-auto box-content flex max-w-[1200px] items-center p-0 px-6">
-          <Flow className="grow-1 basis-0 py-8 pr-24">
-            <Heading level="h2" as="h2">
-              What playing will be like
-            </Heading>
+      {/* ── 3 · What Playing Will Be Like ───────────────────────── */}
+      <section className="flex min-h-[560px] flex-col overflow-hidden lg:flex-row lg:items-stretch">
+        {/* text: left-padded to align with the 1200px grid */}
+        <div
+          className="flex flex-col justify-center py-16 pr-12 lg:w-[45%] lg:shrink-0 lg:py-24 lg:pr-20"
+          style={{ paddingLeft: "max(24px, calc((100vw - 1200px) / 2 + 24px))" }}
+        >
+          <Flow>
+            <Heading level="h2">What playing will be like</Heading>
             <Text>
               You start in one of the three start locations, a newcomer with a name nobody knows
               yet. What you make of it is yours: train your skills, go down into the dungeons under
@@ -107,15 +108,16 @@ export default function InvitePage() {
               when it does is the part the world writes down.
             </Text>
           </Flow>
-          <div className="grow-2 basis-0 self-stretch">
-            <img
-              src="/img/defence.png"
-              alt="What you'll actually do"
-              className="rounded-0 -mr-[calc(1200px-100vh)] h-full w-full grow-3 basis-0 object-cover object-center"
-            />
-          </div>
-        </section>
-      </Card>
+        </div>
+        {/* image: fills remainder and bleeds to the right viewport edge */}
+        <div className="relative h-[400px] lg:h-auto lg:flex-1">
+          <img
+            src="/img/defence.png"
+            alt="Warriors in battle"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+        </div>
+      </section>
 
       {/* ── 4 · How the Age Ends ─────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 pb-20">
