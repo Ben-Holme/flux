@@ -10,6 +10,7 @@ import {
 } from "@/lib/contentful";
 import RichText from "@/components/rich-text";
 import { Flow, Heading } from "@/components/ui";
+import { WikiXpTracker } from "@/components/wiki-xp-tracker";
 import type { Document } from "@contentful/rich-text-types";
 
 export async function generateStaticParams() {
@@ -63,6 +64,7 @@ export default async function WikiSlugPage({ params }: { params: Promise<{ slug:
     const heroAlt = getAssetTitle(post.fields.image);
     return (
       <Flow as="article" className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
+        <WikiXpTracker slug={slug} />
         <Heading level="h1">{post.fields.title as string}</Heading>
         {heroUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -77,6 +79,7 @@ export default async function WikiSlugPage({ params }: { params: Promise<{ slug:
 
   return (
     <Flow as="article" className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
+      <WikiXpTracker slug={slug} />
       <Heading level="h1">{page!.fields.title as string}</Heading>
       {page!.fields.pageContent && <RichText document={page!.fields.pageContent as Document} />}
     </Flow>

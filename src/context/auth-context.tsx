@@ -15,6 +15,7 @@ interface Session {
 
 interface AuthContextValue {
   session: Session | null;
+  ready: boolean; // true once localStorage has been read
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -43,10 +44,25 @@ function clearSession() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setSession(loadSession());
+    setReady(true);
   }, []);
+
+  // After session is available (fresh login or restored from storage),
+  // fire a background check for Steam wishlist XP. Best-effort — never throws.
+  useEffect(() => {
+    if (!session?.sessionkey) return;
+    fetch("https://api.unyhagame.com/ueserv/check-steam-wishlist-w.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
+    }).catch(() => {});
+  }, [session?.sessionkey]);
 
   async function login(username: string, password: string) {
     const res = await fetch("https://api.unyhagame.com/ueserv/mmologin-w.php", {
@@ -67,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, login, logout }}>
+    <AuthContext.Provider value={{ session, ready, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
