@@ -225,7 +225,9 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
           <Eyebrow className="mb-6" deco>
             Latest
           </Eyebrow>
-          <Heading level="h2">News</Heading>
+          <Heading level="h1" as="h2">
+            News
+          </Heading>
           <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
             {posts.map((post) => (
               <PostCard key={post.sys.id} post={post} />
