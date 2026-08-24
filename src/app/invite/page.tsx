@@ -69,19 +69,23 @@ export default function InvitePage() {
       {/* ── 2 · What This Is ─────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
         <Flow>
-          <Eyebrow deco>A note from the devs</Eyebrow>
-          <div className="columns-1 gap-8 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*:last-child]:mb-0">
+          <Eyebrow deco>A different kind of game</Eyebrow>
+          <div className="columns-1 gap-8 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
             <Text>
-              Unyha writes its own history. The world generates its own chapters around what players
-              actually do, and it keeps them. No one authors what comes next. Not even us.
+              Unyha isn&apos;t a story someone handed you. The world generates its own chapters — out
+              of what players actually do, age by age. The record is real. What you accomplish shapes
+              what comes next for everyone who plays after you.
             </Text>
             <Text>
-              This first age is the one exception. We wrote it by hand — a real mystery, a real name
-              at the end of it — so you can judge for yourself whether the thing that comes after is
-              any good. Because how this age ends is what the world builds the next one from. Win it
-              or lose it, that outcome becomes history, and the machine takes the baton.
+              This first age is the exception. We wrote it by hand — a real mystery, a real arc with
+              a name at the end of it — so you have something concrete to walk through before the
+              machine takes over. The hero above introduced it. It only happens once.
             </Text>
-            <Text>It only works this way once. You&apos;re here for the once.</Text>
+            <Text>
+              When it closes, what happened becomes history. The world reads the record and generates
+              the next age from it. Not a sequel someone wrote — a continuation that inherits exactly
+              what this age produced. Win or lose, your outcome is the input.
+            </Text>
           </div>
         </Flow>
       </section>
@@ -91,7 +95,7 @@ export default function InvitePage() {
         {/* text: left-padded to align with the 1200px grid */}
         <div
           className="flex flex-col justify-center py-16 pr-12 lg:w-[45%] lg:shrink-0 lg:py-24 lg:pr-20"
-          style={{ paddingLeft: "max(24px, calc((100vw - 1200px) / 2 + 24px))" }}
+          style={{ paddingLeft: "max(24px, calc((100vw - 1200px) / 2 + 64px))" }}
         >
           <Flow>
             <Heading level="h2">What playing will be like</Heading>
