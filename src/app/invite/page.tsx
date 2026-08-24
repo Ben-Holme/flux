@@ -1,6 +1,7 @@
 import { Eyebrow, Heading, Text, Flow, Card, Badge, Table, TableHead, TableBody, TableRow, Th, Td } from "@/components/ui";
 import Button from "@/components/button";
 import { HeroVideo } from "@/components/hero-video";
+import SkillsCarousel from "@/components/skills-carousel";
 
 export const metadata = {
   title: "Unyha — Early Access Invite",
@@ -57,10 +58,9 @@ export default function InvitePage() {
       {/* ── 2 · What This Is ─────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
         <Flow>
-          <Eyebrow deco>A note from the builders</Eyebrow>
+          <Eyebrow deco>A note from the devs</Eyebrow>
           <Card variant="raised">
-            <Flow>
-              <Text variant="muted">A note from the two of us building this —</Text>
+            <div className="columns-1 gap-8 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
               <Text>
                 Unyha writes its own history. The world generates its own chapters around
                 what players actually do, and it keeps them. No one authors what comes next.
@@ -75,7 +75,7 @@ export default function InvitePage() {
               </Text>
               <Text>It only works this way once. You&apos;re here for the once.</Text>
               <Text variant="muted">— Ben &amp; Vik</Text>
-            </Flow>
+            </div>
           </Card>
         </Flow>
       </section>
@@ -87,9 +87,10 @@ export default function InvitePage() {
             What You&apos;ll Actually Do
           </Heading>
           <Text>
-            You start in one of the north&apos;s cities, a newcomer with a name nobody knows
-            yet. What you make of it is yours: train your skills, go down into the dungeons
-            under the mountains, craft your gear, build a House meant to outlast you.
+            You start in one of the three start locations, a newcomer with a name nobody
+            knows yet. What you make of it is yours: train your skills, go down into the
+            dungeons under the mountains, craft your gear, build a House meant to outlast
+            you.
           </Text>
           <Text>
             The trouble in the north isn&apos;t a quest handed to you at the gate. It&apos;s
@@ -99,6 +100,7 @@ export default function InvitePage() {
             and where you&apos;re standing when it does is the part the world writes down.
           </Text>
         </Flow>
+        <SkillsCarousel />
       </section>
 
       {/* ── 4 · How the Age Ends ─────────────────────────────────── */}
