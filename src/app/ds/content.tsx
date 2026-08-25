@@ -43,6 +43,7 @@ import {
   Th,
   Td,
   TableEllipsis,
+  BleedSection,
 } from "@/components/ui";
 import Button from "@/components/button";
 
@@ -67,6 +68,7 @@ DemoSection.flowSpacing = "mt-12" as const;
 
 export default function DSContent() {
   return (
+    <>
     <Flow className="mx-auto max-w-[900px] px-6 pt-[120px] pb-24">
       <Eyebrow deco>Components</Eyebrow>
       <h1 className="mb-10">Design System</h1>
@@ -396,5 +398,34 @@ export default function DSContent() {
         </TabsPanel>
       </Tabs>
     </Flow>
+
+    {/* ── BleedSection — full-width layout demos ───────────────────────── */}
+    <section className="mx-auto box-content max-w-[900px] px-6 pb-6">
+      <div className="flex items-center gap-4">
+        <span className="font-heading text-[0.6rem] tracking-[0.2em] whitespace-nowrap text-white/20 uppercase">
+          BleedSection
+        </span>
+        <div className="bg-border h-px flex-1" />
+      </div>
+    </section>
+
+    <BleedSection image="/img/defence.png" alt="Warriors in combat">
+      <Heading level="h2">Text left · image right</Heading>
+      <Text>
+        The default layout: text column anchored to the 1200px grid, image column bleeding to the
+        right viewport edge with no right constraint. Use this for cinematic content sections.
+      </Text>
+      <Text variant="muted">Props: image, alt, bg, reverse</Text>
+    </BleedSection>
+
+    <BleedSection image="/img/melee.png" alt="Melee combat" reverse>
+      <Heading level="h2">Image left · text right</Heading>
+      <Text>
+        With <code>reverse</code>, the image bleeds to the left viewport edge and the text column
+        anchors to the right side of the 1200px grid.
+      </Text>
+      <Text variant="muted">reverse={"{true}"}</Text>
+    </BleedSection>
+    </>
   );
 }

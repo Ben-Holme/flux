@@ -10,6 +10,7 @@ import {
   TableRow,
   Th,
   Td,
+  BleedSection,
 } from "@/components/ui";
 import Button from "@/components/button";
 import { HeroVideo } from "@/components/hero-video";
@@ -91,37 +92,21 @@ export default function InvitePage() {
       </section>
 
       {/* ── 3 · What Playing Will Be Like ───────────────────────── */}
-      <section className="flex min-h-[560px] flex-col overflow-hidden lg:flex-row lg:items-stretch">
-        {/* text: left-padded to align with the 1200px grid */}
-        <div
-          className="flex flex-col justify-center bg-[#1b222f] py-16 pr-12 lg:w-[45%] lg:shrink-0 lg:py-24 lg:pr-20"
-          style={{ paddingLeft: "max(24px, calc((100vw - 1200px) / 2))" }}
-        >
-          <Flow>
-            <Heading level="h2">What playing will be like</Heading>
-            <Text>
-              You start in one of the three start locations, a newcomer with a name nobody knows
-              yet. What you make of it is yours: train your skills, go down into the dungeons under
-              the mountains, craft your gear, build a House meant to outlast you.
-            </Text>
-            <Text>
-              The trouble in the north isn&apos;t a quest handed to you at the gate. It&apos;s the
-              weather the whole world is living under — spreading through the taverns, thickening as
-              the age wears on. Chase it if you want. Ignore it if you&apos;d rather carve your name
-              some other way. Either way it&apos;s coming to a head, and where you&apos;re standing
-              when it does is the part the world writes down.
-            </Text>
-          </Flow>
-        </div>
-        {/* image: fills remainder and bleeds to the right viewport edge */}
-        <div className="relative h-[400px] lg:h-auto lg:flex-1">
-          <img
-            src="/img/defence.png"
-            alt="Warriors in battle"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
-        </div>
-      </section>
+      <BleedSection image="/img/defence.png" alt="Warriors in battle" bg="#1b222f">
+        <Heading level="h2">What playing will be like</Heading>
+        <Text>
+          You start in one of the three start locations, a newcomer with a name nobody knows yet.
+          What you make of it is yours: train your skills, go down into the dungeons under the
+          mountains, craft your gear, build a House meant to outlast you.
+        </Text>
+        <Text>
+          The trouble in the north isn&apos;t a quest handed to you at the gate. It&apos;s the
+          weather the whole world is living under — spreading through the taverns, thickening as the
+          age wears on. Chase it if you want. Ignore it if you&apos;d rather carve your name some
+          other way. Either way it&apos;s coming to a head, and where you&apos;re standing when it
+          does is the part the world writes down.
+        </Text>
+      </BleedSection>
 
       {/* ── 4 · How the Age Ends ─────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 pb-20">
