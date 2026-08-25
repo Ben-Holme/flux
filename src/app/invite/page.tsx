@@ -3,9 +3,9 @@ import Button from "@/components/button";
 import { HeroVideo } from "@/components/hero-video";
 
 export const metadata = {
-  title: "Unyha — Early Access",
+  title: "Unyha — Early Access Invite",
   description:
-    "We're opening the doors. Come play the first season of Unyha — a medieval goth autochronicle online RPG.",
+    "We've been building Unyha for a long time. Now we're opening the doors — a few of you at first, then more. Come play.",
 };
 
 export default function InvitePage() {
@@ -37,97 +37,89 @@ export default function InvitePage() {
             </Text>
             <Text>
               But some say it went north for something else entirely — past the last honest
-              road. <strong>North, into orc lands.</strong>
+              road.
             </Text>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="primary" href="/register">
-                Create an account
-              </Button>
-              <Button href="/login">Sign in</Button>
-            </div>
+            <Text>
+              <strong>Into orc lands.</strong>
+            </Text>
+            <Button variant="primary" href="/register">
+              Join the Founders
+            </Button>
           </Flow>
         </div>
       </section>
 
-      {/* ── 2 · Meta appeal ──────────────────────────────────────── */}
+      {/* ── 2 · The Invitation ───────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
         <Flow>
-          <Eyebrow deco>From the devs</Eyebrow>
-          <Heading level="h2">The doors are open.</Heading>
-          <div className="columns-1 gap-8 sm:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
-            <Text>
-              Unyha is a strange game to describe from the outside. The pitch doesn&apos;t land the
-              same way playing it does — so we always planned to skip the pitch and just let people
-              in. This is that.
-            </Text>
-            <Text>
-              We&apos;re opening a first season — one we wrote by hand, with a real arc and a real
-              ending that only happens once. When it closes, it becomes part of the world&apos;s
-              permanent history. Everything after it inherits what this season produced.
-            </Text>
+          <Eyebrow>A note from the two of us</Eyebrow>
+          <div className="border-l-2 border-gold/30 pl-6 lg:pl-10">
+            <Flow>
+              <Text>
+                We&apos;ve been building Unyha for a long time, mostly heads-down, two of us and a
+                few we trust. It&apos;s an online world with one strange idea at the center: it
+                writes its own history. Play in it, and the world turns what you and everyone else
+                actually do into its record — its chapters, its ages — and keeps them. No one
+                authors what happens next. Not even us.
+              </Text>
+              <Text>
+                This first chapter is the exception — the Golden City and the rot underneath it,
+                all of it written by hand. We built it to sit right on the seam between
+                Unyha&apos;s long backstory and its living present: the weight of what came before
+                is real, and the first age is where the world stops being history and starts being
+                made. After this chapter, the world takes the pen. This is the last one we hold.
+              </Text>
+              <Text>
+                And now, finally, we&apos;re opening the doors. A few of you at first, then more.
+                We&apos;re not asking you to back us or hype us — we&apos;re asking you to come
+                play, and to take the project seriously enough to see what it is. That&apos;s the
+                whole invitation.
+              </Text>
+              <Text variant="muted">— Ben &amp; Vik</Text>
+            </Flow>
           </div>
-          <Text variant="muted">
-            We&apos;re not asking you to back a roadmap. We&apos;re asking you to come play
-            something real, and see what you think.
-          </Text>
         </Flow>
       </section>
 
-      {/* ── 3 · The weather ──────────────────────────────────────── */}
+      {/* ── 3 · What You're Walking Into ─────────────────────────── */}
       <BleedSection image="/img/defence.png" alt="Warriors in the north" bg="#1b222f">
-        <Eyebrow deco>Season one</Eyebrow>
-        <Heading level="h2">The weather in Unyha</Heading>
+        <Heading level="h2">What you&apos;re walking into</Heading>
         <Text>
-          You start as a nobody. A Spiritfolk with a name, a starting city, and nothing else. The
-          world is already mid-sentence when you arrive — skills to train, dungeons under the
-          mountains, a House to build if you want to leave something behind.
+          You&apos;ll start a nobody. A Spiritfolk with no name yet, in a world that won&apos;t
+          notice you for a while. What you do from there is yours — train, delve the dungeons,
+          craft, build a House meant to outlast you. The potential is real, and so is the climb.
         </Text>
         <Text>
-          There&apos;s something happening in the north. Coin has been moving up the north road for
-          two years, and the North Warden hasn&apos;t been seen since winter. Nobody in the Golden
-          City is saying it out loud yet. But the ledgers don&apos;t balance — and ledgers
-          don&apos;t lie.
+          And something is wrong in the north. The orcs have grown bold — seen further south than
+          Tann, where no one remembers them coming before. Coin went missing on the roads up there;
+          a wall that swallowed a fortune was never built; and nobody with power seems to want the
+          question asked out loud. It isn&apos;t a quest handed to you at the gate. It&apos;s just
+          the state of the world you&apos;re walking into. But push far enough, make enough of a
+          name, and you might reach the outskirts of it — close enough to touch the thing everyone
+          else only whispers about, and leave a mark on how it ends.
         </Text>
-        <Text>
-          You don&apos;t have to chase it. But if you push far enough, you&apos;ll find the edge of
-          something bigger. And where you&apos;re standing when it breaks is the part the world
-          writes down.
+        <Text variant="muted">
+          Most won&apos;t. That&apos;s fine. The ones who do get written into the world for good.
         </Text>
       </BleedSection>
 
-      {/* ── 4 · Get in / Discord / Steam ─────────────────────────── */}
+      {/* ── 4 · Close ────────────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20 pb-32">
         <Flow>
-          <Eyebrow deco>Join us</Eyebrow>
-          <Heading level="h2">Come in</Heading>
           <Text>
-            Create a free account and you&apos;ll get access when the season opens. The Discord is
-            where the play test lives between sessions — patch notes, lore, and whatever the
-            community turns up.
+            Here&apos;s how getting in works. You sign up and link your Steam account — that puts
+            you on the founders&apos; list. From there we bring people in ourselves, in waves, a
+            handful at a time. We&apos;re doing it by hand because we want the early world to hold
+            together, not flood.
           </Text>
-          <div className="flex flex-wrap gap-3">
-            <Button variant="primary" href="/register">
-              Create an account
-            </Button>
-            <Button href="https://discord.gg/BRd7y3P5Xg" external>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 512 512" fill="currentColor">
-                <path d="M464 66.52A50 50 0 0 0 414.12 17L97.64 0A47.84 47.84 0 0 0 48 46.16V384c0 26.4 21.4 48 48 48h32v64l96-64h201.56A47.94 47.94 0 0 0 474 384.1V114.12a50.22 50.22 0 0 0-10-47.6zM203 297.06c-16 0-29-14-29-31s13-31 29-31 29 14 29 31-13 31-29 31zm106 0c-16 0-29-14-29-31s13-31 29-31 29 14 29 31-13 31-29 31z"/>
-              </svg>
-              Join Discord
-            </Button>
-          </div>
-          <Text variant="muted">
-            On Steam?{" "}
-            <a
-              href="https://store.steampowered.com/app/2712710/Unyha/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold underline-offset-2 hover:underline"
-            >
-              Wishlist on Steam
-            </a>{" "}
-            to follow along.
+          <Text>
+            So most of you will wait a little, and that&apos;s the point, not a brush-off. Everyone
+            on the list is part of this founding cohort — the waves just open one after another.
+            While you wait, we&apos;ll keep you in the loop and give you reasons to stick around.
           </Text>
+          <Button variant="primary" href="/register">
+            Join the Founders
+          </Button>
         </Flow>
       </section>
     </>
