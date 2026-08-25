@@ -269,7 +269,7 @@ export default function InvitePage() {
       </section>
 
       {/* ── 8 · Get In ───────────────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 pb-32">
+      <section className="mx-auto box-content max-w-[1200px] px-6 pb-20">
         <Flow>
           <Eyebrow deco>Free Early Access</Eyebrow>
           <Heading level="h1" as="h2">
@@ -290,6 +290,28 @@ export default function InvitePage() {
           </div>
           <Button variant="primary" href="/key">
             Request a Key
+          </Button>
+        </Flow>
+      </section>
+
+      {/* ── 9 · Discord ──────────────────────────────────────────── */}
+      <section className="mx-auto box-content max-w-[1200px] px-6 pb-32">
+        <Flow>
+          <Eyebrow>Community</Eyebrow>
+          <Heading level="h2">Join the Discord</Heading>
+          <Text>
+            The server is where the play test lives between sessions — patch notes, lore drops,
+            character talk, and whatever the investigation turns up. If you&apos;re in, you should
+            be there.
+          </Text>
+          <Button
+            href="https://discord.gg/BRd7y3P5Xg"
+            external
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 512 512" fill="currentColor">
+              <path d="M464 66.52A50 50 0 0 0 414.12 17L97.64 0A47.84 47.84 0 0 0 48 46.16V384c0 26.4 21.4 48 48 48h32v64l96-64h201.56A47.94 47.94 0 0 0 474 384.1V114.12a50.22 50.22 0 0 0-10-47.6zM203 297.06c-16 0-29-14-29-31s13-31 29-31 29 14 29 31-13 31-29 31zm106 0c-16 0-29-14-29-31s13-31 29-31 29 14 29 31-13 31-29 31z"/>
+            </svg>
+            Join on Discord
           </Button>
         </Flow>
       </section>
