@@ -53,7 +53,7 @@ export default function InvitePage() {
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
         <Flow>
           <Eyebrow deco>From the devs</Eyebrow>
-          <Heading level="h2">Why we&apos;re doing this now</Heading>
+          <Heading level="h2">The doors are open.</Heading>
           <div className="columns-1 gap-8 sm:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
             <Text>
               Unyha is a strange game to describe from the outside. The pitch doesn&apos;t land the
