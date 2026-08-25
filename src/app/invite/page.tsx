@@ -24,12 +24,20 @@ export default function InvitePage() {
         />
         <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-[768px]:items-end max-[768px]:pb-16">
           <Flow className="ml-auto max-w-lg pt-[120px] pb-20 max-[768px]:ml-0 max-[768px]:pt-0">
-            <Eyebrow deco>Early Access · First Season</Eyebrow>
-            <Heading level="h1">The doors are open.</Heading>
+            <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
+            <Heading level="h1">The Golden City</Heading>
             <Text>
-              Unyha is a medieval goth online RPG where the world writes its own history — out of
-              what players actually do. We&apos;ve been building it a while. Now we&apos;re inviting
-              the first group in to play.
+              That&apos;s what they call Midaen in the taverns now — a mountain mining town
+              that&apos;s swallowed a kingdom&apos;s coin and has nothing to show for it.
+              Best-funded wall in the land, and not a stone laid.
+            </Text>
+            <Text>
+              The North Warden has been taking the coin for himself, it seems. It
+              wouldn&apos;t be the first time.
+            </Text>
+            <Text>
+              But some say it went north for something else entirely — past the last honest
+              road. <strong>North, into orc lands.</strong>
             </Text>
             <div className="flex flex-wrap gap-3">
               <Button variant="primary" href="/register">
