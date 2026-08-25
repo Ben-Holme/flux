@@ -1,5 +1,8 @@
-import type { ReactNode } from "react";
-import { Flow } from "@/components/ui";
+"use client";
+
+import { useRef, type ReactNode } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Card, Flow } from "@/components/ui";
 
 interface BleedSectionProps {
   children: ReactNode;
@@ -11,20 +14,19 @@ interface BleedSectionProps {
 
 const GUTTER = "max(24px, calc((100vw - 1200px) / 2))";
 
-export function BleedSection({
-  children,
-  image,
-  alt = "",
-  bg = "#1b222f",
-  reverse = false,
-}: BleedSectionProps) {
+export function BleedSection({ children, image, alt = "", reverse = false }: BleedSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["-16%", "16%"]);
   const textCol = (
     <div
-      className={`flex flex-col justify-center py-16 lg:w-[45%] lg:shrink-0 lg:py-24 ${
+      className={`flex flex-col justify-center py-16 lg:w-[40%] lg:shrink-0 lg:py-24 ${
         reverse ? "pl-12 lg:pl-20" : "pr-12 lg:pr-20"
       }`}
       style={{
-        background: bg,
         ...(reverse ? { paddingRight: GUTTER } : { paddingLeft: GUTTER }),
       }}
     >
@@ -33,32 +35,36 @@ export function BleedSection({
   );
 
   const imageCol = (
-    <div className="relative h-[400px] lg:h-auto lg:flex-1">
-      <img
+    <div className="relative h-[400px] overflow-hidden lg:h-auto lg:flex-1">
+      <motion.img
         src={image}
         alt={alt}
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        style={{ y, willChange: "transform" }}
+        className="absolute inset-x-0 top-[-12.5%] h-[125%] w-full object-cover object-center"
       />
     </div>
   );
 
   return (
-    <section
-      className={`flex min-h-[560px] overflow-hidden lg:flex-row lg:items-stretch ${
-        reverse ? "flex-col-reverse" : "flex-col"
-      }`}
-    >
-      {reverse ? (
-        <>
-          {imageCol}
-          {textCol}
-        </>
-      ) : (
-        <>
-          {textCol}
-          {imageCol}
-        </>
-      )}
-    </section>
+    <Card variant="raised" className="rounded-none p-0">
+      <section
+        ref={sectionRef}
+        className={`flex min-h-[560px] overflow-hidden lg:flex-row lg:items-stretch ${
+          reverse ? "flex-col-reverse" : "flex-col"
+        }`}
+      >
+        {reverse ? (
+          <>
+            {imageCol}
+            {textCol}
+          </>
+        ) : (
+          <>
+            {textCol}
+            {imageCol}
+          </>
+        )}
+      </section>
+    </Card>
   );
 }

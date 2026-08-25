@@ -3,6 +3,7 @@ import {
   Heading,
   Text,
   Flow,
+  Card,
   Badge,
   Table,
   TableHead,
@@ -45,8 +46,8 @@ export default function InvitePage() {
 
         <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-[768px]:items-end max-[768px]:pb-16">
           <Flow className="ml-auto max-w-lg pt-[120px] pb-20 max-[768px]:ml-0 max-[768px]:pt-0">
-            <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
-            <Heading level="h1">The Golden City</Heading>
+            <Eyebrow deco>Early Access Invite</Eyebrow>
+            <Heading level="h1">Unyha: The Golden City</Heading>
             <Text>
               That&apos;s what they call Midaen in the taverns now — a mountain mining town
               that&apos;s swallowed a kingdom&apos;s coin and has nothing to show for it.
@@ -68,31 +69,105 @@ export default function InvitePage() {
       </section>
 
       {/* ── 2 · What This Is ─────────────────────────────────────── */}
+      <Card>
+        <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
+          <Flow>
+            <Eyebrow deco>A different kind of game</Eyebrow>
+            <div className="columns-1 gap-8 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
+              <Text>
+                Unyha isn&apos;t a story someone handed you. The world generates its own chapters —
+                out of what players actually do, age by age. The record is real. What you accomplish
+                shapes what comes next for everyone who plays after you.
+              </Text>
+              <Text>
+                This first age is the exception. We wrote it by hand — a real mystery, a real arc
+                with a name at the end of it — so you have something concrete to walk through before
+                the machine takes over. The hero above introduced it. It only happens once.
+              </Text>
+              <Text>
+                When it closes, what happened becomes history. The world reads the record and
+                generates the next age from it. Not a sequel someone wrote — a continuation that
+                inherits exactly what this age produced. Win or lose, your outcome is the input.
+              </Text>
+            </div>
+          </Flow>
+        </section>
+      </Card>
+
+      {/* ── 4 · Follow the Gold ────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
         <Flow>
-          <Eyebrow deco>A different kind of game</Eyebrow>
-          <div className="columns-1 gap-8 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid [&>*:last-child]:mb-0">
-            <Text>
-              Unyha isn&apos;t a story someone handed you. The world generates its own chapters — out
-              of what players actually do, age by age. The record is real. What you accomplish shapes
-              what comes next for everyone who plays after you.
-            </Text>
-            <Text>
-              This first age is the exception. We wrote it by hand — a real mystery, a real arc with
-              a name at the end of it — so you have something concrete to walk through before the
-              machine takes over. The hero above introduced it. It only happens once.
-            </Text>
-            <Text>
-              When it closes, what happened becomes history. The world reads the record and generates
-              the next age from it. Not a sequel someone wrote — a continuation that inherits exactly
-              what this age produced. Win or lose, your outcome is the input.
-            </Text>
+          <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+          <Heading level="h1" as="h2">
+            Follow the Gold
+          </Heading>
+          <Text>
+            Start with what everyone in Midaen already knows. The wall was funded. The wall was
+            never built. A kingdom&apos;s coin went up the north road, and the North Warden put his
+            name to every requisition.
+          </Text>
+          <Text>
+            The Circle keeps the ledgers, and the ledgers do not close. Three caravans of dressed
+            stone went past the last honest road, signed to names that trace to nothing. Cut stone.
+            Finished stone. Hauled into country that builds nothing and never has.
+          </Text>
+          <Text>
+            Someone up there is raising something, and the gold has been paying for it for years.
+            That is the age you walk into. It is already most of the way to its answer.
+          </Text>
+          <Heading level="h4">Threads worth pulling</Heading>
+          <Text variant="muted">
+            No marker on a map hands you these. They sit in the world, in taverns and ledgers and
+            wrecks, for anyone who thinks to look. Pull one and see where it goes.
+          </Text>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card variant="raised">
+              <Flow>
+                <Badge variant="accent">The Ledger</Badge>
+                <Heading level="h5">A factor in Brimmar</Heading>
+                <Text>
+                  A book that will not balance and a man who knows he is holding the end of a rope.
+                  He cannot see what is tied to the other end. You can go and find out.
+                </Text>
+              </Flow>
+            </Card>
+            <Card variant="raised">
+              <Flow>
+                <Badge variant="accent">The Wreck</Badge>
+                <Heading level="h5">East of Whisper Bay</Heading>
+                <Text>
+                  The honest report never reached the Circle. It went down with the ship that
+                  carried it. Salt has had a year at the seal, and you are not the only one diving
+                  for it.
+                </Text>
+              </Flow>
+            </Card>
+            <Card variant="raised">
+              <Flow>
+                <Badge>The Warden</Badge>
+                <Heading level="h5">Who signs for Midaen</Heading>
+                <Text>
+                  Ask the Golden City who last stood in a room with the North Warden. Count how few
+                  can answer. No one that busy stays out of sight since winter for nothing.
+                </Text>
+              </Flow>
+            </Card>
+            <Card variant="raised">
+              <Flow>
+                <Badge>The Ridge</Badge>
+                <Heading level="h5">Past the last road</Heading>
+                <Text>
+                  Orc camps on a patrol rotation. A gate older than the orcs who guard it. Stone
+                  carved by hands that were not theirs. The dark behind it runs deep.
+                </Text>
+              </Flow>
+            </Card>
           </div>
         </Flow>
       </section>
 
       {/* ── 3 · What Playing Will Be Like ───────────────────────── */}
-      <BleedSection image="/img/defence.png" alt="Warriors in battle" bg="#1b222f">
+      <BleedSection image="/img/defence.png" alt="Warriors in battle">
         <Heading level="h2">What playing will be like</Heading>
         <Text>
           You start in one of the three start locations, a newcomer with a name nobody knows yet.
@@ -108,7 +183,25 @@ export default function InvitePage() {
         </Text>
       </BleedSection>
 
-      {/* ── 4 · How the Age Ends ─────────────────────────────────── */}
+      {/* ── 5 · Into Orc Lands (bleed) ─────────────────────────── */}
+      <BleedSection image="/orc-image.png" alt="An orc of the northern camps" reverse>
+        <Eyebrow deco>Past the last road</Eyebrow>
+        <Heading level="h3">Into Orc Lands</Heading>
+        <Text>
+          The trail does not stop at the border. It crosses it. Whatever the coin bought is up
+          there, behind the ridge, in country that answers to no city and never has.
+        </Text>
+        <Text>
+          Orc camps hold the approaches. Behind them, a gate older than the orcs who guard it, and
+          stone cut by hands that were not theirs. Something was buried here long before the gold
+          started moving. The gold is only digging it back up.
+        </Text>
+        <Text variant="muted">
+          How far in you go is your business. What waits at the bottom is everyone&apos;s.
+        </Text>
+      </BleedSection>
+
+      {/* ── 6 · How the Age Ends ─────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 pb-20">
         <Flow>
           <Heading level="h1" as="h2">
@@ -130,7 +223,7 @@ export default function InvitePage() {
         </Flow>
       </section>
 
-      {/* ── 5 · What Stays ───────────────────────────────────────── */}
+      {/* ── 7 · What Stays ───────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 pb-20">
         <Flow>
           <Heading level="h1" as="h2">
@@ -175,7 +268,7 @@ export default function InvitePage() {
         </Flow>
       </section>
 
-      {/* ── 6 · Get In ───────────────────────────────────────────── */}
+      {/* ── 8 · Get In ───────────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 pb-32">
         <Flow>
           <Eyebrow deco>Free Early Access</Eyebrow>
