@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import Button from "@/components/button";
 import { HeroVideo } from "@/components/hero-video";
+import { WorldMap } from "@/components/world-map";
 import SkillsCarousel from "@/components/skills-carousel";
 
 export const metadata = {
@@ -95,75 +96,49 @@ export default function InvitePage() {
       </Card>
 
       {/* ── 4 · Follow the Gold ────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
-        <Flow>
-          <Eyebrow deco>The First Age · The Mystery</Eyebrow>
-          <Heading level="h1" as="h2">
-            Follow the Gold
-          </Heading>
-          <Text>
-            Start with what everyone in Midaen already knows. The wall was funded. The wall was
-            never built. A kingdom&apos;s coin went up the north road, and the North Warden put his
-            name to every requisition.
-          </Text>
-          <Text>
-            The Circle keeps the ledgers, and the ledgers do not close. Three caravans of dressed
-            stone went past the last honest road, signed to names that trace to nothing. Cut stone.
-            Finished stone. Hauled into country that builds nothing and never has.
-          </Text>
-          <Text>
-            Someone up there is raising something, and the gold has been paying for it for years.
-            That is the age you walk into. It is already most of the way to its answer.
-          </Text>
-          <Heading level="h4">Threads worth pulling</Heading>
-          <Text variant="muted">
-            No marker on a map hands you these. They sit in the world, in taverns and ledgers and
-            wrecks, for anyone who thinks to look. Pull one and see where it goes.
-          </Text>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Card variant="raised">
-              <Flow>
-                <Badge variant="accent">The Ledger</Badge>
-                <Heading level="h5">A factor in Brimmar</Heading>
-                <Text>
-                  A book that will not balance and a man who knows he is holding the end of a rope.
-                  He cannot see what is tied to the other end. You can go and find out.
-                </Text>
-              </Flow>
-            </Card>
-            <Card variant="raised">
-              <Flow>
-                <Badge variant="accent">The Wreck</Badge>
-                <Heading level="h5">East of Whisper Bay</Heading>
-                <Text>
-                  The honest report never reached the Circle. It went down with the ship that
-                  carried it. Salt has had a year at the seal, and you are not the only one diving
-                  for it.
-                </Text>
-              </Flow>
-            </Card>
-            <Card variant="raised">
-              <Flow>
-                <Badge>The Warden</Badge>
-                <Heading level="h5">Who signs for Midaen</Heading>
-                <Text>
-                  Ask the Golden City who last stood in a room with the North Warden. Count how few
-                  can answer. No one that busy stays out of sight since winter for nothing.
-                </Text>
-              </Flow>
-            </Card>
-            <Card variant="raised">
-              <Flow>
-                <Badge>The Ridge</Badge>
-                <Heading level="h5">Past the last road</Heading>
-                <Text>
-                  Orc camps on a patrol rotation. A gate older than the orcs who guard it. Stone
-                  carved by hands that were not theirs. The dark behind it runs deep.
-                </Text>
-              </Flow>
-            </Card>
-          </div>
-        </Flow>
+      <section className="relative flex min-h-[600px] items-center overflow-hidden">
+        <WorldMap
+          view={{ position: [-0.37, 11.09, 0.07], target: [0.76, -1.5, -8.01] }}
+          markers={[
+            { name: "Brimmar", x: 374723, y: -150569, kind: "city" },
+            { name: "Breen", x: 286454, y: -178874, kind: "city" },
+            { name: "Tann", x: 166679, y: -286230, kind: "city" },
+            { name: "Midaen", x: 66549, y: -312520, kind: "city" },
+            { name: "Gruk Nub's Fort", x: 113603, y: -332980, kind: "orc" },
+          ]}
+          clouds={false}
+          className="absolute inset-0 h-full w-full"
+        />
+        {/* Legibility scrim: dark on the left where the copy sits, map showing through on the right */}
+        <div className="from-void via-void/85 pointer-events-none absolute inset-0 bg-gradient-to-r to-transparent" />
+        <div className="from-void to-void/40 pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent" />
+        <div className="pointer-events-none relative mx-auto box-content w-full max-w-[1200px] px-6 py-24">
+          <Flow className="max-w-xl">
+            <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+            <Heading level="h1" as="h2">
+              Follow the Gold
+            </Heading>
+            <Text>
+              Start with what everyone in Midaen already knows. The wall was funded. The wall was
+              never built. A kingdom&apos;s coin went up the north road, and the North Warden put
+              his name to every requisition.
+            </Text>
+            <Text>
+              The Circle keeps the ledgers, and the ledgers do not close. Three caravans of dressed
+              stone went past the last honest road, signed to names that trace to nothing. Cut
+              stone. Finished stone. Hauled into country that builds nothing and never has.
+            </Text>
+            <Text>
+              Someone up there is raising something, and the gold has been paying for it for years.
+              That is the age you walk into. It is already most of the way to its answer.
+            </Text>
+            <Heading level="h4">Where the trail leads</Heading>
+            <Text variant="muted">
+              North and east, past the last honest road. Midaen in the foothills, the ridge beyond
+              it, and orc country past that. Every thread worth pulling runs the same direction.
+            </Text>
+          </Flow>
+        </div>
       </section>
 
       {/* ── 3 · What Playing Will Be Like ───────────────────────── */}
