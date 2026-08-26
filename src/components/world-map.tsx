@@ -244,6 +244,8 @@ interface WorldMapProps {
    * Paste the value produced by the debug overlay's "Copy camera" button here.
    */
   view?: { position: [number, number, number]; target: [number, number, number] };
+  /** Alternative camera for viewports narrower than 768 px. Falls back to `view` if omitted. */
+  mobileView?: { position: [number, number, number]; target: [number, number, number] };
   /** Location markers (icon + label) drawn over the map, like the interactive map. */
   markers?: WorldMapMarker[];
   /** Show the drifting cloud sheet above the terrain. Defaults to true. */
@@ -264,6 +266,7 @@ export function WorldMap({
   targetZ = -4,
   radius = 15,
   view,
+  mobileView,
   markers = [],
   clouds = true,
   brightness = 1,
@@ -275,6 +278,8 @@ export function WorldMap({
   const snippetRef = useRef("");
   const viewRef = useRef(view);
   viewRef.current = view;
+  const mobileViewRef = useRef(mobileView);
+  mobileViewRef.current = mobileView;
   const markersRef = useRef(markers);
   markersRef.current = markers;
   const markerElsRef = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -484,7 +489,7 @@ export function WorldMap({
 
     // Camera framing: explicit free transform if provided, else derive from
     // target + radius (elevation mirrors chronicle's updateCameraFromOrbit).
-    const viewOverride = viewRef.current;
+    const viewOverride = (W < 768 && mobileViewRef.current) ? mobileViewRef.current : viewRef.current;
     const camTarget = new THREE.Vector3();
     if (viewOverride) {
       camTarget.set(viewOverride.target[0], viewOverride.target[1], viewOverride.target[2]);
@@ -782,7 +787,7 @@ export function WorldMap({
       seaMat.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
-  }, [targetX, targetZ, radius, clouds, brightness, debug]);
+  }, [targetX, targetZ, radius, clouds, brightness, debug, mobileView]);
 
   return (
     <div className={cn("relative", className)}>
