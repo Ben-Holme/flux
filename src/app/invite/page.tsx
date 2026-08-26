@@ -98,10 +98,19 @@ export default function InvitePage() {
           className="absolute inset-0 h-full w-full"
         />
 
-        {/* Desktop: left backdrop — text column readable against the map */}
+        {/* Desktop: solid void panel under the text column */}
         <div
-          className="pointer-events-none absolute inset-0 hidden lg:block"
-          style={{ background: "linear-gradient(to right, var(--void) 20%, var(--void) 35%, transparent 62%)" }}
+          className="pointer-events-none absolute inset-y-0 left-0 hidden lg:block"
+          style={{ width: "46%", background: "var(--void)" }}
+        />
+        {/* Desktop: feather — blends the solid panel into the map */}
+        <div
+          className="pointer-events-none absolute inset-y-0 hidden lg:block"
+          style={{
+            left: "43%",
+            width: "20%",
+            background: "linear-gradient(to right, var(--void), transparent)",
+          }}
         />
 
         {/* Desktop: right-half focus vignette — frames the marker area */}
