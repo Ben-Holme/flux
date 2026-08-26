@@ -101,13 +101,13 @@ export default function InvitePage() {
         {/* Desktop: solid left panel — #0009 flush to the split */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 hidden lg:block"
-          style={{ width: "calc(50% - 100px)", background: "#000c" }}
+          style={{ width: "calc(50% - 300px)", background: "#000c" }}
         />
         {/* Desktop: radial vignette on the right — #000c at all edges, seam-matches left panel */}
         <div
           className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block"
           style={{
-            left: "calc(50% - 100px)",
+            left: "calc(50% - 300px)",
             background: "radial-gradient(ellipse 42% 42% at 50% 50%, transparent, #000c)",
           }}
         />
