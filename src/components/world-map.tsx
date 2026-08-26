@@ -792,12 +792,6 @@ export function WorldMap({
   return (
     <div className={cn("relative", className)}>
       <div ref={mountRef} className="absolute inset-0" />
-      <div
-        style={{
-          background: "radial-gradient(transparent, #000a 40%) 0px 0px / 150% 100% no-repeat",
-        }}
-        className="pointer-events-none absolute inset-0"
-      />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {markers.map((m, i) => {
           const kind = m.kind ?? "city";

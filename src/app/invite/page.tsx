@@ -101,7 +101,7 @@ export default function InvitePage() {
         {/* Desktop: left backdrop — text column readable against the map */}
         <div
           className="pointer-events-none absolute inset-0 hidden lg:block"
-          style={{ background: "linear-gradient(to right, var(--void) 30%, transparent 58%)" }}
+          style={{ background: "linear-gradient(to right, var(--void) 20%, var(--void) 35%, transparent 62%)" }}
         />
 
         {/* Desktop: right-half focus vignette — frames the marker area */}
