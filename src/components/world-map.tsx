@@ -248,6 +248,8 @@ interface WorldMapProps {
   markers?: WorldMapMarker[];
   /** Show the drifting cloud sheet above the terrain. Defaults to true. */
   clouds?: boolean;
+  /** Overall lighting multiplier for the map. 1 = default; >1 brightens. */
+  brightness?: number;
   /** Enable drag-to-orbit + scroll-to-pan controls plus a copyable camera readout. */
   debug?: boolean;
   className?: string;
@@ -264,6 +266,7 @@ export function WorldMap({
   view,
   markers = [],
   clouds = true,
+  brightness = 1,
   debug = false,
   className,
 }: WorldMapProps) {
@@ -307,15 +310,15 @@ export function WorldMap({
       needsRender = true;
     };
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.13));
-    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
+    // Lighting (scaled by the brightness prop)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.13 * brightness));
+    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.2 * brightness);
     dirLight.position.set(0, 45, -25);
     scene.add(dirLight);
-    const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5);
+    const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5 * brightness);
     fillLight.position.set(0, 45, 25);
     scene.add(fillLight);
-    const leftLight = new THREE.DirectionalLight(0xfff8f0, 1.2);
+    const leftLight = new THREE.DirectionalLight(0xfff8f0, 1.2 * brightness);
     leftLight.position.set(-8, 8, 0);
     leftLight.castShadow = true;
     scene.add(leftLight);
@@ -779,11 +782,17 @@ export function WorldMap({
       seaMat.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
-  }, [targetX, targetZ, radius, clouds, debug]);
+  }, [targetX, targetZ, radius, clouds, brightness, debug]);
 
   return (
     <div className={cn("relative", className)}>
       <div ref={mountRef} className="absolute inset-0" />
+      <div
+        style={{
+          background: "radial-gradient(transparent, #000a 40%) 0px 0px / 150% 100% no-repeat",
+        }}
+        className="pointer-events-none absolute inset-0"
+      />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {markers.map((m, i) => {
           const kind = m.kind ?? "city";

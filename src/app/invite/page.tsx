@@ -93,11 +93,11 @@ export default function InvitePage() {
             { name: "Gruk Nub's Fort", x: 113603, y: -332980, kind: "orc" },
           ]}
           clouds={false}
+          brightness={1}
           className="absolute inset-0 h-full w-full"
         />
-        {/* Legibility scrim: dark on the left where the copy sits, map showing through on the right */}
-        <div className="from-void via-void/85 pointer-events-none absolute inset-0 bg-gradient-to-r to-transparent" />
-        <div className="from-void to-void/40 pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent" />
+        {/* Radial vignette: map fades to void at the edges */}
+
         <div className="pointer-events-none relative mx-auto box-content w-full max-w-[1200px] px-6 py-24">
           <Flow className="max-w-xl">
             <Eyebrow deco>The First Age · The Mystery</Eyebrow>
