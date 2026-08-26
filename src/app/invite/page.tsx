@@ -82,7 +82,8 @@ export default function InvitePage() {
       </section>
 
       {/* ── 3 · Follow the Gold ──────────────────────────────────── */}
-      <section className="relative flex min-h-[600px] items-center overflow-hidden">
+      <section className="relative overflow-hidden">
+        {/* Map fills the full section background */}
         <WorldMap
           view={{ position: [-0.37, 11.09, 0.07], target: [0.76, -1.5, -8.01] }}
           markers={[
@@ -96,34 +97,59 @@ export default function InvitePage() {
           brightness={1}
           className="absolute inset-0 h-full w-full"
         />
-        {/* Radial vignette: map fades to void at the edges */}
 
-        <div className="pointer-events-none relative mx-auto box-content w-full max-w-[1200px] px-6 py-24">
-          <Flow className="max-w-xl">
-            <Eyebrow deco>The First Age · The Mystery</Eyebrow>
-            <Heading level="h1" as="h2">
-              Follow the Gold
-            </Heading>
-            <Text>
-              Start with what everyone in Midaen already knows. The wall was funded. The wall was
-              never built. A kingdom&apos;s coin went up the north road, and the North Warden put
-              his name to every requisition.
-            </Text>
-            <Text>
-              The Circle keeps the ledgers, and the ledgers do not close. Three caravans of dressed
-              stone went past the last honest road, signed to names that trace to nothing. Cut
-              stone. Finished stone. Hauled into country that builds nothing and never has.
-            </Text>
-            <Text>
-              Someone up there is raising something, and the gold has been paying for it for years.
-              That is the age you walk into. It is already most of the way to its answer.
-            </Text>
-            <Heading level="h4">Where the trail leads</Heading>
-            <Text variant="muted">
-              North and east, past the last honest road. Midaen in the foothills, the ridge beyond
-              it, and orc country past that. Every thread worth pulling runs the same direction.
-            </Text>
-          </Flow>
+        {/* Desktop: left backdrop — text column readable against the map */}
+        <div
+          className="pointer-events-none absolute inset-0 hidden lg:block"
+          style={{ background: "linear-gradient(to right, var(--void) 30%, transparent 58%)" }}
+        />
+
+        {/* Desktop: right-half focus vignette — frames the marker area */}
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 lg:block"
+          style={{ background: "radial-gradient(ellipse at 50% 50%, transparent 20%, var(--void) 88%)" }}
+        />
+
+        {/* Mobile: full-bleed bottom fade — map bleeds into text below */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 lg:hidden"
+          style={{ background: "linear-gradient(to bottom, transparent, var(--void))" }}
+        />
+
+        {/* Mobile: map spacer (centered above text) + desktop: centered text row */}
+        <div className="relative flex flex-col lg:min-h-[600px] lg:flex-row lg:items-center">
+          {/* Mobile only: empty area that exposes the map with markers */}
+          <div className="h-[320px] lg:hidden" />
+
+          {/* Text — full width on mobile, left column on desktop */}
+          <div className="pointer-events-none mx-auto box-content w-full max-w-[1200px] px-6 py-10 lg:py-24">
+            <Flow className="max-w-xl">
+              <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+              <Heading level="h1" as="h2">
+                Follow the Gold
+              </Heading>
+              <Text>
+                Start with what everyone in Midaen already knows. The wall was funded. The wall was
+                never built. A kingdom&apos;s coin went up the north road, and the North Warden put
+                his name to every requisition.
+              </Text>
+              <Text>
+                The Circle keeps the ledgers, and the ledgers do not close. Three caravans of
+                dressed stone went past the last honest road, signed to names that trace to nothing.
+                Cut stone. Finished stone. Hauled into country that builds nothing and never has.
+              </Text>
+              <Text>
+                Someone up there is raising something, and the gold has been paying for it for
+                years. That is the age you walk into. It is already most of the way to its answer.
+              </Text>
+              <Heading level="h4">Where the trail leads</Heading>
+              <Text variant="muted">
+                North and east, past the last honest road. Midaen in the foothills, the ridge
+                beyond it, and orc country past that. Every thread worth pulling runs the same
+                direction.
+              </Text>
+            </Flow>
+          </div>
         </div>
       </section>
 
