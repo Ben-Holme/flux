@@ -98,25 +98,18 @@ export default function InvitePage() {
           className="absolute inset-0 h-full w-full"
         />
 
-        {/* Desktop: solid void panel under the text column */}
+        {/* Desktop: solid left panel — #0009 flush to the split */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 hidden lg:block"
-          style={{ width: "46%", background: "var(--void)" }}
+          style={{ width: "calc(50% - 100px)", background: "#0009" }}
         />
-        {/* Desktop: feather — blends the solid panel into the map */}
+        {/* Desktop: radial vignette on the right — #0009 at all edges, seam-matches left panel */}
         <div
-          className="pointer-events-none absolute inset-y-0 hidden lg:block"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block"
           style={{
-            left: "43%",
-            width: "20%",
-            background: "linear-gradient(to right, var(--void), transparent)",
+            left: "calc(50% - 100px)",
+            background: "radial-gradient(ellipse 42% 42% at 50% 50%, transparent, #0009)",
           }}
-        />
-
-        {/* Desktop: right-half focus vignette — frames the marker area */}
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 lg:block"
-          style={{ background: "radial-gradient(ellipse at 50% 50%, transparent 20%, var(--void) 88%)" }}
         />
 
         {/* Mobile: full-bleed bottom fade — map bleeds into text below */}
