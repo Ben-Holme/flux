@@ -179,6 +179,18 @@ export default function InvitePage() {
               a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Founders coming in early are part of what makes that possible.",
             },
             {
+              q: "When can I actually play?",
+              a: "Sign up now — we bring people in manually, in small waves. Most founders will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
+            },
+            {
+              q: "What platform does it run on?",
+              a: "PC via Steam. Windows first. Mac and Linux aren't off the table, but we're not making promises we can't keep yet.",
+            },
+            {
+              q: "Will my character carry over after early access?",
+              a: "That's the plan. The history you help write is meant to be permanent — founders are part of the world's first age, and that age doesn't get erased. If anything ever had to reset, we'd tell you well in advance.",
+            },
+            {
               q: "How are you using AI?",
               a: "Mainly to close the loop between what players do and what the world generates next. It reads activity, writes it into prose and data, and the game uses that to create content. We also use it to speed up development — graphics, code, copy. Every asset goes through a lot of quality checking before it makes it in; the output is a starting point, not a final answer. We know it's a loaded topic. Without it, there wouldn't be a game.",
             },
