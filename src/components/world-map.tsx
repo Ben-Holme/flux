@@ -647,11 +647,11 @@ export function WorldMap({
         ndc.set(ndcX, 0);
         raycaster.setFromCamera(ndc, camera);
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
-          idleTarget.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (progress - 0.5) * 8);
+          idleTarget.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (progress - 0.5) * 16);
         }
         // Lerp toward the target so position changes are smooth
         if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
-          cursorLight.position.lerp(idleTarget, 0.07);
+          cursorLight.position.lerp(idleTarget, 0.15);
           needsRender = true;
         }
       }
