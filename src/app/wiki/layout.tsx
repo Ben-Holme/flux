@@ -12,7 +12,7 @@ async function WikiSidebar() {
           href="/wiki"
           className="mb-2 block font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
         >
-          Unyha Wiki
+          The Unyha Wiki
         </Link>
         <WikiNavLinks links={links} />
       </div>
