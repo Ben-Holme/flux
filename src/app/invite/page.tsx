@@ -157,6 +157,39 @@ export default function InvitePage() {
           </Flow>
         </Card>
       </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────── */}
+      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
+        <Flow className="mb-10">
+          <Eyebrow glow={false}>FAQ</Eyebrow>
+          <Heading level="h2">Common questions</Heading>
+        </Flow>
+        <dl className="divide-y divide-white/10">
+          {[
+            {
+              q: "What is Unyha?",
+              a: "A medieval goth online RPG. The world has its own history, and you play in it — your actions, and everyone else's, get written into that history and shape what comes next.",
+            },
+            {
+              q: "What's an Autochronicle?",
+              a: "Our term for the system that generates the world's history from what players actually do. No authored storyline — the chronicle writes itself from real play. Each age becomes a permanent record.",
+            },
+            {
+              q: "Is it free to play?",
+              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Founders coming in early are part of what makes that possible.",
+            },
+            {
+              q: "How are you using AI?",
+              a: "Mainly to close the loop between what players do and what the world generates next. It reads activity, writes it into prose and data, and the game uses that to create content. We also use it to speed up development — graphics, code, copy. We know that's a loaded topic. Without it, there wouldn't be a game.",
+            },
+          ].map(({ q, a }) => (
+            <div key={q} className="py-6 lg:grid lg:grid-cols-[1fr_2fr] lg:gap-12">
+              <Heading level="h3">{q}</Heading>
+              <Text className="mt-2 lg:mt-0">{a}</Text>
+            </div>
+          ))}
+        </dl>
+      </section>
     </>
   );
 }
