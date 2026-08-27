@@ -629,9 +629,10 @@ export function WorldMap({
     window.addEventListener("scroll", onWindowScroll, { passive: true });
 
     const idleTarget = new THREE.Vector3(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
-    // Camera forward projected onto the horizontal plane — travel along this, not world Z.
-    const camForward = new THREE.Vector3()
-      .subVectors(camTarget, camera.position)
+    // Screen-up direction projected onto the ground plane — this is what makes the light
+    // appear to travel "into" the scene as the user scrolls, matching the camera tilt.
+    const camTravelDir = new THREE.Vector3(0, 1, 0)
+      .applyQuaternion(camera.quaternion)
       .setY(0)
       .normalize();
 
@@ -655,9 +656,9 @@ export function WorldMap({
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
           const offset = (0.5 - progress) * 16;
           idleTarget.set(
-            hitPoint.x + camForward.x * offset,
+            hitPoint.x + camTravelDir.x * offset,
             LIGHT_PLANE_Y,
-            hitPoint.z + camForward.z * offset,
+            hitPoint.z + camTravelDir.z * offset,
           );
         }
         // Lerp toward the target so position changes are smooth
