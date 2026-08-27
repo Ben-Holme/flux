@@ -138,38 +138,33 @@ export default function InvitePage() {
           {/* Mobile only: empty area that exposes the map with markers */}
           <div className="h-[320px] lg:hidden" />
 
-          {/* Eyebrow only — map is the content */}
           <div className="pointer-events-none mx-auto w-full max-w-[1200px] px-6 py-12 lg:box-content lg:py-24">
-            <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+            <Flow className="max-w-xl">
+              <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+              <Heading level="h2">The North Road</Heading>
+              <Text>
+                The land finds itself buzzing with rumours of corruption in the north. A wall at
+                Midaen, funded for a generation and never raised. A kingdom&apos;s coin sent up the
+                mountain — and never arriving there at all.
+              </Text>
+              <Text>
+                Was the funding skimmed? Did the North Warden line his own coffers? That&apos;s a
+                matter for highborne and noble lords to fret over, not for common tavern folk.
+              </Text>
+              <Text>
+                Some say the cargo never made it up the road to Midaen. It turned off, out past the
+                last honest road, toward a place nobody goes.
+              </Text>
+              <Text>
+                And that place has been restless lately. Orcs sighted as far south as Tann, bolder
+                than anyone remembers. Unrelated, surely.
+              </Text>
+              <Text variant="muted">
+                Still — give it an age, and perhaps some Spiritfolk will take an interest.
+              </Text>
+            </Flow>
           </div>
         </div>
-      </section>
-
-      {/* ── 4 · The North Road ───────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
-        <Flow>
-          <Heading level="h2">The North Road</Heading>
-          <Text>
-            The land finds itself buzzing with rumours of corruption in the north. A wall at
-            Midaen, funded for a generation and never raised. A kingdom&apos;s coin sent up the
-            mountain — and never arriving there at all.
-          </Text>
-          <Text>
-            Was the funding skimmed? Did the North Warden line his own coffers? That&apos;s a
-            matter for highborne and noble lords to fret over, not for common tavern folk.
-          </Text>
-          <Text>
-            Some say the cargo never made it up the road to Midaen. It turned off, out past the
-            last honest road, toward a place nobody goes.
-          </Text>
-          <Text>
-            And that place has been restless lately. Orcs sighted as far south as Tann, bolder
-            than anyone remembers. Unrelated, surely.
-          </Text>
-          <Text variant="muted">
-            Still — give it an age, and perhaps some Spiritfolk will take an interest.
-          </Text>
-        </Flow>
       </section>
 
       {/* ── 5 · What You're Walking Into ─────────────────────────── */}
