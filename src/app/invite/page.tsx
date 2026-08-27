@@ -180,7 +180,7 @@ export default function InvitePage() {
             },
             {
               q: "When can I actually play?",
-              a: "Sign up now — we bring people in manually, in small waves. Most founders will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
+              a: "We'll announce a date — it's TBD for now. When it's set, everyone on the founders list will hear first. From there we bring people in manually, in small waves, so most will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
             },
             {
               q: "What platform does it run on?",
