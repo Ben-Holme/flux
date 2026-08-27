@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { documentToReactComponents, type Options } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import type { Block, Document } from "@contentful/rich-text-types";
@@ -80,6 +81,19 @@ const baseOptions: Options = {
         {children}
       </a>
     ),
+    [INLINES.ENTRY_HYPERLINK]: (node, children) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const target = node.data.target as any;
+      const slug = target?.fields?.slug as string | undefined;
+      const contentType = target?.sys?.contentType?.sys?.id as string | undefined;
+      if (!slug) return <>{children}</>;
+      const href = contentType === "post" ? `/wiki/${slug}` : `/wiki/${slug}`;
+      return (
+        <Link href={href} className="text-gold hover:text-parchment underline underline-offset-2">
+          {children}
+        </Link>
+      );
+    },
   },
 };
 
