@@ -184,7 +184,7 @@ export default function InvitePage() {
             },
             {
               q: "What platform does it run on?",
-              a: "PC via Steam. Windows first. Mac and Linux aren't off the table, but we're not making promises we can't keep yet.",
+              a: "PC via Steam for now. We're built on Unreal Engine 4.27, which supports most major platforms, so porting is realistic — but we're not committing to a timeline on anything beyond Windows yet.",
             },
             {
               q: "Will my character carry over after early access?",
