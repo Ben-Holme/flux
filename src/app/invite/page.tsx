@@ -172,7 +172,7 @@ export default function InvitePage() {
               a: <>A medieval goth online RPG. The world has its own history, and you play in it — your actions, and everyone else&apos;s, get written into that history and shape what comes next. <Link href="/wiki" className="text-gold underline underline-offset-2">Read more in the wiki.</Link></>,
             },
             {
-              q: "What's an Autochronicle?",
+              q: "Autochronicle?",
               a: "Our term for the system that generates the world's history from what players actually do. No authored storyline — the chronicle writes itself from real play. Each age becomes a permanent record.",
             },
             {
