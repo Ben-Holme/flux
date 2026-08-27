@@ -644,7 +644,7 @@ export function WorldMap({
       if (!lightHover) {
         const isMobile = curW < 768;
         const ndcX = isMobile ? 0 : Math.min(0.95, 600 / curW);
-        const ndcY = isMobile ? -0.5 : 0;
+        const ndcY = isMobile ? 0.5 : 0;
         const scrollY = scrollRef.value;
         const sectionH = mount?.clientHeight ?? 800;
         const progress = Math.max(0, Math.min(1,
