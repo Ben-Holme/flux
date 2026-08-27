@@ -626,12 +626,14 @@ export function WorldMap({
     const onWindowScroll = () => { scrollRef.value = window.scrollY; requestRender(); };
     window.addEventListener("scroll", onWindowScroll, { passive: true });
 
+    const idleTarget = new THREE.Vector3(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
+
     let raf = 0;
     let onFrame: (() => void) | null = null;
     function loop() {
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
-      // When idle, park the light at the responsive default and animate north/south with scroll.
+      // When idle, park the light at the responsive default and travel south-to-north with scroll.
       if (!lightHover) {
         const isMobile = curW < 768;
         const ndcX = isMobile ? 0 : Math.min(0.95, 600 / curW);
@@ -643,7 +645,12 @@ export function WorldMap({
         ndc.set(ndcX, 0);
         raycaster.setFromCamera(ndc, camera);
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
-          cursorLight.position.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (0.5 - progress) * 8);
+          idleTarget.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (progress - 0.5) * 8);
+        }
+        // Lerp toward the target so position changes are smooth
+        if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
+          cursorLight.position.lerp(idleTarget, 0.07);
+          needsRender = true;
         }
       }
       // Ease the cursor light toward its hover target intensity.
