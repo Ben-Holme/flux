@@ -586,6 +586,7 @@ export function WorldMap({
     // Cursor-following point light: ray-cast the pointer onto a plane above the
     // tallest peak and park the light there. Intensity eases in/out on hover.
     const CURSOR_LIGHT_MAX = 18;
+    const CURSOR_LIGHT_BASE = 7;
     const cursorLight = new THREE.PointLight(0xffd9a0, 0, 30, 1.2);
     cursorLight.position.set(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
     scene.add(cursorLight);
@@ -619,13 +620,34 @@ export function WorldMap({
       lightDom.removeEventListener("pointerleave", onHoverLeave);
     };
 
+    // Track scroll so the idle light position updates as the section scrolls.
+    const scrollRef = { value: window.scrollY };
+    const mountPageTop = mount.getBoundingClientRect().top + window.scrollY;
+    const onWindowScroll = () => { scrollRef.value = window.scrollY; requestRender(); };
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+
     let raf = 0;
     let onFrame: (() => void) | null = null;
     function loop() {
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
+      // When idle, park the light at the responsive default and animate north/south with scroll.
+      if (!lightHover) {
+        const isMobile = curW < 768;
+        const ndcX = isMobile ? 0 : Math.min(0.95, 600 / curW);
+        const scrollY = scrollRef.value;
+        const sectionH = mount?.clientHeight ?? 800;
+        const progress = Math.max(0, Math.min(1,
+          (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
+        ));
+        ndc.set(ndcX, 0);
+        raycaster.setFromCamera(ndc, camera);
+        if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
+          cursorLight.position.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (0.5 - progress) * 8);
+        }
+      }
       // Ease the cursor light toward its hover target intensity.
-      const targetIntensity = lightHover ? CURSOR_LIGHT_MAX : 0;
+      const targetIntensity = lightHover ? CURSOR_LIGHT_MAX : CURSOR_LIGHT_BASE;
       const diff = targetIntensity - cursorLight.intensity;
       if (Math.abs(diff) > 0.01) {
         cursorLight.intensity += diff * 0.12;
@@ -788,6 +810,7 @@ export function WorldMap({
       ro.disconnect();
       cleanupDebug();
       cleanupHover();
+      window.removeEventListener("scroll", onWindowScroll);
       cancelAnimationFrame(raf);
       renderer.dispose();
       geo.dispose();
