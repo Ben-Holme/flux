@@ -73,10 +73,6 @@ export default function InvitePage() {
             takes the pen. We&apos;re opening the doors now, a few at a time, and we&apos;re asking
             you to come play — and to take the project seriously enough to see what it is.
           </Text>
-          <Text>
-            So here&apos;s the land as it stands, and the trouble it&apos;s found itself in.
-            They&apos;re calling it the Golden City.
-          </Text>
         </Flow>
       </section>
 
