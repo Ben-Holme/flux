@@ -44,6 +44,7 @@ const DISCORD_SVG = (
 export default function Nav() {
   const pathname = usePathname();
   const isFirst = pathname === "/" || pathname === "/invite";
+  const isInvite = pathname === "/invite";
   const isChronicle = pathname === "/chronicle";
   const [scrolled, setScrolled] = useState(!isFirst);
   const [open, setOpen] = useState(false);
@@ -143,7 +144,7 @@ export default function Nav() {
               display: "block",
               transition: ".5s",
               transform: active ? "scale(0.9)" : "scale(1)",
-              opacity: active ? 1 : 0,
+              opacity: active || isInvite ? 1 : 0,
             }}
           >
             <path
