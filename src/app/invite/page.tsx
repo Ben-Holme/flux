@@ -1,6 +1,6 @@
 import { Eyebrow, Heading, Text, Flow, BleedSection, Card } from "@/components/ui";
 import Button from "@/components/button";
-import { HeroVideo } from "@/components/hero-video";
+import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 
 export const metadata = {
@@ -13,48 +13,7 @@ export default function InvitePage() {
   return (
     <>
       {/* ── 1 · Hero ─────────────────────────────────────────────── */}
-      <section className="bg-void relative overflow-hidden">
-        {/* Video band: fixed height at the top on mobile, full-bleed on desktop */}
-        <div className="absolute inset-x-0 top-0 h-[480px] md:h-full">
-          <HeroVideo />
-          {/* Mobile: fade the bottom of the video into void behind the text */}
-        </div>
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "#000", opacity: 0.35 }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "#00a2ff", mixBlendMode: "color", opacity: 0.3 }}
-        />
-
-        <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-md:min-h-0 max-md:flex-col max-md:items-stretch">
-          {/* Mobile: spacer that reveals the video above, text overlaps its faded base */}
-          <div className="h-[380px] md:hidden" />
-          <Flow className="ml-auto max-w-lg pt-[120px] pb-12 max-md:ml-0 max-md:pt-0">
-            <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
-            <Heading level="h1">The Golden City</Heading>
-            <Text>
-              That&apos;s what they call Midaen in the taverns now — a mountain mining town
-              that&apos;s swallowed a kingdom&apos;s coin and has nothing to show for it.
-              Best-funded wall in the land, and not a stone laid.
-            </Text>
-            <Text>
-              The North Warden has been taking the coin for himself, it seems. It wouldn&apos;t be
-              the first time.
-            </Text>
-            <Text>
-              But some say it went north for something else entirely — past the last honest road.
-            </Text>
-            <Text>
-              <strong>Into orc lands.</strong>
-            </Text>
-            <Button variant="primary" href="/register">
-              Join the Founders
-            </Button>
-          </Flow>
-        </div>
-      </section>
+      <InviteHero />
 
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
