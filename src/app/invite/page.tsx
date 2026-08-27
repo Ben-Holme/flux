@@ -59,26 +59,19 @@ export default function InvitePage() {
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Flow>
-          <Eyebrow>A note from the two of us</Eyebrow>
+          <Eyebrow>A note from Ben and Vik</Eyebrow>
           <Text>
-            We&apos;ve been building Unyha for a long time, mostly heads-down, two of us and a few
-            we trust. It&apos;s an online world with one strange idea at the center: it writes its
-            own history. Play in it, and the world turns what you and everyone else actually do into
-            its record — its chapters, its ages — and keeps them. No one authors what happens next.
-            Not even us.
+            We&apos;ve been building Unyha for a long time, mostly heads-down — two of us and a
+            few we trust. One strange idea at the center: the world writes its own history. Play in
+            it and it turns what you and everyone else actually do into its record, its ages, its
+            chapters. No one authors what happens next. Not even us.
           </Text>
           <Text>
-            There&apos;s one exception, and it&apos;s the age you&apos;d be walking into. We wrote
-            this first chapter by hand, and we built it to sit right on the seam between
-            Unyha&apos;s long backstory and its living present: the weight of what came before is
-            real, and the first age is where the world stops being history and starts being made.
-            After this chapter, the world takes the pen. This is the last one we hold.
-          </Text>
-          <Text>
-            And now, finally, we&apos;re opening the doors. A few of you at first, then more.
-            We&apos;re not asking you to back us or hype us — we&apos;re asking you to come play,
-            and to take the project seriously enough to see what it is. That&apos;s the whole
-            invitation.
+            The age you&apos;d be walking into is the one exception — written by hand, built to sit
+            right on the seam between Unyha&apos;s long backstory and its living present. The first
+            age is where the world stops being history and starts being made. After it, the world
+            takes the pen. We&apos;re opening the doors now, a few at a time, and we&apos;re asking
+            you to come play — and to take the project seriously enough to see what it is.
           </Text>
           <Text>
             So here&apos;s the land as it stands, and the trouble it&apos;s found itself in.
