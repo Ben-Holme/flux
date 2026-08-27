@@ -188,7 +188,7 @@ export default function InvitePage() {
             },
             {
               q: "Will my character carry over after early access?",
-              a: "That's the plan. The history you help write is meant to be permanent — founders are part of the world's first age, and that age doesn't get erased. If anything ever had to reset, we'd tell you well in advance.",
+              a: "Honestly, this is early access. We'll do our best to carry characters forward, but some changes may be world-altering enough that starting fresh is the only thing that makes sense. We'll always be upfront about it before it happens.",
             },
             {
               q: "How are you using AI?",
