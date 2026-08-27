@@ -59,7 +59,7 @@ export default function InvitePage() {
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Flow>
-          <Eyebrow>A note from Ben and Vik</Eyebrow>
+          <Eyebrow glow={false}>A note from Ben and Vik</Eyebrow>
           <Text>
             We&apos;ve been building Unyha for a long time, mostly heads-down — two of us and a
             few we trust. One strange idea at the center: the world writes its own history. Play in
