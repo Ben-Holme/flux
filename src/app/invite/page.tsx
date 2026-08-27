@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Eyebrow, Heading, Text, Flow, BleedSection, Card } from "@/components/ui";
 import Button from "@/components/button";
 import { InviteHero } from "@/components/invite-hero";
@@ -168,7 +169,7 @@ export default function InvitePage() {
           {[
             {
               q: "What is Unyha?",
-              a: "A medieval goth online RPG. The world has its own history, and you play in it — your actions, and everyone else's, get written into that history and shape what comes next.",
+              a: <>A medieval goth online RPG. The world has its own history, and you play in it — your actions, and everyone else&apos;s, get written into that history and shape what comes next. <Link href="/wiki" className="text-gold underline underline-offset-2">Read more in the wiki.</Link></>,
             },
             {
               q: "What's an Autochronicle?",
