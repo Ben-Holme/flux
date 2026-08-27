@@ -68,11 +68,11 @@ export default function InvitePage() {
             Not even us.
           </Text>
           <Text>
-            This first chapter is the exception — the Golden City and the rot underneath it, all of
-            it written by hand. We built it to sit right on the seam between Unyha&apos;s long
-            backstory and its living present: the weight of what came before is real, and the first
-            age is where the world stops being history and starts being made. After this chapter,
-            the world takes the pen. This is the last one we hold.
+            There&apos;s one exception, and it&apos;s the age you&apos;d be walking into. We wrote
+            this first chapter by hand, and we built it to sit right on the seam between
+            Unyha&apos;s long backstory and its living present: the weight of what came before is
+            real, and the first age is where the world stops being history and starts being made.
+            After this chapter, the world takes the pen. This is the last one we hold.
           </Text>
           <Text>
             And now, finally, we&apos;re opening the doors. A few of you at first, then more.
@@ -80,7 +80,10 @@ export default function InvitePage() {
             and to take the project seriously enough to see what it is. That&apos;s the whole
             invitation.
           </Text>
-          <Text variant="muted">— Ben &amp; Vik</Text>
+          <Text>
+            So here&apos;s the land as it stands, and the trouble it&apos;s found itself in.
+            They&apos;re calling it the Golden City.
+          </Text>
         </Flow>
       </section>
 
@@ -135,38 +138,41 @@ export default function InvitePage() {
           {/* Mobile only: empty area that exposes the map with markers */}
           <div className="h-[320px] lg:hidden" />
 
-          {/* Text — full width on mobile, left column on desktop */}
+          {/* Eyebrow only — map is the content */}
           <div className="pointer-events-none mx-auto w-full max-w-[1200px] px-6 py-12 lg:box-content lg:py-24">
-            <Flow className="max-w-xl">
-              <Eyebrow deco>The First Age · The Mystery</Eyebrow>
-              <Heading level="h1" as="h2">
-                Follow the Gold
-              </Heading>
-              <Text>
-                Start with what everyone in Midaen already knows. The wall was funded. The wall was
-                never built. A kingdom&apos;s coin went up the north road, and the North Warden put
-                his name to every requisition.
-              </Text>
-              <Text>
-                The Circle keeps the ledgers, and the ledgers do not close. Three caravans of
-                dressed stone went past the last honest road, signed to names that trace to nothing.
-                Cut stone. Finished stone. Hauled into country that builds nothing and never has.
-              </Text>
-              {/* <Text>
-                Someone up there is raising something, and the gold has been paying for it for
-                years. That is the age you walk into. It is already most of the way to its answer.
-              </Text>
-              <Heading level="h4">Where the trail leads</Heading>
-              <Text variant="muted">
-                North and east, past the last honest road. Midaen in the foothills, the ridge beyond
-                it, and orc country past that. Every thread worth pulling runs the same direction.
-              </Text> */}
-            </Flow>
+            <Eyebrow deco>The First Age · The Mystery</Eyebrow>
           </div>
         </div>
       </section>
 
-      {/* ── 4 · What You're Walking Into ─────────────────────────── */}
+      {/* ── 4 · The North Road ───────────────────────────────────── */}
+      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
+        <Flow>
+          <Heading level="h2">The North Road</Heading>
+          <Text>
+            The land finds itself buzzing with rumours of corruption in the north. A wall at
+            Midaen, funded for a generation and never raised. A kingdom&apos;s coin sent up the
+            mountain — and never arriving there at all.
+          </Text>
+          <Text>
+            Was the funding skimmed? Did the North Warden line his own coffers? That&apos;s a
+            matter for highborne and noble lords to fret over, not for common tavern folk.
+          </Text>
+          <Text>
+            Some say the cargo never made it up the road to Midaen. It turned off, out past the
+            last honest road, toward a place nobody goes.
+          </Text>
+          <Text>
+            And that place has been restless lately. Orcs sighted as far south as Tann, bolder
+            than anyone remembers. Unrelated, surely.
+          </Text>
+          <Text variant="muted">
+            Still — give it an age, and perhaps some Spiritfolk will take an interest.
+          </Text>
+        </Flow>
+      </section>
+
+      {/* ── 5 · What You're Walking Into ─────────────────────────── */}
       <BleedSection
         image="https://images.ctfassets.net/ug7dduf1ziy3/6Q2BUNxOGiPC9mc4MD2ZrZ/14f7cf9a5674ebe256140bc9a1c15311/screenshot7.png"
         alt="Warriors in the north"
@@ -176,23 +182,16 @@ export default function InvitePage() {
         <Text>
           You&apos;ll start a nobody. A Spiritfolk with no name yet, in a world that won&apos;t
           notice you for a while. What you do from there is yours — train, delve the dungeons,
-          craft, build a House meant to outlast you. The potential is real, and so is the climb.
+          craft, build a House meant to outlast you.
         </Text>
-        {/* <Text>
-          And something is wrong in the north. The orcs have grown bold — seen further south than
-          Tann, where no one remembers them coming before. Coin went missing on the roads up there;
-          a wall that swallowed a fortune was never built; and nobody with power seems to want the
-          question asked out loud. It isn&apos;t a quest handed to you at the gate. It&apos;s just
-          the state of the world you&apos;re walking into. But push far enough, make enough of a
-          name, and you might reach the outskirts of it — close enough to touch the thing everyone
-          else only whispers about, and leave a mark on how it ends.
-        </Text> */}
-        {/* <Text>
-          Most won&apos;t. That&apos;s fine. The ones who do get written into the world for good.
-        </Text> */}
+        <Text>
+          Push far enough, make enough of a name, and you might reach the outskirts of the thing
+          everyone else only whispers about — close enough to touch it, and to leave a mark on how
+          it ends. Most won&apos;t. The ones who do get written into the world for good.
+        </Text>
       </BleedSection>
 
-      {/* ── 5 · Close ────────────────────────────────────────────── */}
+      {/* ── 6 · Close ────────────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Flow>
           <Text>
