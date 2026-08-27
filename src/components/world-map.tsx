@@ -599,6 +599,7 @@ export function WorldMap({
     const hitPoint = new THREE.Vector3();
 
     const onHoverMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       const rect = lightDom.getBoundingClientRect();
       ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -609,7 +610,8 @@ export function WorldMap({
         requestRender();
       }
     };
-    const onHoverLeave = () => {
+    const onHoverLeave = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       lightHover = false;
       requestRender();
     };
