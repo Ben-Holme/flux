@@ -1,4 +1,4 @@
-import { Eyebrow, Heading, Text, Flow, BleedSection } from "@/components/ui";
+import { Eyebrow, Heading, Text, Flow, BleedSection, Card } from "@/components/ui";
 import Button from "@/components/button";
 import { HeroVideo } from "@/components/hero-video";
 import { WorldMap } from "@/components/world-map";
@@ -188,22 +188,26 @@ export default function InvitePage() {
 
       {/* ── 6 · Close ────────────────────────────────────────────── */}
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
-        <Flow>
-          <Text>
-            Here&apos;s how getting in works. You sign up and link your Steam account — that puts
-            you on the founders&apos; list. From there we bring people in ourselves, in waves, a
-            handful at a time. We&apos;re doing it by hand because we want the early world to hold
-            together, not flood.
-          </Text>
-          <Text>
-            So most of you will wait a little, and that&apos;s the point, not a brush-off. Everyone
-            on the list is part of this founding cohort — the waves just open one after another.
-            While you wait, we&apos;ll keep you in the loop and give you reasons to stick around.
-          </Text>
-          <Button variant="primary" href="/register">
-            Join the Founders
-          </Button>
-        </Flow>
+        <Card>
+          <Flow>
+            <Heading level="h2">Join us</Heading>
+            <Text>
+              Here&apos;s how getting in works. You sign up and link your Steam account — that puts
+              you on the founders&apos; list. From there we bring people in ourselves, in waves, a
+              handful at a time. We&apos;re doing it by hand because we want the early world to hold
+              together, not flood.
+            </Text>
+            <Text>
+              So most of you will wait a little, and that&apos;s the point, not a brush-off.
+              Everyone on the list is part of this founding cohort — the waves just open one after
+              another. While you wait, we&apos;ll keep you in the loop and give you reasons to stick
+              around.
+            </Text>
+            <Button variant="primary" href="/register">
+              Join the Founders
+            </Button>
+          </Flow>
+        </Card>
       </section>
     </>
   );
