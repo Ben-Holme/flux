@@ -653,7 +653,7 @@ export function WorldMap({
         ndc.set(ndcX, ndcY);
         raycaster.setFromCamera(ndc, camera);
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
-          const offset = (progress - 0.5) * 16;
+          const offset = (0.5 - progress) * 16;
           idleTarget.set(
             hitPoint.x + camForward.x * offset,
             LIGHT_PLANE_Y,
