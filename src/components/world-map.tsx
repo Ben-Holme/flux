@@ -629,25 +629,36 @@ export function WorldMap({
     window.addEventListener("scroll", onWindowScroll, { passive: true });
 
     const idleTarget = new THREE.Vector3(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
+    // Camera forward projected onto the horizontal plane — travel along this, not world Z.
+    const camForward = new THREE.Vector3()
+      .subVectors(camTarget, camera.position)
+      .setY(0)
+      .normalize();
 
     let raf = 0;
     let onFrame: (() => void) | null = null;
     function loop() {
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
-      // When idle, park the light at the responsive default and travel south-to-north with scroll.
+      // When idle, park the light at the responsive default and travel along the camera axis with scroll.
       if (!lightHover) {
         const isMobile = curW < 768;
         const ndcX = isMobile ? 0 : Math.min(0.95, 600 / curW);
+        const ndcY = isMobile ? -0.5 : 0;
         const scrollY = scrollRef.value;
         const sectionH = mount?.clientHeight ?? 800;
         const progress = Math.max(0, Math.min(1,
           (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
         ));
-        ndc.set(ndcX, 0);
+        ndc.set(ndcX, ndcY);
         raycaster.setFromCamera(ndc, camera);
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
-          idleTarget.set(hitPoint.x, LIGHT_PLANE_Y, camTarget.z + (progress - 0.5) * 16);
+          const offset = (progress - 0.5) * 16;
+          idleTarget.set(
+            hitPoint.x + camForward.x * offset,
+            LIGHT_PLANE_Y,
+            hitPoint.z + camForward.z * offset,
+          );
         }
         // Lerp toward the target so position changes are smooth
         if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
