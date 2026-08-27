@@ -177,7 +177,7 @@ export default function InvitePage() {
             },
             {
               q: "Is it free to play?",
-              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Founders coming in early are part of what makes that possible.",
+              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Early founders don't help us financially — but they do help the game, by populating the world early enough that it starts generating real history before it scales.",
             },
             {
               q: "When can I actually play?",
