@@ -489,7 +489,7 @@ export function WorldMap({
 
     // Camera framing: explicit free transform if provided, else derive from
     // target + radius (elevation mirrors chronicle's updateCameraFromOrbit).
-    const viewOverride = (W < 768 && mobileViewRef.current) ? mobileViewRef.current : viewRef.current;
+    const viewOverride = W < 768 && mobileViewRef.current ? mobileViewRef.current : viewRef.current;
     const camTarget = new THREE.Vector3();
     if (viewOverride) {
       camTarget.set(viewOverride.target[0], viewOverride.target[1], viewOverride.target[2]);
@@ -715,6 +715,7 @@ export function WorldMap({
         if (!dragging || keys.size === 0) return;
         const fwd = new THREE.Vector3().subVectors(camTarget, camPos).normalize();
         const right = new THREE.Vector3().crossVectors(fwd, WORLD_UP).normalize();
+        const up = WORLD_UP;
         let moved = false;
         if (keys.has("w")) {
           camPos.addScaledVector(fwd, MOVE_SPEED);
@@ -732,11 +733,19 @@ export function WorldMap({
           camPos.addScaledVector(right, -MOVE_SPEED);
           moved = true;
         }
+        if (keys.has("q")) {
+          camPos.addScaledVector(up, -MOVE_SPEED);
+          moved = true;
+        }
+        if (keys.has("e")) {
+          camPos.addScaledVector(up, MOVE_SPEED);
+          moved = true;
+        }
         if (moved) apply();
       };
       const onKeyDown = (e: KeyboardEvent) => {
         const k = e.key.toLowerCase();
-        if (k === "w" || k === "a" || k === "s" || k === "d") keys.add(k);
+        if (k === "w" || k === "a" || k === "s" || k === "d" || k === "q" || k === "e") keys.add(k);
       };
       const onKeyUp = (e: KeyboardEvent) => {
         keys.delete(e.key.toLowerCase());

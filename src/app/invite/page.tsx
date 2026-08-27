@@ -13,8 +13,12 @@ export default function InvitePage() {
   return (
     <>
       {/* ── 1 · Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <HeroVideo />
+      <section className="bg-void relative overflow-hidden">
+        {/* Video band: fixed height at the top on mobile, full-bleed on desktop */}
+        <div className="absolute inset-x-0 top-0 h-[480px] md:h-full">
+          <HeroVideo />
+          {/* Mobile: fade the bottom of the video into void behind the text */}
+        </div>
         <div
           className="pointer-events-none absolute inset-0"
           style={{ background: "#000", opacity: 0.35 }}
@@ -23,8 +27,11 @@ export default function InvitePage() {
           className="pointer-events-none absolute inset-0"
           style={{ background: "#00a2ff", mixBlendMode: "color", opacity: 0.3 }}
         />
-        <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-[768px]:items-end max-[768px]:pb-16">
-          <Flow className="ml-auto max-w-lg pt-[120px] pb-20 max-[768px]:ml-0 max-[768px]:pt-0">
+
+        <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-md:min-h-0 max-md:flex-col max-md:items-stretch">
+          {/* Mobile: spacer that reveals the video above, text overlaps its faded base */}
+          <div className="h-[380px] md:hidden" />
+          <Flow className="ml-auto max-w-lg pt-[120px] pb-12 max-md:ml-0 max-md:pt-0">
             <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
             <Heading level="h1">The Golden City</Heading>
             <Text>
@@ -50,81 +57,86 @@ export default function InvitePage() {
       </section>
 
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 py-20">
+      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Flow>
           <Eyebrow>A note from the two of us</Eyebrow>
-          <div className="border-gold/30 border-l-2 pl-6 lg:pl-10">
-            <Flow>
-              <Text>
-                We&apos;ve been building Unyha for a long time, mostly heads-down, two of us and a
-                few we trust. It&apos;s an online world with one strange idea at the center: it
-                writes its own history. Play in it, and the world turns what you and everyone else
-                actually do into its record — its chapters, its ages — and keeps them. No one
-                authors what happens next. Not even us.
-              </Text>
-              <Text>
-                This first chapter is the exception — the Golden City and the rot underneath it, all
-                of it written by hand. We built it to sit right on the seam between Unyha&apos;s
-                long backstory and its living present: the weight of what came before is real, and
-                the first age is where the world stops being history and starts being made. After
-                this chapter, the world takes the pen. This is the last one we hold.
-              </Text>
-              <Text>
-                And now, finally, we&apos;re opening the doors. A few of you at first, then more.
-                We&apos;re not asking you to back us or hype us — we&apos;re asking you to come
-                play, and to take the project seriously enough to see what it is. That&apos;s the
-                whole invitation.
-              </Text>
-              <Text variant="muted">— Ben &amp; Vik</Text>
-            </Flow>
-          </div>
+          <Text>
+            We&apos;ve been building Unyha for a long time, mostly heads-down, two of us and a few
+            we trust. It&apos;s an online world with one strange idea at the center: it writes its
+            own history. Play in it, and the world turns what you and everyone else actually do into
+            its record — its chapters, its ages — and keeps them. No one authors what happens next.
+            Not even us.
+          </Text>
+          <Text>
+            This first chapter is the exception — the Golden City and the rot underneath it, all of
+            it written by hand. We built it to sit right on the seam between Unyha&apos;s long
+            backstory and its living present: the weight of what came before is real, and the first
+            age is where the world stops being history and starts being made. After this chapter,
+            the world takes the pen. This is the last one we hold.
+          </Text>
+          <Text>
+            And now, finally, we&apos;re opening the doors. A few of you at first, then more.
+            We&apos;re not asking you to back us or hype us — we&apos;re asking you to come play,
+            and to take the project seriously enough to see what it is. That&apos;s the whole
+            invitation.
+          </Text>
+          <Text variant="muted">— Ben &amp; Vik</Text>
         </Flow>
       </section>
 
       {/* ── 3 · Follow the Gold ──────────────────────────────────── */}
-      <section className="relative overflow-hidden">
+      <section className="bg-void relative overflow-hidden lg:min-h-[800px]">
         {/* Map fills the full section background */}
         <WorldMap
-          view={{ position: [-0.37, 11.09, 0.07], target: [0.76, -1.5, -8.01] }}
+          mobileView={{ position: [11.18, 13.98, 9.87], target: [8.21, 2.32, 0.91] }}
+          view={{ position: [3.89, 12.67, 1.96], target: [1.17, -0.53, -4.63] }}
           markers={[
             { name: "Brimmar", x: 374723, y: -150569, kind: "city" },
             { name: "Breen", x: 286454, y: -178874, kind: "city" },
             { name: "Tann", x: 166679, y: -286230, kind: "city" },
             { name: "Midaen", x: 66549, y: -312520, kind: "city" },
-            { name: "Gruk Nub's Fort", x: 113603, y: -332980, kind: "orc" },
+            { name: "Ork Lands", x: 113603, y: -332980, kind: "orc" },
           ]}
           clouds={false}
           brightness={1}
-          className="absolute inset-0 h-full w-full"
+          className="absolute top-0 right-0 left-0 h-[700px] lg:h-full"
         />
 
-        {/* Desktop: solid left panel — #0009 flush to the split */}
+        {/* Desktop: solid left panel — void flush to the split */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 hidden lg:block"
-          style={{ width: "calc(50% - 300px)", background: "#000c" }}
+          style={{
+            width: "calc(50% - 300px)",
+            background:
+              "linear-gradient(to right, color-mix(in srgb, var(--void) 93%, transparent) 30%, color-mix(in srgb, var(--void) 80%, transparent))",
+          }}
         />
-        {/* Desktop: radial vignette on the right — #000c at all edges, seam-matches left panel */}
+        {/* Desktop: radial vignette on the right — void at all edges, seam-matches left panel */}
         <div
           className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block"
           style={{
             left: "calc(50% - 300px)",
-            background: "radial-gradient(ellipse 42% 42% at 50% 50%, transparent, #000c)",
+            background:
+              "radial-gradient(ellipse 70% 80% at 70% 50%, transparent, color-mix(in srgb, var(--void) 80%, transparent))",
           }}
         />
 
         {/* Mobile: full-bleed bottom fade — map bleeds into text below */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 lg:hidden"
-          style={{ background: "linear-gradient(to bottom, transparent, var(--void))" }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-[700px] lg:hidden"
+          style={{
+            background:
+              "linear-gradient(to bottom, color-mix(in srgb, var(--void) 80%, transparent), transparent 20%, var(--void) 100%)",
+          }}
         />
 
         {/* Mobile: map spacer (centered above text) + desktop: centered text row */}
-        <div className="relative flex flex-col lg:min-h-[600px] lg:flex-row lg:items-center">
+        <div className="pointer-events-none relative flex flex-col lg:min-h-[600px] lg:flex-row lg:items-center">
           {/* Mobile only: empty area that exposes the map with markers */}
           <div className="h-[320px] lg:hidden" />
 
           {/* Text — full width on mobile, left column on desktop */}
-          <div className="pointer-events-none mx-auto box-content w-full max-w-[1200px] px-6 py-10 lg:py-24">
+          <div className="pointer-events-none mx-auto w-full max-w-[1200px] px-6 py-12 lg:box-content lg:py-24">
             <Flow className="max-w-xl">
               <Eyebrow deco>The First Age · The Mystery</Eyebrow>
               <Heading level="h1" as="h2">
@@ -140,30 +152,33 @@ export default function InvitePage() {
                 dressed stone went past the last honest road, signed to names that trace to nothing.
                 Cut stone. Finished stone. Hauled into country that builds nothing and never has.
               </Text>
-              <Text>
+              {/* <Text>
                 Someone up there is raising something, and the gold has been paying for it for
                 years. That is the age you walk into. It is already most of the way to its answer.
               </Text>
               <Heading level="h4">Where the trail leads</Heading>
               <Text variant="muted">
-                North and east, past the last honest road. Midaen in the foothills, the ridge
-                beyond it, and orc country past that. Every thread worth pulling runs the same
-                direction.
-              </Text>
+                North and east, past the last honest road. Midaen in the foothills, the ridge beyond
+                it, and orc country past that. Every thread worth pulling runs the same direction.
+              </Text> */}
             </Flow>
           </div>
         </div>
       </section>
 
       {/* ── 4 · What You're Walking Into ─────────────────────────── */}
-      <BleedSection image="/img/defence.png" alt="Warriors in the north" reverse>
+      <BleedSection
+        image="https://images.ctfassets.net/ug7dduf1ziy3/6Q2BUNxOGiPC9mc4MD2ZrZ/14f7cf9a5674ebe256140bc9a1c15311/screenshot7.png"
+        alt="Warriors in the north"
+        reverse
+      >
         <Heading level="h2">What you&apos;re walking into</Heading>
         <Text>
           You&apos;ll start a nobody. A Spiritfolk with no name yet, in a world that won&apos;t
           notice you for a while. What you do from there is yours — train, delve the dungeons,
           craft, build a House meant to outlast you. The potential is real, and so is the climb.
         </Text>
-        <Text>
+        {/* <Text>
           And something is wrong in the north. The orcs have grown bold — seen further south than
           Tann, where no one remembers them coming before. Coin went missing on the roads up there;
           a wall that swallowed a fortune was never built; and nobody with power seems to want the
@@ -171,14 +186,14 @@ export default function InvitePage() {
           the state of the world you&apos;re walking into. But push far enough, make enough of a
           name, and you might reach the outskirts of it — close enough to touch the thing everyone
           else only whispers about, and leave a mark on how it ends.
-        </Text>
-        <Text variant="muted">
+        </Text> */}
+        {/* <Text>
           Most won&apos;t. That&apos;s fine. The ones who do get written into the world for good.
-        </Text>
+        </Text> */}
       </BleedSection>
 
       {/* ── 5 · Close ────────────────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 py-20 pb-32">
+      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Flow>
           <Text>
             Here&apos;s how getting in works. You sign up and link your Steam account — that puts

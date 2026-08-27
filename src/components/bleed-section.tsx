@@ -23,8 +23,8 @@ export function BleedSection({ children, image, alt = "", reverse = false }: Ble
   const y = useTransform(scrollYProgress, [0, 1], ["-16%", "16%"]);
   const textCol = (
     <div
-      className={`flex flex-col justify-center py-16 lg:w-[40%] lg:shrink-0 lg:py-24 ${
-        reverse ? "pl-12 lg:pl-20" : "pr-12 lg:pr-20"
+      className={`py-12 lg:w-[40%] lg:shrink-0 lg:py-24 ${
+        reverse ? "pl-6 lg:pl-20" : "pr-6 lg:pr-20"
       }`}
       style={{
         ...(reverse ? { paddingRight: GUTTER } : { paddingLeft: GUTTER }),
@@ -35,7 +35,7 @@ export function BleedSection({ children, image, alt = "", reverse = false }: Ble
   );
 
   const imageCol = (
-    <div className="relative h-[400px] overflow-hidden lg:h-auto lg:flex-1">
+    <div className="relative h-[200px] overflow-hidden lg:h-auto lg:flex-1">
       <motion.img
         src={image}
         alt={alt}

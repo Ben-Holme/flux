@@ -37,6 +37,18 @@ const HEADING_LEVEL_SPACING = new Map<string, string>([
   ["h6", "mt-3"],
 ]);
 
+// When a Flow lives inside a Client Component (e.g. BleedSection) but its children
+// come from a Server Component, those shared children (Heading, Text, …) are already
+// rendered to host tags by the time Flow sees them — so component-identity lookups in
+// FLOW_SPACING miss. Recognize the rendered tags as a fallback: <h1>–<h6> map to the
+// heading rhythm, <p> to Text's rhythm.
+function hostTagSpacing(type: unknown, afterEyebrow: boolean): string | undefined {
+  if (typeof type !== "string") return undefined;
+  if (/^h[1-6]$/.test(type)) return afterEyebrow ? "mt-4" : HEADING_LEVEL_SPACING.get(type);
+  if (type === "p") return "mt-4";
+  return undefined;
+}
+
 interface FlowProps {
   children: ReactNode;
   as?: ElementType;
@@ -99,6 +111,7 @@ export function Flow({ children, as: Tag = "div", className }: FlowProps) {
         : undefined) ??
       FLOW_SPACING.get(child.type as React.ComponentType<any>) ?? // eslint-disable-line @typescript-eslint/no-explicit-any
       (child.type as { flowSpacing?: string }).flowSpacing ??
+      hostTagSpacing(child.type, afterEyebrow) ??
       "mt-12";
 
     // If the child can't receive className, wrap it so spacing still applies.

@@ -61,6 +61,12 @@ export function HeroVideo() {
       className="absolute inset-0 scale-110"
       style={{ y, opacity: opacity, willChange: "transform" }}
     >
+      <div
+        className="pointer-events-none absolute inset-0 -bottom-2 z-10 md:hidden"
+        style={{
+          background: "linear-gradient(to bottom, transparent 50%, var(--void))",
+        }}
+      />
       <video
         ref={aRef}
         src="/hero.mp4"
