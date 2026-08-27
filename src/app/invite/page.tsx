@@ -193,7 +193,7 @@ export default function InvitePage() {
             },
             {
               q: "How are you using AI?",
-              a: "Two places. First, the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. That part runs on player activity — not anyone else's work. Second, development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI assistance we couldn't close that gap. We know the training data question is real — we don't have a clean answer to it, just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
+              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same ethics applies across both — these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
             },
           ].map(({ q, a }) => (
             <div key={q} className="py-6 lg:grid lg:grid-cols-[1fr_2fr] lg:gap-12">
