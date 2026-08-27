@@ -586,7 +586,7 @@ export function WorldMap({
     // Cursor-following point light: ray-cast the pointer onto a plane above the
     // tallest peak and park the light there. Intensity eases in/out on hover.
     const CURSOR_LIGHT_MAX = 18;
-    const CURSOR_LIGHT_BASE = 7;
+    const CURSOR_LIGHT_BASE = 18;
     const cursorLight = new THREE.PointLight(0xffd9a0, 0, 30, 1.2);
     cursorLight.position.set(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
     scene.add(cursorLight);
