@@ -28,7 +28,7 @@ async function WikiIndex() {
   // Fallback: hardcoded content matching the original Gatsby site
   return (
     <Flow className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
-      <Heading level="h1">Welcome to the Unyha Wiki</Heading>
+      <Heading level="h1">The Unyha Wiki</Heading>
       <Text>
         Welcome to the official Unyha Wiki, your go-to resource for everything about the world of
         Unyha! This wiki is a work in progress and will continue to grow as we develop the game.
