@@ -27,7 +27,7 @@ const baseOptions: Options = {
     [BLOCKS.PARAGRAPH]: (_node, children) => <Text>{children}</Text>,
     [BLOCKS.HEADING_1]: (_node, children) => <Heading level="h1">{children}</Heading>,
     [BLOCKS.HEADING_2]: (_node, children) => <Heading level="h2">{children}</Heading>,
-    [BLOCKS.HEADING_3]: (_node, children) => <p className="text-[20px] font-semibold leading-snug">{children}</p>,
+    [BLOCKS.HEADING_3]: (_node, children) => <Heading level="h3">{children}</Heading>,
     [BLOCKS.UL_LIST]: (_node, children) => <ul className="mb-4">{children}</ul>,
     [BLOCKS.OL_LIST]: (_node, children) => <ol className="mb-4 list-decimal pl-6">{children}</ol>,
     [BLOCKS.LIST_ITEM]: (_node, children) => <li className="mb-1">{children}</li>,
