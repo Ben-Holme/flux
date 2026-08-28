@@ -605,7 +605,7 @@ export function WorldMap({
       ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(ndc, camera);
       if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
-        cursorLight.position.copy(hitPoint);
+        idleTarget.copy(hitPoint);
         lightHover = true;
         requestRender();
       }
@@ -661,11 +661,11 @@ export function WorldMap({
             hitPoint.z + camTravelDir.z * offset,
           );
         }
-        // Lerp toward the target so position changes are smooth
-        if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
-          cursorLight.position.lerp(idleTarget, 0.15);
-          needsRender = true;
-        }
+      }
+      // Always lerp toward the target — applies to both hover and idle so there's no snap.
+      if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
+        cursorLight.position.lerp(idleTarget, 0.15);
+        needsRender = true;
       }
       // Ease the cursor light toward its hover target intensity.
       const targetIntensity = lightHover ? CURSOR_LIGHT_MAX : CURSOR_LIGHT_BASE;
