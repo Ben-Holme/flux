@@ -89,7 +89,7 @@ export default function InvitePage() {
 
           <div className="pointer-events-none mx-auto w-full max-w-[1200px] px-6 py-12 lg:box-content lg:py-24">
             <Flow className="max-w-xl">
-              <Eyebrow deco>The First Age · The Mystery</Eyebrow>
+              <Eyebrow deco>The First Age · The Golden City</Eyebrow>
               <Heading level="h2">The North Road</Heading>
               <Text>
                 The land finds itself buzzing with rumours of corruption in the north. A wall at
