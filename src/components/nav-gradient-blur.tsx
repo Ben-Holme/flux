@@ -5,8 +5,8 @@ import { useEffect, useRef } from "react";
 // 40 sibling divs, each 3px tall = 120px total.
 // Each gets an independent backdrop-filter value scaled by scroll progress —
 // no parent opacity, which would break backdrop-filter in Safari.
-const STEPS = 40;
-const STEP_H = 3;
+const STEPS = 60;
+const STEP_H = 2;
 const MAX_BLUR = 22;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
