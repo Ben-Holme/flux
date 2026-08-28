@@ -4,6 +4,7 @@ import Button from "@/components/button";
 import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 import { getLatestPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
+import { InviteGallery } from "@/components/invite-gallery";
 
 export const metadata = {
   title: { absolute: "Unyha - Early Access Invite" },
@@ -47,21 +48,8 @@ export default async function InvitePage() {
             </Text>
           </Flow>
           {gallery.length > 0 && (
-            <div className="mt-10 grid grid-cols-2 gap-2 lg:mt-0">
-              {gallery.map(({ url, alt, slug }) => (
-                <Link
-                  key={url}
-                  href={`/devlog/${slug}`}
-                  className="block overflow-hidden rounded-lg"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={alt}
-                    className="aspect-video w-full object-cover transition-opacity hover:opacity-80"
-                  />
-                </Link>
-              ))}
+            <div className="mt-10 lg:mt-0">
+              <InviteGallery images={gallery} />
             </div>
           )}
         </div>
