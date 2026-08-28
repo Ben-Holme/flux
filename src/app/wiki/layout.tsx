@@ -1,20 +1,13 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { getWikiNav } from "@/lib/contentful";
-import WikiNavLinks from "./wiki-nav-links";
+import { WikiSidebarNav } from "./wiki-sidebar-nav";
 
 async function WikiSidebar() {
   const links = await getWikiNav();
   return (
     <div>
       <div className="fixed w-[300px] max-[1200px]:w-[200px] max-[768px]:relative max-[768px]:w-auto max-[768px]:p-6 max-[768px]:pt-[120px]">
-        <Link
-          href="/wiki"
-          className="mb-2 block font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
-        >
-          The Unyha Wiki
-        </Link>
-        <WikiNavLinks links={links} />
+        <WikiSidebarNav links={links} />
       </div>
     </div>
   );
