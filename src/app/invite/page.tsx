@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 const STATIC_SCREENSHOTS = [
-  { url: "/img/screenshots/orc-combat.jpg", alt: "Combat against Ork forces in the highlands" },
+  { url: "/img/screenshots/orc-combat.jpg", alt: "Combat against Orc forces in the highlands" },
   { url: "/img/screenshots/norlog-river.jpg", alt: "Overlooking the Norlog River valley" },
   { url: "/img/screenshots/mountain-landscape.jpg", alt: "Mountain landscape with snow-capped peaks" },
   { url: "/img/screenshots/forest-pond.jpg", alt: "Misty forest pond" },
@@ -98,7 +98,7 @@ export default async function InvitePage() {
             { name: "Breen", x: 286454, y: -178874, kind: "city" },
             { name: "Tann", x: 166679, y: -286230, kind: "city" },
             { name: "Midaen", x: 66549, y: -312520, kind: "city" },
-            { name: "Ork Lands", x: 113603, y: -332980, kind: "orc" },
+            { name: "Orc Lands", x: 113603, y: -332980, kind: "orc" },
           ]}
           clouds={false}
           brightness={1}

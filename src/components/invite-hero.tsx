@@ -67,7 +67,7 @@ export function InviteHero() {
               But some say it went north for something else entirely - past the last honest road.
             </Text>
             <Text>
-              <strong>Into Ork lands.</strong>
+              <strong>Into Orc lands.</strong>
             </Text>
             <div className="flex flex-wrap gap-3">
               <Button variant="primary" onClick={() => openVideo(VIDEOS[0].id)}>
