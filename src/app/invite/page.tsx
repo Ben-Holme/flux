@@ -5,7 +5,7 @@ import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 
 export const metadata = {
-  title: "Unyha - Early Access Invite",
+  title: { absolute: "Unyha - Early Access Invite" },
   description:
     "We've been building Unyha for a long time. Now we're opening the doors - a few of you at first, then more. Come play.",
 };
@@ -98,7 +98,7 @@ export default function InvitePage() {
               </Text>
               <Text>
                 Was the funding skimmed? Did the North Warden line his own coffers? That&apos;s a
-                matter for highborne and noble lords to fret over, not for common tavern folk.
+                matter for highborn and noble lords to fret over, not for common tavern folk.
               </Text>
               <Text>
                 Some say the cargo never made it up the road to Midaen. It turned off, out past the
@@ -124,8 +124,8 @@ export default function InvitePage() {
       >
         <Heading level="h2">What you&apos;re walking into</Heading>
         <Text>
-          You&apos;ll start a nobody. A Spiritfolk with no name yet, in a world that won&apos;t
-          notice you for a while. What you do from there is yours - train, delve the dungeons,
+          You&apos;ll start a nobody. A Spiritfolk with no name yet - one of the called,
+          summoned by the world itself - in a world that won&apos;t notice you for a while. What you do from there is yours - train, delve the dungeons,
           craft, build a House meant to outlast you.
         </Text>
         <Text>
@@ -153,7 +153,7 @@ export default function InvitePage() {
               around.
             </Text>
             <Button variant="primary" href="/register">
-              Join the Founders
+              Sign Up
             </Button>
           </Flow>
         </Card>
@@ -193,7 +193,7 @@ export default function InvitePage() {
             },
             {
               q: "How are you using AI?",
-              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same ethics applies across both - these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
+              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same question applies across both - these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
             },
           ].map(({ q, a }) => (
             <div key={q} className="py-6 lg:grid lg:grid-cols-[1fr_2fr] lg:gap-12">
