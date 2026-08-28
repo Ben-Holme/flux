@@ -12,16 +12,24 @@ export const metadata = {
     "We've been building Unyha for a long time. Now we're opening the doors - a few of you at first, then more. Come play.",
 };
 
+const STATIC_SCREENSHOTS = [
+  { url: "/img/screenshots/orc-combat.jpg", alt: "Combat against Ork forces in the highlands" },
+  { url: "/img/screenshots/norlog-river.jpg", alt: "Overlooking the Norlog River valley" },
+  { url: "/img/screenshots/mountain-landscape.jpg", alt: "Mountain landscape with snow-capped peaks" },
+  { url: "/img/screenshots/forest-pond.jpg", alt: "Misty forest pond" },
+];
+
 export default async function InvitePage() {
   const posts = await getLatestPosts(20);
-  const gallery = posts
+  const fromDevlog = posts
     .map((p) => ({
       url: getAssetUrl(p.fields.image),
       alt: getAssetTitle(p.fields.image),
       slug: p.fields.slug as string,
     }))
     .filter((p): p is { url: string; alt: string; slug: string } => !!p.url)
-    .slice(0, 6);
+    .slice(0, 4);
+  const gallery = [...STATIC_SCREENSHOTS, ...fromDevlog];
 
   return (
     <>

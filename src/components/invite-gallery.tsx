@@ -6,7 +6,7 @@ import Link from "next/link";
 interface GalleryImage {
   url: string;
   alt: string;
-  slug: string;
+  slug?: string;
 }
 
 const ChevronLeft = ({ large }: { large?: boolean }) => (
@@ -149,12 +149,14 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
               ))}
             </div>
           ) : <span />}
-          <Link
-            href={`/devlog/${img.slug}`}
-            className="text-xs text-ash transition-colors hover:text-parchment"
-          >
-            View in devlog →
-          </Link>
+          {img.slug && (
+            <Link
+              href={`/devlog/${img.slug}`}
+              className="text-xs text-ash transition-colors hover:text-parchment"
+            >
+              View in devlog →
+            </Link>
+          )}
         </div>
       </div>
 
