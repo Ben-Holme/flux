@@ -42,7 +42,7 @@ export function NavGradientBlur() {
         const blur = STEP_MAX[i] * progress;
         const bf = blur > 0.1 ? `blur(${blur.toFixed(2)}px)` : "";
         div.style.backdropFilter = bf;
-        div.style.webkitBackdropFilter = bf;
+        div.style.setProperty("-webkit-backdrop-filter", bf);
 
         const a = STEP_VOID_ALPHA[i] * progress;
         div.style.backgroundColor =
