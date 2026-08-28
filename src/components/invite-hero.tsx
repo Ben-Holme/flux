@@ -37,7 +37,7 @@ export function InviteHero() {
       />
 
       <section className="bg-void relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-[480px] md:h-full">
+        <div className="absolute inset-x-0 top-0 h-[680px] md:h-full">
           <HeroVideo />
         </div>
         <div
@@ -50,7 +50,7 @@ export function InviteHero() {
         />
 
         <div className="relative mx-auto box-content flex min-h-screen max-w-[1200px] items-center px-6 max-md:min-h-0 max-md:flex-col max-md:items-stretch">
-          <div className="h-[380px] md:hidden" />
+          <div className="h-[580px] md:hidden" />
           <Flow className="ml-auto max-w-lg pt-[120px] pb-12 max-md:ml-0 max-md:pt-0">
             <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
             <Heading level="h1">The Golden City</Heading>
