@@ -1,27 +1,57 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
-const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+// Scaling the blur per-div (no parent opacity) avoids the Safari bug where
+// opacity on a parent breaks backdrop-filter on its children.
+// Direct DOM writes skip React state updates so scroll stays smooth.
 
-// --void = #0d0b12 → rgba(13, 11, 18)
 const STEPS = 40;
 const STEP_H = 3;
 const MAX_BLUR = 22;
+const FADE_PX = 120; // scroll distance over which effect fades in
+// --void = #0d0b12
 const VOID_R = 13;
 const VOID_G = 11;
 const VOID_B = 18;
-const FADE_START = 0;   // px scrolled where fade begins
-const FADE_END = 120;   // px scrolled where fully visible
+
+// Pre-compute the per-step max blur so the scroll handler is just arithmetic
+const STEP_MAX = Array.from({ length: STEPS }, (_, i) => {
+  const t = (STEPS - 1 - i) / (STEPS - 1); // 1 at top, 0 at bottom
+  return MAX_BLUR * t * t;
+});
+
+const STEP_VOID_ALPHA = Array.from({ length: STEPS }, (_, i) => {
+  const t = (STEPS - 1 - i) / (STEPS - 1);
+  return Math.pow(t, 1.1) * 0.92;
+});
 
 export function NavGradientBlur() {
-  const [opacity, setOpacity] = useState(0);
+  const blurRef = useRef<HTMLDivElement>(null);
 
-  useIsomorphicLayoutEffect(() => {
+  useEffect(() => {
+    const container = blurRef.current;
+    if (!container) return;
+
+    const divs = Array.from(container.children) as HTMLElement[];
+
     const onScroll = () => {
-      const t = Math.max(0, Math.min(1, (window.scrollY - FADE_START) / (FADE_END - FADE_START)));
-      setOpacity(t);
+      const progress = Math.min(1, window.scrollY / FADE_PX);
+
+      divs.forEach((div, i) => {
+        const blur = STEP_MAX[i] * progress;
+        const bf = blur > 0.1 ? `blur(${blur.toFixed(2)}px)` : "";
+        div.style.backdropFilter = bf;
+        div.style.webkitBackdropFilter = bf;
+
+        const a = STEP_VOID_ALPHA[i] * progress;
+        div.style.backgroundColor =
+          a > 0.005
+            ? `rgba(${VOID_R},${VOID_G},${VOID_B},${a.toFixed(3)})`
+            : "";
+      });
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
@@ -29,39 +59,23 @@ export function NavGradientBlur() {
 
   return (
     <div
+      ref={blurRef}
       className="pointer-events-none fixed inset-x-0 top-0 z-[100]"
-      style={{
-        height: STEPS * STEP_H,
-        opacity,
-        transition: "opacity 0.25s ease",
-        willChange: "opacity",
-      }}
+      style={{ height: STEPS * STEP_H }}
       aria-hidden="true"
     >
-      {Array.from({ length: STEPS }, (_, i) => {
-        const t = (STEPS - 1 - i) / (STEPS - 1); // 1 at top, 0 at bottom
-        const blur = MAX_BLUR * t * t;
-        const voidAlpha = Math.pow(t, 1.1) * 0.92;
-
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: i * STEP_H,
-              height: STEP_H + 1,
-              backdropFilter: blur > 0.1 ? `blur(${blur.toFixed(2)}px)` : undefined,
-              WebkitBackdropFilter: blur > 0.1 ? `blur(${blur.toFixed(2)}px)` : undefined,
-              backgroundColor:
-                voidAlpha > 0.01
-                  ? `rgba(${VOID_R},${VOID_G},${VOID_B},${voidAlpha.toFixed(3)})`
-                  : undefined,
-            }}
-          />
-        );
-      })}
+      {STEP_MAX.map((_, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: i * STEP_H,
+            height: STEP_H + 1,
+          }}
+        />
+      ))}
     </div>
   );
 }
