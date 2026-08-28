@@ -43,22 +43,20 @@ const DISCORD_SVG = (
 
 export default function Nav() {
   const pathname = usePathname();
-  const isFirst = pathname === "/" || pathname === "/invite";
-  const isInvite = pathname === "/invite";
+  const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
-  const [scrolled, setScrolled] = useState(!isFirst);
+  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
-    if (!isFirst) {
-      setScrolled(true);
-      return;
-    }
-    const onScroll = () => setScrolled(window.scrollY > 300);
+    // Homepage: high threshold so the hero fills the screen first
+    // All other pages: shallow threshold — background fades in quickly on scroll
+    const threshold = isHome ? 300 : 80;
+    const onScroll = () => setScrolled(window.scrollY > threshold);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isFirst]);
+  }, [isHome]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,7 +142,7 @@ export default function Nav() {
               display: "block",
               transition: ".5s",
               transform: active ? "scale(0.9)" : "scale(1)",
-              opacity: active || isInvite ? 1 : 0,
+              opacity: active || !isHome ? 1 : 0,
             }}
           >
             <path
