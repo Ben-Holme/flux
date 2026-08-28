@@ -48,7 +48,7 @@ async function PostContent({ params }: { params: Promise<{ slug: string }> }) {
     ?.name;
 
   return (
-    <Flow className="mx-auto max-w-3xl py-24">
+    <Flow className="mx-auto max-w-3xl px-6 py-24">
       <div className="mb-4">
         <Link
           href="/devlog"
