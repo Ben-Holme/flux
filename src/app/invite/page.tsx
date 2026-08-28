@@ -3,7 +3,7 @@ import { Eyebrow, Heading, Text, Flow, BleedSection, Card } from "@/components/u
 import Button from "@/components/button";
 import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
-import { getLatestPosts, getAssetUrl, getAssetTitle } from "@/lib/contentful";
+import { getLatestPosts, getAssetUrl, getAssetTitle, getPage } from "@/lib/contentful";
 import { InviteGallery } from "@/components/invite-gallery";
 
 export const metadata = {
@@ -19,8 +19,31 @@ const STATIC_SCREENSHOTS = [
   { url: "/img/screenshots/forest-pond.jpg", alt: "Misty forest pond" },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractImageUrls(doc: any): string[] {
+  const urls: string[] = [];
+  function walk(node: any) {
+    if (!node) return;
+    if (node.nodeType === "embedded-asset-block" && node.data?.target) {
+      const url = getAssetUrl(node.data.target);
+      if (url) urls.push(url);
+    }
+    if (Array.isArray(node.content)) node.content.forEach(walk);
+  }
+  walk(doc);
+  return urls;
+}
+
 export default async function InvitePage() {
-  const posts = await getLatestPosts(20);
+  const [screenshotsPage, posts] = await Promise.all([
+    getPage("screenshots"),
+    getLatestPosts(20),
+  ]);
+
+  const fromScreenshots = screenshotsPage?.fields.pageContent
+    ? extractImageUrls(screenshotsPage.fields.pageContent).map((url) => ({ url, alt: "" }))
+    : [];
+
   const fromDevlog = posts
     .map((p) => ({
       url: getAssetUrl(p.fields.image),
@@ -29,7 +52,8 @@ export default async function InvitePage() {
     }))
     .filter((p): p is { url: string; alt: string; slug: string } => !!p.url)
     .slice(0, 4);
-  const gallery = [...STATIC_SCREENSHOTS, ...fromDevlog];
+
+  const gallery = [...STATIC_SCREENSHOTS, ...fromScreenshots, ...fromDevlog];
 
   return (
     <>
