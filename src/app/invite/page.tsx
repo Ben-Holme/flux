@@ -23,13 +23,13 @@ export default function InvitePage() {
           <Text>
             We&apos;ve been building Unyha for a long time, mostly heads-down - two of us and a
             few we trust. One strange idea at the center: the world writes its own history. Play in
-            it and it turns what you and everyone else actually do into its record, its ages, its
+            it and it turns what you and everyone else actually do into its record, its seasons, its
             chapters. No one authors what happens next. Not even us.
           </Text>
           <Text>
-            The age you&apos;d be walking into, The Golden City, is the one exception - written by hand, built to sit
-            right on the seam between Unyha&apos;s long backstory and its living present. The first
-            age is where the world stops being history and starts being made. After it, the world
+            The season you&apos;d be walking into, The Golden City, is the one exception - written by hand, built to sit
+            right on the seam between Unyha&apos;s long backstory and its living present. Season one
+            is where the world stops being history and starts being made. After it, the world
             takes the pen. We&apos;re opening the doors now, a few at a time, and we&apos;re asking
             you to come play - and to take the project seriously enough to see what it is.
           </Text>
@@ -89,7 +89,7 @@ export default function InvitePage() {
 
           <div className="pointer-events-none mx-auto w-full max-w-[1200px] px-6 py-12 lg:box-content lg:py-24">
             <Flow className="max-w-xl">
-              <Eyebrow deco>The First Age · The Golden City</Eyebrow>
+              <Eyebrow deco>Season One · The Golden City</Eyebrow>
               <Heading level="h2">The North Road</Heading>
               <Text>
                 The land finds itself buzzing with rumours of corruption in the north. A wall at
@@ -109,7 +109,7 @@ export default function InvitePage() {
                 than anyone remembers. Unrelated, surely.
               </Text>
               <Text>
-                Still - give it an age, and perhaps some Spiritfolk will take an interest.
+                Still - give it a season, and perhaps some Spiritfolk will take an interest.
               </Text>
             </Flow>
           </div>
@@ -173,7 +173,7 @@ export default function InvitePage() {
             },
             {
               q: "Autochronicle?",
-              a: "Our term for the system that generates the world's history from what players actually do. No authored storyline - the chronicle writes itself from real play. Each age becomes a permanent record.",
+              a: "Our term for the system that generates the world's history from what players actually do. No authored storyline - the chronicle writes itself from real play. Each season becomes a permanent record.",
             },
             {
               q: "Is it free to play?",
