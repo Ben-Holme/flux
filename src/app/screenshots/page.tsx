@@ -21,7 +21,7 @@ async function ScreenshotsContent() {
 
   return (
     <Flow className="mx-auto box-content max-w-[1200px] px-6 py-24">
-      <Heading level="h1">Screenshots</Heading>
+      <Heading level="h1">Screen&shy;shots</Heading>
 
       {assets.length === 0 ? (
         <p className="text-white/40">No screenshots yet.</p>
