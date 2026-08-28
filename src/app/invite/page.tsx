@@ -5,9 +5,9 @@ import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 
 export const metadata = {
-  title: "Unyha — Early Access Invite",
+  title: "Unyha - Early Access Invite",
   description:
-    "We've been building Unyha for a long time. Now we're opening the doors — a few of you at first, then more. Come play.",
+    "We've been building Unyha for a long time. Now we're opening the doors - a few of you at first, then more. Come play.",
 };
 
 export default function InvitePage() {
@@ -21,17 +21,17 @@ export default function InvitePage() {
         <Flow>
           <Eyebrow glow={false}>A note from Ben and Vik</Eyebrow>
           <Text>
-            We&apos;ve been building Unyha for a long time, mostly heads-down — two of us and a
+            We&apos;ve been building Unyha for a long time, mostly heads-down - two of us and a
             few we trust. One strange idea at the center: the world writes its own history. Play in
             it and it turns what you and everyone else actually do into its record, its ages, its
             chapters. No one authors what happens next. Not even us.
           </Text>
           <Text>
-            The age you&apos;d be walking into, The Golden City, is the one exception — written by hand, built to sit
+            The age you&apos;d be walking into, The Golden City, is the one exception - written by hand, built to sit
             right on the seam between Unyha&apos;s long backstory and its living present. The first
             age is where the world stops being history and starts being made. After it, the world
             takes the pen. We&apos;re opening the doors now, a few at a time, and we&apos;re asking
-            you to come play — and to take the project seriously enough to see what it is.
+            you to come play - and to take the project seriously enough to see what it is.
           </Text>
         </Flow>
       </section>
@@ -54,7 +54,7 @@ export default function InvitePage() {
           className="absolute top-0 right-0 left-0 h-[700px] lg:h-full"
         />
 
-        {/* Desktop: solid left panel — void flush to the split */}
+        {/* Desktop: solid left panel - void flush to the split */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 hidden lg:block"
           style={{
@@ -63,7 +63,7 @@ export default function InvitePage() {
               "linear-gradient(to right, color-mix(in srgb, var(--void) 93%, transparent) 30%, color-mix(in srgb, var(--void) 80%, transparent))",
           }}
         />
-        {/* Desktop: radial vignette on the right — void at all edges, seam-matches left panel */}
+        {/* Desktop: radial vignette on the right - void at all edges, seam-matches left panel */}
         <div
           className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block"
           style={{
@@ -73,7 +73,7 @@ export default function InvitePage() {
           }}
         />
 
-        {/* Mobile: full-bleed bottom fade — map bleeds into text below */}
+        {/* Mobile: full-bleed bottom fade - map bleeds into text below */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[700px] lg:hidden"
           style={{
@@ -94,7 +94,7 @@ export default function InvitePage() {
               <Text>
                 The land finds itself buzzing with rumours of corruption in the north. A wall at
                 Midaen, funded for a generation and never raised. A kingdom&apos;s coin sent up the
-                mountain — and never arriving there at all.
+                mountain - and never arriving there at all.
               </Text>
               <Text>
                 Was the funding skimmed? Did the North Warden line his own coffers? That&apos;s a
@@ -108,8 +108,8 @@ export default function InvitePage() {
                 And that place has been restless lately. Orcs sighted as far south as Tann, bolder
                 than anyone remembers. Unrelated, surely.
               </Text>
-              <Text variant="muted">
-                Still — give it an age, and perhaps some Spiritfolk will take an interest.
+              <Text>
+                Still - give it an age, and perhaps some Spiritfolk will take an interest.
               </Text>
             </Flow>
           </div>
@@ -125,12 +125,12 @@ export default function InvitePage() {
         <Heading level="h2">What you&apos;re walking into</Heading>
         <Text>
           You&apos;ll start a nobody. A Spiritfolk with no name yet, in a world that won&apos;t
-          notice you for a while. What you do from there is yours — train, delve the dungeons,
+          notice you for a while. What you do from there is yours - train, delve the dungeons,
           craft, build a House meant to outlast you.
         </Text>
         <Text>
           Push far enough, make enough of a name, and you might reach the outskirts of the thing
-          everyone else only whispers about — close enough to touch it, and to leave a mark on how
+          everyone else only whispers about - close enough to touch it, and to leave a mark on how
           it ends. Most won&apos;t. The ones who do get written into the world for good.
         </Text>
       </BleedSection>
@@ -141,14 +141,14 @@ export default function InvitePage() {
           <Flow>
             <Heading level="h2">Join us</Heading>
             <Text>
-              Here&apos;s how getting in works. You sign up and link your Steam account — that puts
+              Here&apos;s how getting in works. You sign up and link your Steam account - that puts
               you on the founders&apos; list. From there we bring people in ourselves, in waves, a
               handful at a time. We&apos;re doing it by hand because we want the early world to hold
               together, not flood.
             </Text>
             <Text>
               So most of you will wait a little, and that&apos;s the point, not a brush-off.
-              Everyone on the list is part of this founding cohort — the waves just open one after
+              Everyone on the list is part of this founding cohort - the waves just open one after
               another. While you wait, we&apos;ll keep you in the loop and give you reasons to stick
               around.
             </Text>
@@ -169,23 +169,23 @@ export default function InvitePage() {
           {[
             {
               q: "What is Unyha?",
-              a: <>A medieval goth online RPG. The world has its own history, and you play in it — your actions, and everyone else&apos;s, get written into that history and shape what comes next. <Link href="/wiki" className="text-gold underline underline-offset-2">Read more in the wiki.</Link></>,
+              a: <>A medieval goth online RPG. The world has its own history, and you play in it - your actions, and everyone else&apos;s, get written into that history and shape what comes next. <Link href="/wiki" className="text-gold underline underline-offset-2">Read more in the wiki.</Link></>,
             },
             {
               q: "Autochronicle?",
-              a: "Our term for the system that generates the world's history from what players actually do. No authored storyline — the chronicle writes itself from real play. Each age becomes a permanent record.",
+              a: "Our term for the system that generates the world's history from what players actually do. No authored storyline - the chronicle writes itself from real play. Each age becomes a permanent record.",
             },
             {
               q: "Is it free to play?",
-              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Early founders don't help us financially — but they do help the game, by populating the world early enough that it starts generating real history before it scales.",
+              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Early founders don't help us financially - but they do help the game, by populating the world early enough that it starts generating real history before it scales.",
             },
             {
               q: "When can I actually play?",
-              a: "We'll announce a date — it's TBD for now. When it's set, everyone on the founders list will hear first. From there we bring people in manually, in small waves, so most will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
+              a: "We'll announce a date - it's TBD for now. When it's set, everyone on the founders list will hear first. From there we bring people in manually, in small waves, so most will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
             },
             {
               q: "What platform does it run on?",
-              a: "PC via Steam for now. We're built on Unreal Engine 4.27, which supports most major platforms, so porting is realistic — but we're not committing to a timeline on anything beyond Windows yet.",
+              a: "PC via Steam for now. We're built on Unreal Engine 4.27, which supports most major platforms, so porting is realistic - but we're not committing to a timeline on anything beyond Windows yet.",
             },
             {
               q: "Will my character carry over after early access?",
@@ -193,7 +193,7 @@ export default function InvitePage() {
             },
             {
               q: "How are you using AI?",
-              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same ethics applies across both — these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
+              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same ethics applies across both - these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
             },
           ].map(({ q, a }) => (
             <div key={q} className="py-6 lg:grid lg:grid-cols-[1fr_2fr] lg:gap-12">

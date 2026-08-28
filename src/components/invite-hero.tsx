@@ -55,7 +55,7 @@ export function InviteHero() {
             <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
             <Heading level="h1">The Golden City</Heading>
             <Text>
-              That&apos;s what they call Midaen in the taverns now — a mountain mining town
+              That&apos;s what they call Midaen in the taverns now - a mountain mining town
               that&apos;s swallowed a kingdom&apos;s coin and has nothing to show for it.
               Best-funded wall in the land, and not a stone laid.
             </Text>
@@ -64,7 +64,7 @@ export function InviteHero() {
               the first time.
             </Text>
             <Text>
-              But some say it went north for something else entirely — past the last honest road.
+              But some say it went north for something else entirely - past the last honest road.
             </Text>
             <Text>
               <strong>Into orc lands.</strong>
