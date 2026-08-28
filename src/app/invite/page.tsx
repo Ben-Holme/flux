@@ -27,7 +27,7 @@ export default function InvitePage() {
             chapters. No one authors what happens next. Not even us.
           </Text>
           <Text>
-            The age you&apos;d be walking into is the one exception — written by hand, built to sit
+            The age you&apos;d be walking into, The Golden City, is the one exception — written by hand, built to sit
             right on the seam between Unyha&apos;s long backstory and its living present. The first
             age is where the world stops being history and starts being made. After it, the world
             takes the pen. We&apos;re opening the doors now, a few at a time, and we&apos;re asking
