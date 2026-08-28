@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import "./globals.css";
 import Nav from "@/components/nav";
+import { NavGradientBlur } from "@/components/nav-gradient-blur";
 import Year from "@/components/year";
 import { AuthProvider } from "@/context/auth-context";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
     <html lang="en" className={`${odebeeSans.variable} ${inter.variable}`}>
       <body className="flex min-h-screen flex-col bg-void antialiased">
         <AuthProvider>
+          <NavGradientBlur />
           <Suspense fallback={null}>
             <Nav />
           </Suspense>
