@@ -227,7 +227,7 @@ export async function getWikiNav() {
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 2, // level 2 resolves assets embedded in pageContent rich text
+      include: 3, // level 3 ensures assets embedded in rich text of linked pages are resolved
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

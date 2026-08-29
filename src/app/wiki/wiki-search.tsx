@@ -67,7 +67,7 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
                 )}
               </div>
               <div className="px-3 py-2.5">
-                <span className="font-heading text-sm tracking-wide text-white/80 group-hover:text-white">
+                <span className="font-heading text-sm uppercase tracking-wide text-white/80 group-hover:text-white">
                   {article.title}
                 </span>
               </div>
