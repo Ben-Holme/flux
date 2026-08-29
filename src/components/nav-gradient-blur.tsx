@@ -2,13 +2,16 @@
 
 import { useEffect, useRef } from "react";
 
-// 12 flat sibling divs with variable step heights.
-// Coarse at the top (solid under the nav), fine at the bottom (smooth fade-out).
-// Step heights top→bottom: 30, 10, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2 = 88px total.
-const STEP_HEIGHTS = [30, 10, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2];
-const N = STEP_HEIGHTS.length;
-const TOTAL_H = STEP_HEIGHTS.reduce((a, b) => a + b, 0); // 88px
+// One solid 60px block at the top (always fully blurred under the nav),
+// then 30 × 2px fine steps below it for a smooth fade-out.
+// 31 divs total, 120px total height.
+const SOLID_H = 60;
+const FINE_STEPS = 30;
+const FINE_H = 2;
+const TOTAL_H = SOLID_H + FINE_STEPS * FINE_H; // 120px
+const N = 1 + FINE_STEPS; // 31
 
+const STEP_HEIGHTS = [SOLID_H, ...Array<number>(FINE_STEPS).fill(FINE_H)];
 const TOPS = STEP_HEIGHTS.reduce<number[]>((acc, _, i) => {
   acc.push(i === 0 ? 0 : acc[i - 1] + STEP_HEIGHTS[i - 1]);
   return acc;
@@ -18,12 +21,12 @@ const MAX_BLUR = 22;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
 
-// Quadratic falloff: max blur at top (i=0), near-zero at bottom (i=N-1)
-const STEP_MAX_BLUR = STEP_HEIGHTS.map((_, i) => {
+// Quadratic distribution across all 31 divs: max at top (i=0), zero at bottom
+const STEP_MAX_BLUR = Array.from({ length: N }, (_, i) => {
   const t = (N - 1 - i) / (N - 1);
   return MAX_BLUR * t * t;
 });
-const STEP_MAX_ALPHA = STEP_HEIGHTS.map((_, i) => {
+const STEP_MAX_ALPHA = Array.from({ length: N }, (_, i) => {
   const t = (N - 1 - i) / (N - 1);
   return Math.pow(t, 1.1) * 0.92;
 });
