@@ -30,9 +30,9 @@ const MENU_LINKS = [
 const DISCORD_SVG = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="32px"
+    width="24px"
     viewBox="0 0 512 512"
-    fill="#FFF"
+    fill="currentcolor"
     style={{ marginRight: "10px" }}
   >
     <path d="M464,66.52A50,50,0,0,0,414.12,17L97.64,16A49.65,49.65,0,0,0,48,65.52V392c0,27.3,22.28,48,49.64,48H368l-13-44L464,496ZM324.65,329.81s-8.72-10.39-16-19.32C340.39,301.55,352.5,282,352.5,282a139,139,0,0,1-27.85,14.25,173.31,173.31,0,0,1-35.11,10.39,170.05,170.05,0,0,1-62.72-.24A184.45,184.45,0,0,1,191.23,296a141.46,141.46,0,0,1-17.68-8.21c-.73-.48-1.45-.72-2.18-1.21-.49-.24-.73-.48-1-.48-4.36-2.42-6.78-4.11-6.78-4.11s11.62,19.09,42.38,28.26c-7.27,9.18-16.23,19.81-16.23,19.81-53.51-1.69-73.85-36.47-73.85-36.47,0-77.06,34.87-139.62,34.87-139.62,34.87-25.85,67.8-25.12,67.8-25.12l2.42,2.9c-43.59,12.32-63.44,31.4-63.44,31.4s5.32-2.9,14.28-6.77c25.91-11.35,46.5-14.25,55-15.21a24,24,0,0,1,4.12-.49,205.62,205.62,0,0,1,48.91-.48,201.62,201.62,0,0,1,72.89,22.95S333.61,145,292.44,132.7l3.39-3.86S329,128.11,363.64,154c0,0,34.87,62.56,34.87,139.62C398.51,293.34,378.16,328.12,324.65,329.81Z" />
@@ -89,7 +89,13 @@ export default function Nav() {
             </span>
           ) : href === "/account" ? (
             <span className="flex items-center gap-3">
-              {CRAFTER_ICON}
+              <svg width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M14.6324 4.15914V0.253784H9.36787V4.15914H3.87109V14.9204H7.04529V10.6624H8.284V23.7462H11.3808V14.7462H12.6195V23.7462H15.7937V10.6624H16.955V14.9204H20.1292V4.15914H14.6324Z"
+                  fill="currentColor"
+                />
+              </svg>
+
               {label}
             </span>
           ) : (
@@ -115,7 +121,6 @@ export default function Nav() {
 
       {/* Nav bar */}
       <div className="fixed top-0 left-[calc((100vw-1200px)/2)] z-[106] flex w-[1200px] max-w-full items-center justify-between pt-6 max-[1248px]:left-auto max-[1248px]:box-border max-[1248px]:w-full max-[1248px]:overflow-hidden max-[1248px]:px-6 max-[1248px]:py-4">
-
         {/* Logo — correct "U" letter SVG from original nav.js */}
         <Link href="/" onClick={() => setOpen(false)} aria-label="Unyha home">
           <svg
