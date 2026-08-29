@@ -13,7 +13,7 @@ async function WikiIndex() {
   const articles = await getWikiNav();
 
   return (
-    <Flow as="article" className="mx-auto min-h-[90vh] max-w-[800px] px-6 pb-6">
+    <Flow as="article" className="mx-auto min-h-[90vh] max-w-[1100px] px-6 pb-6">
       <Heading level="h1">The Unyha Wiki</Heading>
       <Text>
         A growing reference for Unyha — lore, mechanics, and everything in between.

@@ -6,6 +6,7 @@ import Link from "next/link";
 interface WikiArticle {
   slug: string;
   title: string;
+  imageUrl: string | null;
 }
 
 const SearchIcon = () => (
@@ -32,7 +33,6 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
 
   return (
     <div>
-      {/* Search input */}
       <div className="relative mb-6">
         <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-white/35">
           <SearchIcon />
@@ -46,23 +46,36 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
         />
       </div>
 
-      {/* Article grid */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {filtered.map((article) => (
             <Link
               key={article.slug}
               href={`/wiki/${article.slug}`}
-              className="block rounded border border-white/10 bg-white/5 px-4 py-3 text-white no-underline transition-colors hover:border-white/20 hover:bg-white/10"
+              className="group block overflow-hidden rounded border border-white/10 bg-white/5 no-underline transition-colors hover:border-white/25 hover:bg-white/8"
             >
-              {article.title}
+              <div className="relative aspect-video w-full overflow-hidden bg-white/5">
+                {article.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={article.imageUrl}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-white/5 to-transparent" />
+                )}
+              </div>
+              <div className="px-3 py-2.5">
+                <span className="font-heading text-sm tracking-wide text-white/80 group-hover:text-white">
+                  {article.title}
+                </span>
+              </div>
             </Link>
           ))}
         </div>
       ) : (
-        <p className="text-white/40">
-          No articles match &ldquo;{query}&rdquo;.
-        </p>
+        <p className="text-white/40">No articles match &ldquo;{query}&rdquo;.</p>
       )}
     </div>
   );

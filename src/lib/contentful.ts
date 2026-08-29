@@ -199,6 +199,26 @@ export async function getPage(slug: string) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractFirstImage(doc: any): string | null {
+  if (!doc?.content) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function walk(nodes: any[]): string | null {
+    for (const node of nodes) {
+      if (node.nodeType === "embedded-asset-block" && node.data?.target) {
+        const url = getAssetUrl(node.data.target);
+        if (url) return url;
+      }
+      if (Array.isArray(node.content)) {
+        const found = walk(node.content);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  return walk(doc.content);
+}
+
 export async function getWikiNav() {
   "use cache";
   cacheLife("hours");
@@ -207,7 +227,7 @@ export async function getWikiNav() {
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 1,
+      include: 2, // level 2 resolves assets embedded in pageContent rich text
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -217,6 +237,7 @@ export async function getWikiNav() {
       .map((l) => ({
         slug: String(l.fields.slug),
         title: String(l.fields.title),
+        imageUrl: extractFirstImage(l.fields?.pageContent) ?? null,
       }));
   } catch {
     return [];
