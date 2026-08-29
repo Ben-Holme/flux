@@ -127,7 +127,7 @@ const SKILLS = [
   {
     title: "Lumberjacking",
     text: "Chop down trees and gather wood for crafting. Learn how to efficiently harvest the forest's resources.",
-    img: "/img/Lumberjacking.png",
+    img: "/img/lumberjacking.png",
     icon: CRAFTER_ICON,
     category: "Crafter",
   },
