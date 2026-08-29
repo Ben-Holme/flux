@@ -28,28 +28,30 @@ export function Eyebrow({ children, className, deco, muted, glow = true }: Eyebr
         {children}
       </p>
       {deco && (
-        <svg width="285" height="12" viewBox="0 0 285 12" fill="none" className="mt-1">
-          <path
-            opacity="0.3"
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
-            fill="url(#sec-line)"
-          />
-          <defs>
-            <linearGradient
-              id="sec-line"
-              x1="1"
-              y1="6.25"
-              x2="284.04"
-              y2="6.25"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stopColor="white" />
-              <stop offset="1" stopColor="white" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <div className="mt-1 min-w-0 flex-1 overflow-hidden">
+          <svg width="285" height="12" viewBox="0 0 285 12" fill="none">
+            <path
+              opacity="0.3"
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M0 0L6 0L6 9.5L8 9.5L8 2.5L14 2.5V5.5L284.04 5.5V7.5L12 7.5L12 4.5L10 4.5L10 11.5L4 11.5L4 2L2 2L2 11.5H0L0 0Z"
+              fill="url(#sec-line)"
+            />
+            <defs>
+              <linearGradient
+                id="sec-line"
+                x1="1"
+                y1="6.25"
+                x2="284.04"
+                y2="6.25"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop stopColor="white" />
+                <stop offset="1" stopColor="white" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
       )}
     </div>
   );
