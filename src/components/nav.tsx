@@ -51,7 +51,7 @@ export default function Nav() {
   useIsomorphicLayoutEffect(() => {
     // Homepage: high threshold so the hero fills the screen first
     // All other pages: shallow threshold — background fades in quickly on scroll
-    const threshold = isHome ? 300 : 80;
+    const threshold = isHome ? window.innerHeight * 0.6 : 80;
     const onScroll = () => setScrolled(window.scrollY > threshold);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
