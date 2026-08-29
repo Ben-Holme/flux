@@ -16,7 +16,7 @@ const VARIANT_CLASS: Record<CardVariant, string> = {
   raised: "bg-white/5  ",
 };
 
-const BASE = "rounded-lg border p-5 backdrop-blur border-white/5";
+const BASE = "rounded-lg border p-6 lg:p-12 backdrop-blur border-white/5";
 
 export function Card({ variant = "default", as: Tag = "div", children, className }: CardProps) {
   return <Tag className={cn(BASE, VARIANT_CLASS[variant], className)}>{children}</Tag>;

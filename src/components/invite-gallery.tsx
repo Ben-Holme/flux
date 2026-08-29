@@ -38,13 +38,29 @@ const ChevronRight = ({ large }: { large?: boolean }) => (
 );
 
 const ExpandIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+  >
     <path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
   </svg>
 );
 
 const XIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
@@ -57,10 +73,7 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
     () => setCurrent((c) => (c - 1 + images.length) % images.length),
     [images.length],
   );
-  const next = useCallback(
-    () => setCurrent((c) => (c + 1) % images.length),
-    [images.length],
-  );
+  const next = useCallback(() => setCurrent((c) => (c + 1) % images.length), [images.length]);
 
   // Auto-advance when lightbox is closed
   useEffect(() => {
@@ -84,7 +97,9 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
   // Prevent body scroll when lightbox open
   useEffect(() => {
     document.body.style.overflow = lightbox ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [lightbox]);
 
   if (images.length === 0) return null;
@@ -116,15 +131,21 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
           {images.length > 1 && (
             <>
               <button
-                className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/70 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); prev(); }}
+                className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
                 aria-label="Previous image"
               >
                 <ChevronLeft />
               </button>
               <button
-                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/70 group-hover:opacity-100"
-                onClick={(e) => { e.stopPropagation(); next(); }}
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
                 aria-label="Next image"
               >
                 <ChevronRight />
@@ -141,18 +162,20 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
                 <button
                   key={i}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === current ? "w-5 bg-gold" : "w-1.5 bg-white/25 hover:bg-white/45"
+                    i === current ? "bg-gold w-5" : "w-1.5 bg-white/25 hover:bg-white/45"
                   }`}
                   onClick={() => setCurrent(i)}
                   aria-label={`Go to slide ${i + 1}`}
                 />
               ))}
             </div>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           {img.slug && (
             <Link
               href={`/devlog/${img.slug}`}
-              className="text-xs text-ash transition-colors hover:text-parchment"
+              className="text-xs transition-colors hover:text-white"
             >
               View in devlog →
             </Link>
@@ -166,10 +189,7 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
           onClick={() => setLightbox(false)}
         >
-          <div
-            className="relative w-full max-w-5xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <img
               src={img.url}
               alt={img.alt}
@@ -178,7 +198,7 @@ export function InviteGallery({ images }: { images: GalleryImage[] }) {
 
             {/* Close */}
             <button
-              className="absolute -top-3 -right-3 rounded-full border border-white/10 bg-void p-2 text-white transition-colors hover:bg-surface"
+              className="bg-void hover:bg-surface absolute -top-3 -right-3 rounded-full border border-white/10 p-2 text-white transition-colors"
               onClick={() => setLightbox(false)}
               aria-label="Close"
             >

@@ -39,7 +39,7 @@ export function PostCard({ post }: PostCardProps) {
       <Card
         as="article"
         variant="raised"
-        className="flex h-full flex-col overflow-hidden p-0 transition-colors group-hover:bg-white/7"
+        className="flex h-full flex-col overflow-hidden p-0 transition-colors group-hover:bg-white/7 lg:p-0"
       >
         {thumb && (
           <div className="relative h-48 overflow-hidden">

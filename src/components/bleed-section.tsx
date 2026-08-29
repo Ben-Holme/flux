@@ -36,6 +36,7 @@ export function BleedSection({ children, image, alt = "", reverse = false }: Ble
 
   const imageCol = (
     <div className="relative h-[200px] overflow-hidden lg:h-auto lg:flex-1">
+      <div className="from-void/0 to-void/90 absolute inset-0 z-10 bg-radial" />
       <motion.img
         src={image}
         alt={alt}
@@ -46,7 +47,7 @@ export function BleedSection({ children, image, alt = "", reverse = false }: Ble
   );
 
   return (
-    <Card variant="raised" className="rounded-none p-0">
+    <Card variant="raised" className="rounded-none p-0 lg:p-0">
       <section
         ref={sectionRef}
         className={`flex min-h-[560px] overflow-hidden lg:flex-row lg:items-stretch ${

@@ -8,6 +8,8 @@ import RichText from "@/components/rich-text";
 import type { Document } from "@contentful/rich-text-types";
 import { Heading } from "@/components/ui/heading";
 import { Flow } from "@/components/ui/flow";
+import { Badge } from "@/components/ui/badge";
+import { Text } from "@/components/ui/text";
 
 export async function generateMetadata({
   params,
@@ -57,15 +59,17 @@ async function PostContent({ params }: { params: Promise<{ slug: string }> }) {
           ← DEVLOG
         </Link>
       </div>
-      <div className="mb-6 flex items-center gap-4">
+      <div className="pt-3">
         {category && (
-          <span className="font-heading text-gold text-xs tracking-wider uppercase">
+          <Badge variant="accent" className="mb-4">
             {category}
-          </span>
+          </Badge>
         )}
-        <span className="text-ash text-xs">{formatDate(post.fields.date)}</span>
+        <Heading level="h1">{post.fields.title as string}</Heading>
+        <Text variant="muted" className="mb-4 text-xs tracking-widest uppercase">
+          {formatDate(post.fields.date as string | undefined)}
+        </Text>
       </div>
-      <Heading level="h1">{post.fields.title}</Heading>
       {heroImg && (
         <div className="news-img-fx relative mb-10 w-full overflow-hidden">
           <Image

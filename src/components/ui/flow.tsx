@@ -31,8 +31,8 @@ const FLOW_SPACING = new Map<React.ComponentType<any>, string>([
 const HEADING_LEVEL_SPACING = new Map<string, string>([
   ["h1", "mt-6"],
   ["h2", "mt-10"],
-  ["h3", "mt-8"],
-  ["h4", "mt-6"],
+  ["h3", "mt-10"],
+  ["h4", "mt-8"],
   ["h5", "mt-4"],
   ["h6", "mt-3"],
 ]);
@@ -112,7 +112,7 @@ export function Flow({ children, as: Tag = "div", className }: FlowProps) {
       FLOW_SPACING.get(child.type as React.ComponentType<any>) ?? // eslint-disable-line @typescript-eslint/no-explicit-any
       (child.type as { flowSpacing?: string }).flowSpacing ??
       hostTagSpacing(child.type, afterEyebrow) ??
-      "mt-12";
+      "mt-4 lg:mt-6"; // default spacing if nothing else matches
 
     // If the child can't receive className, wrap it so spacing still applies.
     if (!forwardsClassName(child.type)) {
