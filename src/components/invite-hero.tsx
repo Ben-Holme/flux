@@ -55,19 +55,17 @@ export function InviteHero() {
             <Eyebrow deco>Unyha · Early Access Invite</Eyebrow>
             <Heading level="h1">The Golden City</Heading>
             <Text>
-              That&apos;s what they call Midaen in the taverns now - a mountain mining town
-              that&apos;s swallowed a kingdom&apos;s coin and has nothing to show for it.
+              That&apos;s what they call Midaen in the taverns now. A mining town in the mountains
+              that has swallowed a generation of a kingdom&apos;s coin and raised nothing with it.
               Best-funded wall in the land, and not a stone laid.
             </Text>
             <Text>
-              The North Warden has been taking the coin for himself, it seems. It wouldn&apos;t be
-              the first time.
+              Some say the North Warden has been taking his share. It wouldn&apos;t be the first
+              time.
             </Text>
             <Text>
-              But some say it went north for something else entirely - past the last honest road.
-            </Text>
-            <Text>
-              <strong>Into Orc lands.</strong>
+              Others say the coin never reached him at all, that it turned off the road somewhere
+              below Midaen and went north instead, past the last honest road and into orc lands.
             </Text>
             <div className="flex flex-wrap gap-3">
               <Button variant="primary" onClick={() => openVideo(VIDEOS[0].id)}>
