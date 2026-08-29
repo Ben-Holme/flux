@@ -2,28 +2,28 @@
 
 import { useEffect, useRef } from "react";
 
-// 30 × 2px fine steps = 60px total, starting at y=0.
-// No solid block — just the gradient fade band.
-const FINE_STEPS = 30;
-const FINE_H = 2;
-const TOTAL_H = FINE_STEPS * FINE_H; // 60px
-const N = FINE_STEPS;
-
-const STEP_HEIGHTS = Array<number>(N).fill(FINE_H);
-const TOPS = STEP_HEIGHTS.map((_, i) => i * FINE_H);
+// 60 × 2px divs = 120px total.
+// Top 30 get backdrop-filter blur + void bg; bottom 30 get void bg only.
+// Blur = 30 compositing layers. Bg-only divs are cheap (no compositing).
+const STEPS = 60;
+const BLUR_STEPS = 30; // only top half gets backdrop-filter
+const STEP_H = 2;
+const TOTAL_H = STEPS * STEP_H; // 120px
 
 const MAX_BLUR = 22;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
-const MAX_ALPHA = 0.60; // dark overlay peaks at 60% opacity
+const MAX_ALPHA = 0.60;
 
-// Quadratic distribution: max at top (i=0), zero at bottom
-const STEP_MAX_BLUR = Array.from({ length: N }, (_, i) => {
-  const t = (N - 1 - i) / (N - 1);
+// Blur: quadratic over top 30 divs only, zero below
+const STEP_MAX_BLUR = Array.from({ length: STEPS }, (_, i) => {
+  if (i >= BLUR_STEPS) return 0;
+  const t = (BLUR_STEPS - 1 - i) / (BLUR_STEPS - 1);
   return MAX_BLUR * t * t;
 });
-const STEP_MAX_ALPHA = Array.from({ length: N }, (_, i) => {
-  const t = (N - 1 - i) / (N - 1);
+// Background: quadratic gradient over all 60 divs
+const STEP_MAX_ALPHA = Array.from({ length: STEPS }, (_, i) => {
+  const t = (STEPS - 1 - i) / (STEPS - 1);
   return Math.pow(t, 1.1) * MAX_ALPHA;
 });
 
@@ -58,10 +58,10 @@ export function NavGradientBlur() {
       style={{ height: TOTAL_H }}
       aria-hidden="true"
     >
-      {TOPS.map((top, i) => (
+      {Array.from({ length: STEPS }, (_, i) => (
         <div
           key={i}
-          style={{ position: "absolute", left: 0, right: 0, top, height: STEP_HEIGHTS[i] + 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: i * STEP_H, height: STEP_H + 1 }}
         />
       ))}
     </div>
