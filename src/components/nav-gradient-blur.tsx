@@ -9,7 +9,7 @@ const BLUR_STEPS = 30;
 const STEP_H = 2;
 const BLUR_H = BLUR_STEPS * STEP_H; // 60px
 const GRAD_H = 120;
-const MAX_BLUR = 22;
+const MAX_BLUR = 11;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
 const MAX_ALPHA = 0.80;
