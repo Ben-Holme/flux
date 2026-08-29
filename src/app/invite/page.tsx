@@ -206,6 +206,20 @@ export default async function InvitePage() {
             <Button variant="primary" href="/register">
               Sign Up
             </Button>
+            <div className="border-t border-white/10 pt-4">
+              <Text variant="muted">More ways to get involved</Text>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Button href="https://store.steampowered.com/app/2712710/Unyha/" external>
+                  Wishlist on Steam
+                </Button>
+                <Button href="https://discord.gg/BRd7y3P5Xg" external>
+                  Join Discord
+                </Button>
+                <Button href="/register">
+                  Newsletter
+                </Button>
+              </div>
+            </div>
           </Flow>
         </Card>
       </section>
