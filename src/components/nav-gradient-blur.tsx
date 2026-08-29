@@ -12,7 +12,7 @@ const GRAD_H = 120;
 const MAX_BLUR = 22;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
-const MAX_ALPHA = 0.60;
+const MAX_ALPHA = 0.80;
 
 const STEP_MAX_BLUR = Array.from({ length: BLUR_STEPS }, (_, i) => {
   const t = (BLUR_STEPS - 1 - i) / (BLUR_STEPS - 1);
