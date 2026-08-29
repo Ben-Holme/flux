@@ -2,33 +2,29 @@
 
 import { useEffect, useRef } from "react";
 
-// One solid 60px block at the top (always fully blurred under the nav),
-// then 30 × 2px fine steps below it for a smooth fade-out.
-// 31 divs total, 120px total height.
-const SOLID_H = 60;
+// 30 × 2px fine steps = 60px total, starting at y=0.
+// No solid block — just the gradient fade band.
 const FINE_STEPS = 30;
 const FINE_H = 2;
-const TOTAL_H = SOLID_H + FINE_STEPS * FINE_H; // 120px
-const N = 1 + FINE_STEPS; // 31
+const TOTAL_H = FINE_STEPS * FINE_H; // 60px
+const N = FINE_STEPS;
 
-const STEP_HEIGHTS = [SOLID_H, ...Array<number>(FINE_STEPS).fill(FINE_H)];
-const TOPS = STEP_HEIGHTS.reduce<number[]>((acc, _, i) => {
-  acc.push(i === 0 ? 0 : acc[i - 1] + STEP_HEIGHTS[i - 1]);
-  return acc;
-}, []);
+const STEP_HEIGHTS = Array<number>(N).fill(FINE_H);
+const TOPS = STEP_HEIGHTS.map((_, i) => i * FINE_H);
 
 const MAX_BLUR = 22;
 const FADE_PX = 120;
 const VOID_R = 13, VOID_G = 11, VOID_B = 18;
+const MAX_ALPHA = 0.60; // dark overlay peaks at 60% opacity
 
-// Quadratic distribution across all 31 divs: max at top (i=0), zero at bottom
+// Quadratic distribution: max at top (i=0), zero at bottom
 const STEP_MAX_BLUR = Array.from({ length: N }, (_, i) => {
   const t = (N - 1 - i) / (N - 1);
   return MAX_BLUR * t * t;
 });
 const STEP_MAX_ALPHA = Array.from({ length: N }, (_, i) => {
   const t = (N - 1 - i) / (N - 1);
-  return Math.pow(t, 1.1) * 0.92;
+  return Math.pow(t, 1.1) * MAX_ALPHA;
 });
 
 export function NavGradientBlur() {
