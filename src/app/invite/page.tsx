@@ -311,10 +311,6 @@ export default async function InvitePage() {
               q: "Will my character carry over after early access?",
               a: "Honestly, this is early access. We'll do our best to carry characters forward, but some changes may be world-altering enough that starting fresh is the only thing that makes sense. We'll always be upfront about it before it happens.",
             },
-            {
-              q: "How are you using AI?",
-              a: "Two places. In the game itself: it reads what players actually do and writes that into prose and data, which the world uses to generate new content. In development: graphics, code, copy. We're two people building something that would normally take a studio, and without AI we couldn't close that gap. The same question applies across both - these models are trained on human work, and we don't have a clean answer to that. Just an honest one: we weighed it, and decided building the game mattered more than opting out entirely. Every asset is quality-checked before it makes it in. AI output is a starting point, not a final product.",
-            },
           ].map(({ q, a }) => (
             <div key={q} className="py-6 lg:grid lg:grid-cols-[1fr_2fr] lg:gap-12">
               <Heading level="h3">{q}</Heading>
