@@ -131,7 +131,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center px-6 pt-24 pb-6">
       <div className="w-full max-w-[420px]">
         <div className="mb-8 text-center">
           <Eyebrow className="mb-3 justify-center">Unyha · Early Access</Eyebrow>

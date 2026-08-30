@@ -85,7 +85,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center px-6 pt-24 pb-6">
       <div className="w-full max-w-[380px]">
         <Heading level="h1" className="mb-8 text-center text-[3rem]">
           Sign In
@@ -93,6 +93,11 @@ export default function LoginPage() {
         <Suspense>
           <LoginForm />
         </Suspense>
+        <div className="mt-5 text-center">
+          <Link href="/register" className="text-[0.8rem] tracking-[0.06em] text-white/30">
+            No account? Create one
+          </Link>
+        </div>
       </div>
     </div>
   );
