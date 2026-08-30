@@ -5,6 +5,7 @@ import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 import { getLatestPosts, getAssetUrl, getAssetTitle, getPage } from "@/lib/contentful";
 import { InviteGallery } from "@/components/invite-gallery";
+import { ImageStrip } from "@/components/image-strip";
 import { SectionImage } from "@/components/section-image";
 import { Divide } from "lucide-react";
 import { Divider } from "@/components/ui/divider";
@@ -67,7 +68,7 @@ export default async function InvitePage() {
       <section className="relative overflow-hidden pt-[148px] pb-12 lg:py-24">
         <SectionImage src="/img/Taming.png" focalY="10%" />
         <div className="relative mx-auto box-content max-w-[1200px] px-6">
-          <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-16">
+          <div className="lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-16">
             <Flow>
               <Eyebrow glow={false}>A note from Ben and Vik</Eyebrow>
               <Text>
@@ -86,8 +87,8 @@ export default async function InvitePage() {
               </Text>
             </Flow>
             {gallery.length > 0 && (
-              <div className="mt-10 lg:mt-0">
-                <InviteGallery images={gallery} />
+              <div className="mt-10 flex flex-col justify-end lg:mt-0">
+                <ImageStrip images={gallery} />
               </div>
             )}
           </div>
