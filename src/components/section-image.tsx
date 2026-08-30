@@ -25,8 +25,15 @@ export function SectionImage({
 
   return (
     <>
-      {/* Mobile: full-bleed bg deco at 25% opacity */}
-      <div className="pointer-events-none absolute inset-0 opacity-25 min-[768px]:hidden">
+      {/* Mobile: fixed-height bg deco at 25% opacity, masked at bottom */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 opacity-25 min-[768px]:hidden"
+        style={{
+          height: "100vw",
+          maskImage: "linear-gradient(to bottom, black 55%, transparent)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent)",
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={alt} style={imgStyle} />
       </div>
