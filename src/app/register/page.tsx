@@ -132,10 +132,18 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-[380px]">
-        <Heading level="h1" className="mb-8 text-center text-[3rem]">
-          Create Account
-        </Heading>
+      <div className="w-full max-w-[420px]">
+        <div className="mb-8 text-center">
+          <Eyebrow className="mb-3 justify-center">Unyha · Early Access</Eyebrow>
+          <Heading level="h1" className="mb-4">
+            Join the List
+          </Heading>
+          <Text variant="muted">
+            Creating an account puts you on the founders&apos; list. We bring people in manually,
+            in small waves — most will wait a little before getting access. When your wave opens,
+            you&apos;ll hear first.
+          </Text>
+        </div>
         <Suspense>
           <RegisterForm />
         </Suspense>
