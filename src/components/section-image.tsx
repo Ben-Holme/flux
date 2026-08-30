@@ -16,21 +16,33 @@ export function SectionImage({
   fade = "28%",
   focalY = "50%",
 }: SectionImageProps) {
+  const imgStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: `center ${focalY}`,
+  };
+
   return (
-    <div
-      className="pointer-events-none absolute top-0 right-0 bottom-0 max-[768px]:hidden"
-      style={{
-        left: from,
-        maskImage: `linear-gradient(to right, transparent, black ${fade})`,
-        WebkitMaskImage: `linear-gradient(to right, transparent, black ${fade})`,
-      }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt}
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${focalY}` }}
-      />
-    </div>
+    <>
+      {/* Mobile: full-bleed bg deco at 25% opacity */}
+      <div className="pointer-events-none absolute inset-0 opacity-25 min-[768px]:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} style={imgStyle} />
+      </div>
+
+      {/* Desktop: right-panel with gradient mask */}
+      <div
+        className="pointer-events-none absolute top-0 right-0 bottom-0 max-[768px]:hidden"
+        style={{
+          left: from,
+          maskImage: `linear-gradient(to right, transparent, black ${fade})`,
+          WebkitMaskImage: `linear-gradient(to right, transparent, black ${fade})`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} style={imgStyle} />
+      </div>
+    </>
   );
 }
