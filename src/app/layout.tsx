@@ -48,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${odebeeSans.variable} ${inter.variable}`}>
       <body className="flex min-h-screen flex-col bg-void antialiased">
-        <Script src="https://scripts.simpleanalytics.com/hello.js" strategy="afterInteractive" />
+        <Script async src="https://scripts.simpleanalytics.com/latest.js" strategy="afterInteractive" />
         <AuthProvider>
           <NavGradientBlur />
           <Suspense fallback={null}>
