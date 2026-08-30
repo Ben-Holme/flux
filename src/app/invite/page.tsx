@@ -5,6 +5,7 @@ import { InviteHero } from "@/components/invite-hero";
 import { WorldMap } from "@/components/world-map";
 import { getLatestPosts, getAssetUrl, getAssetTitle, getPage } from "@/lib/contentful";
 import { InviteGallery } from "@/components/invite-gallery";
+import { SectionImage } from "@/components/section-image";
 import { Divide } from "lucide-react";
 import { Divider } from "@/components/ui/divider";
 
@@ -63,9 +64,10 @@ export default async function InvitePage() {
       <InviteHero />
 
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
-      <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
-        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-16">
-          <Flow>
+      <section className="relative overflow-hidden py-12 lg:py-24">
+        <SectionImage src="/img/Taming.png" objectPosition="center" />
+        <div className="relative mx-auto box-content max-w-[1200px] px-6">
+          <Flow className="max-w-xl">
             <Eyebrow glow={false}>A note from Ben and Vik</Eyebrow>
             <Text>
               We&apos;ve been building Unyha for a long time, mostly heads-down - two of us and a
@@ -82,11 +84,6 @@ export default async function InvitePage() {
               enough to see what it is.
             </Text>
           </Flow>
-          {gallery.length > 0 && (
-            <div className="mt-10 lg:mt-0">
-              <InviteGallery images={gallery} />
-            </div>
-          )}
         </div>
       </section>
 
