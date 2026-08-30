@@ -107,6 +107,13 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
 
   return (
     <>
+      <div
+        className="bg-black py-6"
+        style={{
+          maskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
+        }}
+      >
       {/* Wrapper clips the scrollbar while allowing JS scrollLeft */}
       <div className="overflow-hidden">
       <div
@@ -130,6 +137,7 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
             className="h-[80px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
           />
         ))}
+      </div>
       </div>
       </div>
 
