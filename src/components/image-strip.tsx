@@ -108,7 +108,7 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
   return (
     <>
       <div
-        className="bg-black py-6"
+        className="bg-black/80 py-4"
         style={{
           maskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
           WebkitMaskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
