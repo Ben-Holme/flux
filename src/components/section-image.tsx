@@ -27,7 +27,7 @@ export function SectionImage({
     <>
       {/* Mobile: fixed-height bg deco at 25% opacity, masked at bottom */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 opacity-25 min-[768px]:hidden"
+        className="pointer-events-none absolute inset-x-0 top-0 opacity-65 min-[768px]:hidden"
         style={{
           height: "100vw",
           maskImage: "linear-gradient(to bottom, black 55%, transparent)",
