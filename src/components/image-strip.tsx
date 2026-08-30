@@ -107,9 +107,11 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
 
   return (
     <>
+      {/* Wrapper clips the scrollbar while allowing JS scrollLeft */}
+      <div className="overflow-hidden">
       <div
         ref={ref}
-        className="flex gap-2 overflow-x-hidden"
+        className="flex gap-2 overflow-x-scroll pb-3 -mb-3"
         style={{ cursor: "grab", scrollbarWidth: "none" }}
         onMouseDown={onMouseDown}
         onMouseLeave={onMouseLeave}
@@ -128,6 +130,7 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
             className="h-[80px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
           />
         ))}
+      </div>
       </div>
 
       {lightbox != null && current && (
