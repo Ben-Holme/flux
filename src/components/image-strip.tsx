@@ -25,14 +25,36 @@ const ChevronRight = () => (
   </svg>
 );
 
+const SPEED = 0.4; // px per frame
+
 export function ImageStrip({ images }: { images: StripImage[] }) {
   const ref = useRef<HTMLDivElement>(null);
+  const raf = useRef<number>(0);
+  const paused = useRef(false);
   const dragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
   const didDrag = useRef(false);
 
   const [lightbox, setLightbox] = useState<number | null>(null);
+
+  // Auto-scroll loop — duplicated images make it seamless
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const tick = () => {
+      if (!paused.current && el) {
+        el.scrollLeft += SPEED;
+        // When we've scrolled past the first copy, reset silently
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft -= el.scrollWidth / 2;
+        }
+      }
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, []);
 
   const prev = useCallback(() => setLightbox((i) => (i != null ? (i - 1 + images.length) % images.length : null)), [images.length]);
   const next = useCallback(() => setLightbox((i) => (i != null ? (i + 1) % images.length : null)), [images.length]);
@@ -55,14 +77,23 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (!ref.current) return;
+    paused.current = true;
     dragging.current = true;
     didDrag.current = false;
     startX.current = e.pageX - ref.current.offsetLeft;
     scrollLeft.current = ref.current.scrollLeft;
     ref.current.style.cursor = "grabbing";
   };
-  const onMouseLeave = () => { dragging.current = false; if (ref.current) ref.current.style.cursor = "grab"; };
-  const onMouseUp = () => { dragging.current = false; if (ref.current) ref.current.style.cursor = "grab"; };
+  const onMouseLeave = () => {
+    dragging.current = false;
+    paused.current = false;
+    if (ref.current) ref.current.style.cursor = "grab";
+  };
+  const onMouseUp = () => {
+    dragging.current = false;
+    paused.current = false;
+    if (ref.current) ref.current.style.cursor = "grab";
+  };
   const onMouseMove = (e: React.MouseEvent) => {
     if (!dragging.current || !ref.current) return;
     e.preventDefault();
@@ -78,22 +109,23 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
     <>
       <div
         ref={ref}
-        className="flex gap-2 overflow-x-auto"
+        className="flex gap-2 overflow-x-hidden"
         style={{ cursor: "grab", scrollbarWidth: "none" }}
         onMouseDown={onMouseDown}
         onMouseLeave={onMouseLeave}
         onMouseUp={onMouseUp}
         onMouseMove={onMouseMove}
       >
-        {images.map((img, i) => (
+        {/* Render twice for seamless loop */}
+        {[...images, ...images].map((img, i) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={i}
             src={img.url}
             alt={img.alt ?? ""}
             draggable={false}
-            onClick={() => { if (!didDrag.current) setLightbox(i); }}
-            className="h-[180px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
+            onClick={() => { if (!didDrag.current) setLightbox(i % images.length); }}
+            className="h-[80px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
           />
         ))}
       </div>
