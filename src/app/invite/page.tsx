@@ -64,7 +64,7 @@ export default async function InvitePage() {
       <InviteHero />
 
       {/* ── 2 · The Invitation ───────────────────────────────────── */}
-      <section className="relative overflow-hidden py-12 lg:py-24">
+      <section className="relative overflow-hidden pt-[148px] pb-12 lg:py-24">
         <SectionImage src="/img/Taming.png" focalY="10%" />
         <div className="relative mx-auto box-content max-w-[1200px] px-6">
           <Flow className="max-w-xl">

@@ -43,7 +43,7 @@ export function BleedSection({ children, image, alt = "", reverse = false }: Ble
         </div>
 
         {/* Image — pulled to top on mobile via order-first */}
-        <div className="relative h-[200px] overflow-hidden max-lg:order-first lg:h-auto lg:flex-1">
+        <div className="relative h-[320px] overflow-hidden max-lg:order-first lg:h-auto lg:flex-1">
           <div className="from-void/0 to-void/90 absolute inset-0 z-10 bg-radial" />
           <motion.img
             src={image}
