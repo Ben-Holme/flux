@@ -87,7 +87,7 @@ export default async function InvitePage() {
               </Text>
             </Flow>
             {gallery.length > 0 && (
-              <div className="mt-10 flex flex-col justify-end lg:mt-0">
+              <div className="mt-10 flex flex-col justify-end max-lg:-mx-6 lg:mt-0">
                 <ImageStrip images={gallery} />
               </div>
             )}
