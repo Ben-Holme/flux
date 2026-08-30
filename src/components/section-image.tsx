@@ -5,8 +5,8 @@ interface SectionImageProps {
   from?: string;
   /** Gradient fade stop — how much of the panel width fades in. Default: "28%" */
   fade?: string;
-  /** CSS object-position for the image. Default: "top" */
-  objectPosition?: string;
+  /** Vertical focal point — Y component of object-position, e.g. "10%" shows near the top. Default: "50%" */
+  focalY?: string;
 }
 
 export function SectionImage({
@@ -14,7 +14,7 @@ export function SectionImage({
   alt = "",
   from = "42%",
   fade = "28%",
-  objectPosition = "top",
+  focalY = "50%",
 }: SectionImageProps) {
   return (
     <div
@@ -29,7 +29,7 @@ export function SectionImage({
       <img
         src={src}
         alt={alt}
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${focalY}` }}
       />
     </div>
   );
