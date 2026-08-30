@@ -169,8 +169,8 @@ export default async function InvitePage() {
 
       {/* ── 5 · What You're Walking Into ─────────────────────────── */}
       <BleedSection
-        image="https://images.ctfassets.net/ug7dduf1ziy3/6Q2BUNxOGiPC9mc4MD2ZrZ/14f7cf9a5674ebe256140bc9a1c15311/screenshot7.png"
-        alt="Warriors in the north"
+        image="/img/hero.png"
+        alt=""
         reverse
       >
         <Heading level="h2">What you&apos;re walking into</Heading>
