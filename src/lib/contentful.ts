@@ -271,14 +271,14 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
     // Fetch images separately — pages at top level, assets at include:1 (guaranteed resolved)
     const imageMap = new Map<string, string | null>();
     if (allPageIds.length) {
-      const imgRes = await client.getEntries<PageSkeleton>({
-        content_type: "page",
+      const imgRes = await client.getEntries({
         "sys.id[in]": allPageIds,
         include: 1,
         limit: 200,
       });
       for (const p of imgRes.items) {
-        imageMap.set(p.sys.id, getAssetUrl(p.fields.image));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        imageMap.set(p.sys.id, getAssetUrl((p.fields as any).image));
       }
     }
 
