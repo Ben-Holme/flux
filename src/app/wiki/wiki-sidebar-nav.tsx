@@ -176,7 +176,7 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
   return (
     <div>
       {/* Desktop heading */}
-      <div className="mb-3 max-[768px]:hidden">
+      <div className="mb-4 max-[768px]:hidden">
         <Link
           href="/wiki"
           className="font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
@@ -185,21 +185,21 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
         </Link>
       </div>
 
-      {/* Mobile heading — centered, full row is the toggle */}
+      {/* Mobile heading — fixed bar, centered, full row is the toggle */}
       <button
-        className="mb-3 hidden w-full items-center justify-center gap-2 max-[768px]:flex"
+        className="hidden w-full items-center justify-center gap-2 border-b border-white/10 bg-black/60 px-6 py-3 backdrop-blur-md max-[768px]:flex"
         onClick={() => setMobileOpen((v) => !v)}
         aria-expanded={mobileOpen}
       >
-        <span className="font-heading text-[2rem] font-normal uppercase leading-none tracking-[0.2em] text-white">
+        <span className="font-heading text-[1.6rem] font-normal uppercase leading-none tracking-[0.2em] text-white">
           The Unyha Wiki
         </span>
         <ChevronDown open={mobileOpen} />
       </button>
 
-      {/* Mobile sliding panels */}
+      {/* Mobile sliding panels — drops down as an overlay */}
       {mobileOpen && (
-        <div className="min-[768px]:hidden">
+        <div className="min-[768px]:hidden border-b border-white/10 bg-black/80 px-6 py-4 backdrop-blur-md">
           <MobileNav sections={sections} onNavigate={closeMobile} />
         </div>
       )}

@@ -6,7 +6,9 @@ async function WikiSidebar() {
   const sections = await getWikiNav();
   return (
     <div>
-      <div className="fixed w-[300px] max-[1200px]:w-[200px] max-[768px]:relative max-[768px]:w-auto max-[768px]:p-6 max-[768px]:pt-[120px]">
+      {/* Desktop: fixed sidebar column */}
+      {/* Mobile: fixed bar below main nav */}
+      <div className="fixed w-[300px] max-[1200px]:w-[200px] max-[768px]:inset-x-0 max-[768px]:top-[64px] max-[768px]:z-40 max-[768px]:w-auto">
         <WikiSidebarNav sections={sections} />
       </div>
     </div>
@@ -27,7 +29,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={<div className="w-[300px] shrink-0" />}>
           <WikiSidebar />
         </Suspense>
-        <div className="pb-[100px] max-[768px]:py-6 max-[768px]:pb-20">
+        <div className="pb-[100px] max-[768px]:pt-[120px] max-[768px]:pb-20 max-[768px]:px-6">
           {children}
         </div>
       </div>
