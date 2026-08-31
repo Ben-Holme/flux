@@ -175,24 +175,27 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
 
   return (
     <div>
-      {/* Heading row */}
-      <div className="mb-3 flex items-center justify-between">
+      {/* Desktop heading */}
+      <div className="mb-3 max-[768px]:hidden">
         <Link
           href="/wiki"
           className="font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
-          onClick={closeMobile}
         >
           The Unyha Wiki
         </Link>
-        <button
-          className="hidden h-8 w-8 items-center justify-center text-white/50 max-[768px]:flex"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-expanded={mobileOpen}
-          aria-label={mobileOpen ? "Collapse wiki navigation" : "Expand wiki navigation"}
-        >
-          <ChevronDown open={mobileOpen} />
-        </button>
       </div>
+
+      {/* Mobile heading — centered, full row is the toggle */}
+      <button
+        className="mb-3 hidden w-full items-center justify-center gap-2 max-[768px]:flex"
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-expanded={mobileOpen}
+      >
+        <span className="font-heading text-[2rem] font-normal uppercase leading-none tracking-[0.2em] text-white">
+          The Unyha Wiki
+        </span>
+        <ChevronDown open={mobileOpen} />
+      </button>
 
       {/* Mobile sliding panels */}
       {mobileOpen && (
