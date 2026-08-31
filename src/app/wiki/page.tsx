@@ -17,7 +17,7 @@ async function WikiIndex() {
     if (seen.has(p.slug)) return false;
     seen.add(p.slug);
     return true;
-  }).map((p) => ({ ...p, imageUrl: null }));
+  });
 
   return (
     <Flow as="article" className="mx-auto min-h-[90vh] max-w-[1100px] px-6 pb-6">

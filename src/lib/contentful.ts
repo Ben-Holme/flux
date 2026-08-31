@@ -221,7 +221,13 @@ function extractFirstImage(doc: any): string | null {
 
 export interface WikiNavSection {
   title: string;
-  pages: { slug: string; title: string }[];
+  pages: { slug: string; title: string; imageUrl: string | null }[];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pageImageUrl(p: any): string | null {
+  const url = p?.fields?.image?.fields?.file?.url;
+  return url ? `https:${url}` : null;
 }
 
 export async function getWikiNav(): Promise<WikiNavSection[]> {
@@ -232,7 +238,7 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 2,
+      include: 3, // wikiNav → wikiSection → page → asset
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,13 +258,16 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .filter((p: any) => p?.fields?.slug && p?.fields?.title)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((p: any) => ({ slug: String(p.fields.slug), title: String(p.fields.title) })),
+            .map((p: any) => ({
+              slug: String(p.fields.slug),
+              title: String(p.fields.title),
+              imageUrl: pageImageUrl(p),
+            })),
         });
       } else if (ct === "page" && l.fields?.slug && l.fields?.title) {
-        // Legacy flat link — wrap in an untitled section so old navs still render
         sections.push({
           title: "",
-          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title) }],
+          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title), imageUrl: pageImageUrl(l) }],
         });
       }
     }

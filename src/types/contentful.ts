@@ -47,6 +47,7 @@ export type PageSkeleton = EntrySkeletonType & {
     title: EntryFieldTypes.Symbol;
     slug: EntryFieldTypes.Symbol;
     pageContent: EntryFieldTypes.RichText;
+    image: EntryFieldTypes.AssetLink;
   };
 };
 
