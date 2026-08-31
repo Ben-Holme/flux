@@ -8,24 +8,48 @@ interface StripImage {
 }
 
 const XIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
 
 const ChevronLeft = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-6 w-6"
+  >
     <path d="M15 18l-6-6 6-6" />
   </svg>
 );
 
 const ChevronRight = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-6 w-6"
+  >
     <path d="M9 18l6-6-6-6" />
   </svg>
 );
 
-const SPEED = 0.4; // px per frame
+const SPEED = 0.1; // px per frame
 
 export function ImageStrip({ images }: { images: StripImage[] }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -56,8 +80,14 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
     return () => cancelAnimationFrame(raf.current);
   }, []);
 
-  const prev = useCallback(() => setLightbox((i) => (i != null ? (i - 1 + images.length) % images.length : null)), [images.length]);
-  const next = useCallback(() => setLightbox((i) => (i != null ? (i + 1) % images.length : null)), [images.length]);
+  const prev = useCallback(
+    () => setLightbox((i) => (i != null ? (i - 1 + images.length) % images.length : null)),
+    [images.length],
+  );
+  const next = useCallback(
+    () => setLightbox((i) => (i != null ? (i + 1) % images.length : null)),
+    [images.length],
+  );
 
   useEffect(() => {
     if (lightbox == null) return;
@@ -72,7 +102,9 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
 
   useEffect(() => {
     document.body.style.overflow = lightbox != null ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [lightbox]);
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -111,34 +143,37 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
         className="bg-black/80 py-4"
         style={{
           maskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent, black 12%, black 88%, transparent)",
         }}
       >
-      {/* Wrapper clips the scrollbar while allowing JS scrollLeft */}
-      <div className="overflow-hidden">
-      <div
-        ref={ref}
-        className="flex gap-2 overflow-x-scroll pb-3 -mb-3"
-        style={{ cursor: "grab", scrollbarWidth: "none" }}
-        onMouseDown={onMouseDown}
-        onMouseLeave={onMouseLeave}
-        onMouseUp={onMouseUp}
-        onMouseMove={onMouseMove}
-      >
-        {/* Render twice for seamless loop */}
-        {[...images, ...images].map((img, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={i}
-            src={img.url}
-            alt={img.alt ?? ""}
-            draggable={false}
-            onClick={() => { if (!didDrag.current) setLightbox(i % images.length); }}
-            className="h-[80px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
-          />
-        ))}
-      </div>
-      </div>
+        {/* Wrapper clips the scrollbar while allowing JS scrollLeft */}
+        <div className="overflow-hidden">
+          <div
+            ref={ref}
+            className="-mb-3 flex gap-2 overflow-x-scroll pb-3"
+            style={{ cursor: "grab", scrollbarWidth: "none" }}
+            onMouseDown={onMouseDown}
+            onMouseLeave={onMouseLeave}
+            onMouseUp={onMouseUp}
+            onMouseMove={onMouseMove}
+          >
+            {/* Render twice for seamless loop */}
+            {[...images, ...images].map((img, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={i}
+                src={img.url}
+                alt={img.alt ?? ""}
+                draggable={false}
+                onClick={() => {
+                  if (!didDrag.current) setLightbox(i % images.length);
+                }}
+                className="h-[80px] w-auto shrink-0 cursor-pointer rounded object-cover transition-opacity hover:opacity-85"
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {lightbox != null && current && (
@@ -148,7 +183,11 @@ export function ImageStrip({ images }: { images: StripImage[] }) {
         >
           <div className="relative w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={current.url} alt={current.alt ?? ""} className="max-h-[85vh] w-full rounded-lg object-contain" />
+            <img
+              src={current.url}
+              alt={current.alt ?? ""}
+              className="max-h-[85vh] w-full rounded-lg object-contain"
+            />
 
             <button
               className="bg-void hover:bg-surface absolute -top-3 -right-3 rounded-full border border-white/10 p-2 text-white transition-colors"

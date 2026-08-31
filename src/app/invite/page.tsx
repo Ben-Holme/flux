@@ -78,12 +78,12 @@ export default async function InvitePage() {
                 seasons, its chapters. No one authors what happens next. Not even us.
               </Text>
               <Text>
-                The season you&apos;d be walking into, The Golden City, is the one exception - written
-                by hand, built to sit right on the seam between Unyha&apos;s long backstory and its
-                living present. Season one is where the world stops being history and starts being
-                made. After it, the world takes the pen. We&apos;re opening the doors now, a few at a
-                time, and we&apos;re asking you to come play - and to take the project seriously
-                enough to see what it is.
+                The season you&apos;d be walking into, The Golden City, is the one exception -
+                written by hand, built to sit right on the seam between Unyha&apos;s long backstory
+                and its living present. Season one is where the world stops being history and starts
+                being made. After it, the world takes the pen. We&apos;re opening the doors now, a
+                few at a time, and we&apos;re asking you to come play - and to take the project
+                seriously enough to see what it is.
               </Text>
             </Flow>
             {gallery.length > 0 && (
@@ -176,11 +176,7 @@ export default async function InvitePage() {
       </section>
 
       {/* ── 5 · What You're Walking Into ─────────────────────────── */}
-      <BleedSection
-        image="/img/hero.png"
-        alt=""
-        reverse
-      >
+      <BleedSection image="/img/hero.png" alt="" reverse>
         <Heading level="h2">What you&apos;re walking into</Heading>
         <Text>
           You&apos;ll start a nobody. A Spiritfolk with no name yet - one of the called, summoned by
@@ -220,13 +216,13 @@ export default async function InvitePage() {
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  fill-rule="evenodd"
+                  fillRule="evenodd"
                   clip-rule="evenodd"
                   d="M6 8V7L6.64641 6.35359L4.14641 3.85359L2 6V9L4 8H6ZM6 9H4L2 10V12H5L6 11V9ZM6 12L5 13H2V17L4 16H6V12ZM6 17H4L2 18L0 19V22H6V18V17ZM18 18V22H24V19H22L20 18H18ZM22 18V12L20 11H18V17H20L22 18ZM18 10H20L22 11V6L20.0606 4.06061L17.5606 6.56061L18 7V10ZM16.8535 5.8535L19.3535 3.3535L17.5 1.5H16V5L16.8535 5.8535ZM15 5V1L14 0H11L10 1V5H15ZM9 5V1.5H6.5L4.85352 3.14648L7.35352 5.64648L8 5H9Z"
                   fill="currentcolor"
                 />
                 <path
-                  fill-rule="evenodd"
+                  fillRule="evenodd"
                   clip-rule="evenodd"
                   d="M9 15H8V15.5H9.5L9 15ZM10.5 16.5H8V17H11L10.5 16.5ZM12 18H8V19H13L12 18ZM14 20H8V22H16L14 20Z"
                   fill="currentcolor"
