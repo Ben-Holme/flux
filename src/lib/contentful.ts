@@ -224,55 +224,71 @@ export interface WikiNavSection {
   pages: { slug: string; title: string; imageUrl: string | null }[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function pageImageUrl(p: any): string | null {
-  const url = p?.fields?.image?.fields?.file?.url;
-  return url ? `https:${url}` : null;
-}
-
 export async function getWikiNav(): Promise<WikiNavSection[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("wikiNav");
   try {
+    // Step 1: fetch wikiNav + sections + page stubs (include:2 — no assets yet)
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 3, // wikiNav → wikiSection → page → asset
+      include: 2,
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const links: any[] = (res.items[0].fields as any).links ?? [];
-    const sections: WikiNavSection[] = [];
+
+    // Collect ordered section shapes and all page IDs we need images for
+    const sectionShapes: { title: string; pageIds: string[] }[] = [];
+    const allPageIds: string[] = [];
 
     for (const l of links) {
       const ct = l?.sys?.contentType?.sys?.id;
       if (!ct) continue;
-
       if (ct === "wikiSection") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pages: any[] = l.fields?.pages ?? [];
-        sections.push({
-          title: String(l.fields?.title ?? ""),
-          pages: pages
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .filter((p: any) => p?.fields?.slug && p?.fields?.title)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((p: any) => ({
-              slug: String(p.fields.slug),
-              title: String(p.fields.title),
-              imageUrl: pageImageUrl(p),
-            })),
-        });
-      } else if (ct === "page" && l.fields?.slug && l.fields?.title) {
-        sections.push({
-          title: "",
-          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title), imageUrl: pageImageUrl(l) }],
-        });
+        const pageIds = (l.fields?.pages ?? []).map((p: any) => p?.sys?.id).filter(Boolean);
+        sectionShapes.push({ title: String(l.fields?.title ?? ""), pageIds });
+        allPageIds.push(...pageIds);
+      } else if (ct === "page") {
+        sectionShapes.push({ title: "", pageIds: [l.sys.id] });
+        allPageIds.push(l.sys.id);
       }
     }
 
-    return sections;
+    // Step 2: fetch all referenced pages directly — assets are now at include:1
+    const pageRes = allPageIds.length
+      ? await client.getEntries<PageSkeleton>({
+          content_type: "page",
+          "sys.id[in]": allPageIds,
+          select: ["sys.id", "fields.slug", "fields.title", "fields.image"],
+          include: 1,
+          limit: 200,
+        })
+      : { items: [] };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pageById = new Map<string, any>(pageRes.items.map((p) => [p.sys.id, p]));
+
+    // Step 3: reassemble sections in original order
+    return sectionShapes
+      .map(({ title, pageIds }) => ({
+        title,
+        pages: pageIds
+          .map((id) => {
+            const p = pageById.get(id);
+            if (!p?.fields?.slug || !p?.fields?.title) return null;
+            const fileUrl = p.fields.image?.fields?.file?.url;
+            return {
+              slug: String(p.fields.slug),
+              title: String(p.fields.title),
+              imageUrl: fileUrl ? `https:${fileUrl}` : null,
+            };
+          })
+          .filter(Boolean) as { slug: string; title: string; imageUrl: string | null }[],
+      }))
+      .filter((s) => s.pages.length > 0);
   } catch {
     return [];
   }
