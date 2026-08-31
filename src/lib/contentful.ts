@@ -278,9 +278,7 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
         limit: 200,
       });
       for (const p of imgRes.items) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const fileUrl = (p.fields as any).image?.fields?.file?.url;
-        imageMap.set(p.sys.id, fileUrl ? `https:${fileUrl}` : null);
+        imageMap.set(p.sys.id, getAssetUrl(p.fields.image));
       }
     }
 
