@@ -229,38 +229,28 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
   cacheLife("hours");
   cacheTag("wikiNav");
   try {
-    const res = await client.getEntries<WikiNavSkeleton>({
-      content_type: "wikiNav",
-      limit: 1,
-      include: 3, // wikiNav(0) → wikiSection(1) → entry(2) → asset(3)
-    });
-    if (!res.items.length) return [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const links: any[] = (res.items[0].fields as any).links ?? [];
+    // Fetch nav structure and all posts in parallel.
+    // Posts are fetched at include:1 — exactly how getAssetUrl works everywhere else.
+    const [navRes, postsRes, pagesRes] = await Promise.all([
+      client.getEntries<WikiNavSkeleton>({ content_type: "wikiNav", limit: 1, include: 2 }),
+      client.getEntries<PostSkeleton>({ content_type: "post", include: 1, limit: 500 }),
+      client.getEntries<PageSkeleton>({ content_type: "page", include: 1, limit: 500 }),
+    ]);
 
-    // Build an asset lookup from the raw includes so we can resolve images
-    // even if the SDK doesn't inline them at depth 3
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const assetById = new Map<string, any>(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((res as any).includes?.Asset ?? []).map((a: any) => [a.sys.id, a]),
+    if (!navRes.items.length) return [];
+
+    // Build slug → imageUrl maps using the same getAssetUrl path that works everywhere
+    const postImageBySlug = new Map(
+      postsRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
+    );
+    const pageImageBySlug = new Map(
+      pagesRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function resolveImageUrl(p: any): string | null {
-      // Try SDK-resolved asset first
-      const direct = getAssetUrl(p?.fields?.image);
-      if (direct) return direct;
-      // Fall back: manually resolve from includes using the link id
-      const linkId = p?.fields?.image?.sys?.id;
-      if (linkId) {
-        const asset = assetById.get(linkId);
-        if (asset) return getAssetUrl(asset);
-      }
-      return null;
-    }
-
+    const links: any[] = (navRes.items[0].fields as any).links ?? [];
     const sections: WikiNavSection[] = [];
+
     for (const l of links) {
       const ct = l?.sys?.contentType?.sys?.id;
       if (!ct) continue;
@@ -268,19 +258,24 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pages = (l.fields?.pages ?? []).map((p: any) => {
           if (!p?.fields?.slug || !p?.fields?.title) return null;
+          const slug = String(p.fields.slug);
           return {
-            slug: String(p.fields.slug),
+            slug,
             title: String(p.fields.title),
-            imageUrl: resolveImageUrl(p),
+            imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
           };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }).filter(Boolean) as any[];
+        }).filter(Boolean) as WikiNavSection["pages"];
         if (pages.length) sections.push({ title: String(l.fields?.title ?? ""), pages });
       } else if (ct === "page" || ct === "post") {
         if (!l?.fields?.slug || !l?.fields?.title) continue;
+        const slug = String(l.fields.slug);
         sections.push({
           title: "",
-          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title), imageUrl: resolveImageUrl(l) }],
+          pages: [{
+            slug,
+            title: String(l.fields.title),
+            imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
+          }],
         });
       }
     }
