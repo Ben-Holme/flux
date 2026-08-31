@@ -229,65 +229,63 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
   cacheLife("hours");
   cacheTag("wikiNav");
   try {
-    // include:2 resolves wikiNav → wikiSection → page (slug/title available; assets not needed here)
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 2,
+      include: 3, // wikiNav(0) → wikiSection(1) → entry(2) → asset(3)
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const links: any[] = (res.items[0].fields as any).links ?? [];
 
-    // Build sections from the already-resolved page stubs
+    // Build an asset lookup from the raw includes so we can resolve images
+    // even if the SDK doesn't inline them at depth 3
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function pageStub(p: any) {
-      if (!p?.fields?.slug || !p?.fields?.title) return null;
-      return { slug: String(p.fields.slug), title: String(p.fields.title), id: String(p.sys.id) };
+    const assetById = new Map<string, any>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((res as any).includes?.Asset ?? []).map((a: any) => [a.sys.id, a]),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function resolveImageUrl(p: any): string | null {
+      // Try SDK-resolved asset first
+      const direct = getAssetUrl(p?.fields?.image);
+      if (direct) return direct;
+      // Fall back: manually resolve from includes using the link id
+      const linkId = p?.fields?.image?.sys?.id;
+      if (linkId) {
+        const asset = assetById.get(linkId);
+        if (asset) return getAssetUrl(asset);
+      }
+      return null;
     }
 
-    const sections: { title: string; stubs: { slug: string; title: string; id: string }[] }[] = [];
-    const allPageIds: string[] = [];
-
+    const sections: WikiNavSection[] = [];
     for (const l of links) {
       const ct = l?.sys?.contentType?.sys?.id;
       if (!ct) continue;
       if (ct === "wikiSection") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stubs = (l.fields?.pages ?? []).map((p: any) => pageStub(p)).filter(Boolean) as { slug: string; title: string; id: string }[];
-        if (stubs.length) {
-          sections.push({ title: String(l.fields?.title ?? ""), stubs });
-          allPageIds.push(...stubs.map((s) => s.id));
-        }
-      } else if (ct === "page") {
-        const stub = pageStub(l);
-        if (stub) {
-          sections.push({ title: "", stubs: [stub] });
-          allPageIds.push(stub.id);
-        }
-      }
-    }
-
-    // Fetch images separately — pages at top level, assets at include:1 (guaranteed resolved)
-    const imageMap = new Map<string, string | null>();
-    if (allPageIds.length) {
-      const imgRes = await client.getEntries({
-        "sys.id[in]": allPageIds,
-        include: 1,
-        limit: 200,
-      });
-      for (const p of imgRes.items) {
+        const pages = (l.fields?.pages ?? []).map((p: any) => {
+          if (!p?.fields?.slug || !p?.fields?.title) return null;
+          return {
+            slug: String(p.fields.slug),
+            title: String(p.fields.title),
+            imageUrl: resolveImageUrl(p),
+          };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const f = p.fields as any;
-        const url = getAssetUrl(f.image) ?? extractFirstImage(f.body ?? f.pageContent);
-        imageMap.set(p.sys.id, url);
+        }).filter(Boolean) as any[];
+        if (pages.length) sections.push({ title: String(l.fields?.title ?? ""), pages });
+      } else if (ct === "page" || ct === "post") {
+        if (!l?.fields?.slug || !l?.fields?.title) continue;
+        sections.push({
+          title: "",
+          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title), imageUrl: resolveImageUrl(l) }],
+        });
       }
     }
 
-    return sections.map(({ title, stubs }) => ({
-      title,
-      pages: stubs.map((s) => ({ slug: s.slug, title: s.title, imageUrl: imageMap.get(s.id) ?? null })),
-    }));
+    return sections;
   } catch (e) {
     console.error("[getWikiNav]", e);
     return [];
