@@ -45,8 +45,19 @@ export default function Nav() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
+  const isWiki = pathname?.startsWith("/wiki") ?? false;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [wikiNavOpen, setWikiNavOpen] = useState(false);
+
+  // Reset wiki nav when leaving wiki section
+  useEffect(() => { if (!isWiki) setWikiNavOpen(false); }, [isWiki]);
+
+  const toggleWikiNav = () => {
+    const next = !wikiNavOpen;
+    setWikiNavOpen(next);
+    window.dispatchEvent(new CustomEvent("wiki-nav-open", { detail: { open: next } }));
+  };
 
   useIsomorphicLayoutEffect(() => {
     // Homepage: high threshold so the hero fills the screen first
@@ -158,6 +169,25 @@ export default function Nav() {
             />
           </svg>
         </Link>
+
+        {/* Wiki nav toggle — mobile only, wiki pages only */}
+        {isWiki && (
+          <button
+            className="hidden max-[768px]:flex items-center gap-1.5 text-white"
+            onClick={toggleWikiNav}
+            aria-expanded={wikiNavOpen}
+          >
+            <span className="font-heading text-[1.1rem] uppercase tracking-[0.15em] leading-none">
+              The Unyha Wiki
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              className="h-4 w-4 shrink-0 transition-transform duration-200"
+              style={{ transform: wikiNavOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
 
         {/* Hamburger / cross button */}
         <div

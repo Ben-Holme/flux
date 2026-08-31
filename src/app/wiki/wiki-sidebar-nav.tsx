@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { WikiNavSection } from "@/lib/contentful";
@@ -169,35 +169,28 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
 export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Sync with the nav bar wiki toggle button via custom event
+  useEffect(() => {
+    const handler = (e: Event) => setMobileOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener("wiki-nav-open", handler);
+    return () => window.removeEventListener("wiki-nav-open", handler);
+  }, []);
+
   function closeMobile() {
     setMobileOpen(false);
+    window.dispatchEvent(new CustomEvent("wiki-nav-open", { detail: { open: false } }));
   }
 
   return (
     <div>
       {/* Desktop heading */}
       <div className="mb-4 max-[768px]:hidden">
-        <Link
-          href="/wiki"
-          className="font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline"
-        >
+        <Link href="/wiki" className="font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline">
           The Unyha Wiki
         </Link>
       </div>
 
-      {/* Mobile heading — fixed bar, centered, full row is the toggle */}
-      <button
-        className="hidden w-full items-center justify-center gap-2 border-b border-white/10 bg-black/60 px-6 py-3 backdrop-blur-md max-[768px]:flex"
-        onClick={() => setMobileOpen((v) => !v)}
-        aria-expanded={mobileOpen}
-      >
-        <span className="font-heading text-[1.6rem] font-normal uppercase leading-none tracking-[0.2em] text-white">
-          The Unyha Wiki
-        </span>
-        <ChevronDown open={mobileOpen} />
-      </button>
-
-      {/* Mobile sliding panels — drops down as an overlay */}
+      {/* Mobile sliding panels — drops down from the fixed bar */}
       {mobileOpen && (
         <div className="min-[768px]:hidden border-b border-white/10 bg-black/80 px-6 py-4 backdrop-blur-md">
           <MobileNav sections={sections} onNavigate={closeMobile} />
