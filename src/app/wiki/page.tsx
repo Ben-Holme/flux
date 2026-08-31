@@ -10,7 +10,14 @@ export const metadata: Metadata = {
 };
 
 async function WikiIndex() {
-  const articles = await getWikiNav();
+  const sections = await getWikiNav();
+  // Flatten sections into a deduplicated article list for search
+  const seen = new Set<string>();
+  const articles = sections.flatMap((s) => s.pages).filter((p) => {
+    if (seen.has(p.slug)) return false;
+    seen.add(p.slug);
+    return true;
+  }).map((p) => ({ ...p, imageUrl: null }));
 
   return (
     <Flow as="article" className="mx-auto min-h-[90vh] max-w-[1100px] px-6 pb-6">

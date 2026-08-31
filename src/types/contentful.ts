@@ -67,9 +67,19 @@ export type BlockListSkeleton = EntrySkeletonType & {
   };
 };
 
+export type WikiSectionSkeleton = EntrySkeletonType & {
+  contentTypeId: "wikiSection";
+  fields: {
+    title: EntryFieldTypes.Symbol;
+    pages: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<PageSkeleton>>;
+  };
+};
+
 export type WikiNavSkeleton = EntrySkeletonType & {
   contentTypeId: "wikiNav";
   fields: {
-    links: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<PageSkeleton>>;
+    links: EntryFieldTypes.Array<
+      EntryFieldTypes.EntryLink<PageSkeleton | WikiSectionSkeleton>
+    >;
   };
 };

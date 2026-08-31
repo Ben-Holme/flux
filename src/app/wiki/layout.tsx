@@ -3,11 +3,11 @@ import { getWikiNav } from "@/lib/contentful";
 import { WikiSidebarNav } from "./wiki-sidebar-nav";
 
 async function WikiSidebar() {
-  const links = await getWikiNav();
+  const sections = await getWikiNav();
   return (
     <div>
       <div className="fixed w-[300px] max-[1200px]:w-[200px] max-[768px]:relative max-[768px]:w-auto max-[768px]:p-6 max-[768px]:pt-[120px]">
-        <WikiSidebarNav links={links} />
+        <WikiSidebarNav sections={sections} />
       </div>
     </div>
   );

@@ -219,7 +219,12 @@ function extractFirstImage(doc: any): string | null {
   return walk(doc.content);
 }
 
-export async function getWikiNav() {
+export interface WikiNavSection {
+  title: string;
+  pages: { slug: string; title: string }[];
+}
+
+export async function getWikiNav(): Promise<WikiNavSection[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("wikiNav");
@@ -227,18 +232,38 @@ export async function getWikiNav() {
     const res = await client.getEntries<WikiNavSkeleton>({
       content_type: "wikiNav",
       limit: 1,
-      include: 3, // level 3 ensures assets embedded in rich text of linked pages are resolved
+      include: 2,
     });
     if (!res.items.length) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const links: any[] = (res.items[0].fields as any).links ?? [];
-    return links
-      .filter((l) => l?.fields?.slug && l?.fields?.title)
-      .map((l) => ({
-        slug: String(l.fields.slug),
-        title: String(l.fields.title),
-        imageUrl: extractFirstImage(l.fields?.pageContent) ?? null,
-      }));
+    const sections: WikiNavSection[] = [];
+
+    for (const l of links) {
+      const ct = l?.sys?.contentType?.sys?.id;
+      if (!ct) continue;
+
+      if (ct === "wikiSection") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pages: any[] = l.fields?.pages ?? [];
+        sections.push({
+          title: String(l.fields?.title ?? ""),
+          pages: pages
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((p: any) => p?.fields?.slug && p?.fields?.title)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((p: any) => ({ slug: String(p.fields.slug), title: String(p.fields.title) })),
+        });
+      } else if (ct === "page" && l.fields?.slug && l.fields?.title) {
+        // Legacy flat link — wrap in an untitled section so old navs still render
+        sections.push({
+          title: "",
+          pages: [{ slug: String(l.fields.slug), title: String(l.fields.title) }],
+        });
+      }
+    }
+
+    return sections;
   } catch {
     return [];
   }
