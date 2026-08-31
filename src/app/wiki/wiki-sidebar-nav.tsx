@@ -192,7 +192,7 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
 
       {/* Mobile sliding panels — drops down from the fixed bar */}
       {mobileOpen && (
-        <div className="min-[768px]:hidden border-b border-white/10 bg-black/80 px-6 py-4 backdrop-blur-md">
+        <div className="min-[768px]:hidden mt-6 mx-4 rounded-2xl border border-white/10 bg-black/80 px-6 py-4 backdrop-blur-md">
           <MobileNav sections={sections} onNavigate={closeMobile} />
         </div>
       )}
