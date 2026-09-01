@@ -147,7 +147,7 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                 <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
               </svg>
             }
-            className="bg-white/5 py-2 text-xs text-white focus:bg-white/8"
+            className="bg-white/5 py-2 text-white focus:bg-white/8"
           />
         </div>
 
