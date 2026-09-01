@@ -84,9 +84,6 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
                 <span className="font-heading text-sm uppercase tracking-wide text-white/80 group-hover:text-white">
                   {article.title}
                 </span>
-                {article.excerpt && (
-                  <p className="mt-1 line-clamp-2 text-xs text-white/40">{article.excerpt}</p>
-                )}
               </div>
             </Link>
           ))}
