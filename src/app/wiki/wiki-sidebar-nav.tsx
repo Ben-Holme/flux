@@ -123,18 +123,18 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
 
         {/* Panel 2 — article list */}
         <div style={{ width: "50%" }}>
-          {/* Back + category name */}
-          <div className="mb-3 flex items-center gap-2">
+          {/* Back icon (absolute left) + centered category name */}
+          <div className="relative mb-3 flex items-center">
             <button
-              className="flex items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white/80"
+              className="absolute left-0 text-white/50 transition-colors hover:text-white/80"
               onClick={() => setActive(null)}
+              aria-label="Back"
             >
               <ArrowLeft />
-              Back
             </button>
             {active?.title && (
-              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
-                · {active.title}
+              <span className="w-full text-center text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
+                {active.title}
               </span>
             )}
           </div>
@@ -147,7 +147,7 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                 key={page.slug}
                 href={href}
                 onClick={onNavigate}
-                className={`-ml-4 mb-0.5 block rounded-[2px] py-2 no-underline transition-colors ${
+                className={`mb-0.5 block rounded-[2px] py-2 no-underline transition-colors ${
                   isActive
                     ? "border-l-2 border-current bg-white/10 pl-[14px] pr-4 text-white"
                     : "px-4 text-white/60 hover:bg-white/5"
