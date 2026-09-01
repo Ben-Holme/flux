@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Input } from "@/components/ui";
+import { Card, Input } from "@/components/ui";
 
 interface WikiArticle {
   slug: string;
@@ -26,10 +26,8 @@ function matchScore(article: WikiArticle, tokens: string[]): number | null {
   if (!tokens.length) return 0;
   const title = article.title.toLowerCase();
   const excerpt = (article.excerpt ?? "").toLowerCase();
-  // All tokens must match somewhere (AND logic)
   const allMatch = tokens.every((t) => title.includes(t) || excerpt.includes(t));
   if (!allMatch) return null;
-  // Score: title matches outrank excerpt-only matches
   return tokens.filter((t) => title.includes(t)).length;
 }
 
@@ -66,25 +64,27 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
             <Link
               key={article.slug}
               href={`/wiki/${article.slug}`}
-              className="group block overflow-hidden rounded border border-white/10 bg-white/5 no-underline transition-colors hover:border-white/25 hover:bg-white/8"
+              className="group block no-underline"
             >
-              <div className="relative aspect-video w-full overflow-hidden bg-white/5">
-                {article.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={article.imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-gradient-to-br from-white/5 to-transparent" />
-                )}
-              </div>
-              <div className="px-3 py-2.5">
-                <span className="font-heading text-sm uppercase tracking-wide text-white/80 group-hover:text-white">
-                  {article.title}
-                </span>
-              </div>
+              <Card variant="raised" className="overflow-hidden p-0 transition-colors hover:border-white/25">
+                <div className="relative aspect-video w-full overflow-hidden">
+                  {article.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={article.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-white/5 to-transparent" />
+                  )}
+                </div>
+                <div className="px-3 py-2.5">
+                  <span className="font-heading text-sm uppercase tracking-wide text-white/80 group-hover:text-white">
+                    {article.title}
+                  </span>
+                </div>
+              </Card>
             </Link>
           ))}
         </div>
