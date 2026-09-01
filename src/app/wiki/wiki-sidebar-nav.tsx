@@ -121,39 +121,39 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
   }, [allPages, query]);
 
   return (
-    <div className="overflow-hidden">
-      <div
-        className="flex"
-        style={{
-          width: "200%",
-          transform: active && !searchResults ? "translateX(-50%)" : "translateX(0)",
-          transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)",
-        }}
-      >
-        {/* Panel 1 — search + category list */}
-        <div style={{ width: "50%" }}>
-          {/* Search input */}
-          <div className="relative mb-3">
-            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/30">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-              </svg>
-            </span>
-            <input
-              ref={searchRef}
-              type="search"
-              placeholder="Search…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-              className="w-full rounded-[6px] border border-white/10 bg-white/5 py-2 pr-3 pl-8 text-xs text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/20 focus:bg-white/8"
-            />
-          </div>
+    <div
+      className="flex"
+      style={{
+        width: "200%",
+        transform: active && !searchResults ? "translateX(-50%)" : "translateX(0)",
+        transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)",
+      }}
+    >
+      {/* Panel 1 — search + category list */}
+      <div style={{ width: "50%" }}>
+        {/* Search */}
+        <div className="relative px-4 pt-3 pb-2">
+          <span className="pointer-events-none absolute top-1/2 left-7 -translate-y-1/2 text-white/30">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+            </svg>
+          </span>
+          <input
+            ref={searchRef}
+            type="search"
+            placeholder="Search…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full rounded-[6px] border border-white/10 bg-white/5 py-2 pr-3 pl-8 text-xs text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/20 focus:bg-white/8"
+          />
+        </div>
 
-          {/* Search results or category list */}
-          {searchResults !== null ? (
-            searchResults.length > 0 ? (
+        {/* Search results or category list */}
+        {searchResults !== null ? (
+          <>
+            {searchResults.length > 0 ? (
               searchResults.map((page) => {
                 const href = `/wiki/${page.slug}`;
                 const isActive = pathname === href || pathname === `/${page.slug}`;
@@ -162,7 +162,7 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                     key={page.slug}
                     href={href}
                     onClick={onNavigate}
-                    className={`mb-0.5 block rounded-[2px] py-2 px-4 text-sm no-underline transition-colors ${
+                    className={`block px-4 py-2.5 text-sm no-underline transition-colors ${
                       isActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"
                     }`}
                     aria-current={isActive ? "page" : undefined}
@@ -172,16 +172,19 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                 );
               })
             ) : (
-              <p className="px-4 py-2 text-xs text-white/30">No results</p>
-            )
-          ) : (
-            sections.map((s, i) => {
+              <p className="px-4 py-2.5 text-xs text-white/30">No results</p>
+            )}
+            <div className="h-2" />
+          </>
+        ) : (
+          <>
+            {sections.map((s, i) => {
               const label = s.title || "General";
               const hasActive = s.pages.some((p) => pathname === `/wiki/${p.slug}`);
               return (
                 <button
                   key={i}
-                  className={`flex w-full items-center justify-between rounded-[2px] px-4 py-2.5 text-left transition-colors ${
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors ${
                     hasActive ? "text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"
                   }`}
                   onClick={() => setActive(s)}
@@ -190,48 +193,51 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                   <ChevronRight />
                 </button>
               );
-            })
+            })}
+            <div className="h-2" />
+          </>
+        )}
+      </div>
+
+      {/* Panel 2 — article list */}
+      <div style={{ width: "50%" }}>
+        {/* Back + section title */}
+        <div className="relative flex items-center px-4 py-2.5">
+          <button
+            className="absolute left-4 text-white/50 transition-colors hover:text-white/80"
+            onClick={() => setActive(null)}
+            aria-label="Back"
+          >
+            <ArrowLeft />
+          </button>
+          {active?.title && (
+            <span className="w-full text-center text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
+              {active.title}
+            </span>
           )}
         </div>
+        <div className="mx-4 border-t border-white/[0.06]" />
 
-        {/* Panel 2 — article list */}
-        <div style={{ width: "50%" }}>
-          {/* Back icon (absolute left) + centered category name */}
-          <div className="relative mb-3 flex items-center">
-            <button
-              className="absolute left-0 text-white/50 transition-colors hover:text-white/80"
-              onClick={() => setActive(null)}
-              aria-label="Back"
+        {active?.pages.map((page) => {
+          const href = `/wiki/${page.slug}`;
+          const isActive = pathname === href || pathname === `/${page.slug}`;
+          return (
+            <Link
+              key={page.slug}
+              href={href}
+              onClick={onNavigate}
+              className={`block py-2.5 no-underline transition-colors ${
+                isActive
+                  ? "border-l-2 border-white/50 bg-white/10 pl-[14px] pr-4 text-white"
+                  : "px-4 text-white/60 hover:bg-white/5 hover:text-white/80"
+              }`}
+              aria-current={isActive ? "page" : undefined}
             >
-              <ArrowLeft />
-            </button>
-            {active?.title && (
-              <span className="w-full text-center text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
-                {active.title}
-              </span>
-            )}
-          </div>
-
-          {active?.pages.map((page) => {
-            const href = `/wiki/${page.slug}`;
-            const isActive = pathname === href || pathname === `/${page.slug}`;
-            return (
-              <Link
-                key={page.slug}
-                href={href}
-                onClick={onNavigate}
-                className={`mb-0.5 block rounded-[2px] py-2 no-underline transition-colors ${
-                  isActive
-                    ? "border-l-2 border-current bg-white/10 pl-[14px] pr-4 text-white"
-                    : "px-4 text-white/60 hover:bg-white/5"
-                }`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                {page.title}
-              </Link>
-            );
-          })}
-        </div>
+              {page.title}
+            </Link>
+          );
+        })}
+        <div className="h-2" />
       </div>
     </div>
   );
@@ -265,7 +271,7 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
 
       {/* Mobile sliding panels — drops down from the fixed bar */}
       {mobileOpen && (
-        <div className="min-[768px]:hidden mt-6 mx-4 rounded-2xl border border-white/10 bg-black/80 px-6 py-4 backdrop-blur-md">
+        <div className="min-[768px]:hidden mt-6 mx-4 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md">
           <MobileNav sections={sections} onNavigate={closeMobile} />
         </div>
       )}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { Suspense } from "react";
 import "./globals.css";
-import { NavWithData } from "@/components/nav-server";
+import Nav from "@/components/nav";
 import { NavGradientBlur } from "@/components/nav-gradient-blur";
 import Year from "@/components/year";
 import { AuthProvider } from "@/context/auth-context";
@@ -52,7 +52,7 @@ export default function RootLayout({
         <AuthProvider>
           <NavGradientBlur />
           <Suspense fallback={null}>
-            <NavWithData />
+            <Nav />
           </Suspense>
           <main className="flex-1">{children}</main>
           <footer className="flex flex-col items-center justify-center gap-4 bg-black px-6 py-12">
