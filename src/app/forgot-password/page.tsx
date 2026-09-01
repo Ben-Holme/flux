@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Alert, Eyebrow, Heading, Text } from "@/components/ui";
+import { Alert, FormLabel, Heading, Input, Text } from "@/components/ui";
 import Button from "@/components/button";
-
-const inputClass =
-  "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
-
-const labelClass = "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -58,14 +53,14 @@ export default function ForgotPasswordPage() {
             className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 backdrop-blur-[14px]"
           >
             <div className="mb-6">
-              <label className={labelClass}>Email</label>
-              <input
+              <FormLabel>Email</FormLabel>
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                className={inputClass}
+                className="mt-1.5"
               />
             </div>
 

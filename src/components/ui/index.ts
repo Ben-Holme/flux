@@ -9,5 +9,5 @@ export { Tabs, TabsList, TabsTrigger, TabsPanel } from "./tabs";
 export { Checkbox } from "./checkbox";
 export { Radio } from "./radio";
 export { Table, TableHead, TableBody, TableRow, Th, Td, TableEllipsis } from "./table";
-export { Input } from "./input";
+export { Input, FormLabel } from "./input";
 export { BleedSection } from "../bleed-section";

@@ -12,7 +12,9 @@ import {
   Card,
   Eyebrow,
   Flow,
+  FormLabel,
   Heading,
+  Input,
   Table,
   TableBody,
   TableRow,
@@ -424,10 +426,6 @@ function CharacterDetail({ char }: { char: Character }) {
   );
 }
 
-const inputClass =
-  "mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none";
-const labelClass =
-  "block text-[0.62rem] uppercase tracking-[0.12em] text-white/35 mb-0.5";
 
 function ChangePasswordForm({
   sessionkey,
@@ -472,37 +470,37 @@ function ChangePasswordForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label className={labelClass}>Current Password</label>
-        <input
+        <FormLabel>Current Password</FormLabel>
+        <Input
           type="password"
           value={current}
           onChange={(e) => setCurrent(e.target.value)}
           autoComplete="current-password"
           required
-          className={inputClass}
+          className="mt-1.5"
           autoFocus
         />
       </div>
       <div>
-        <label className={labelClass}>New Password</label>
-        <input
+        <FormLabel>New Password</FormLabel>
+        <Input
           type="password"
           value={next}
           onChange={(e) => setNext(e.target.value)}
           autoComplete="new-password"
           required
-          className={inputClass}
+          className="mt-1.5"
         />
       </div>
       <div>
-        <label className={labelClass}>Confirm New Password</label>
-        <input
+        <FormLabel>Confirm New Password</FormLabel>
+        <Input
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"
           required
-          className={inputClass}
+          className="mt-1.5"
         />
       </div>
       {error && <Alert>{error}</Alert>}

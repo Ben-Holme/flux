@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { WikiNavSection } from "@/lib/contentful";
+import { Input } from "@/components/ui";
 
 function tokenize(s: string) {
   return s.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -132,13 +133,8 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
       {/* Panel 1 — search + category list */}
       <div style={{ width: "50%" }}>
         {/* Search */}
-        <div className="relative px-4 pt-3 pb-2">
-          <span className="pointer-events-none absolute top-1/2 left-7 -translate-y-1/2 text-white/30">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-            </svg>
-          </span>
-          <input
+        <div className="px-4 pt-3 pb-2">
+          <Input
             ref={searchRef}
             type="search"
             placeholder="Search…"
@@ -146,7 +142,12 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
             onChange={(e) => setQuery(e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-[6px] border border-white/10 bg-white/5 py-2 pr-3 pl-8 text-xs text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/20 focus:bg-white/8"
+            leadIcon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+            }
+            className="bg-white/5 py-2 text-xs text-white focus:bg-white/8"
           />
         </div>
 
