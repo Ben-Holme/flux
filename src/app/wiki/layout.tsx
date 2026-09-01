@@ -29,9 +29,7 @@ export default function WikiLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={<div className="w-[300px] shrink-0" />}>
           <WikiSidebar />
         </Suspense>
-        <div className="pb-[100px] max-[768px]:pt-[120px] max-[768px]:pb-20">
-          {children}
-        </div>
+        <div className="pb-[100px] max-[768px]:pt-[120px] max-[768px]:pb-20">{children}</div>
       </div>
     </>
   );

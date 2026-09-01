@@ -11,7 +11,13 @@ function tokenize(s: string) {
 }
 
 const ChevronDown = ({ open }: { open: boolean }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className="h-4 w-4 shrink-0 transition-transform duration-200"
     style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
   >
@@ -20,23 +26,47 @@ const ChevronDown = ({ open }: { open: boolean }) => (
 );
 
 const ChevronRight = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4 shrink-0"
+  >
     <path d="M9 18l6-6-6-6" />
   </svg>
 );
 
 const ArrowLeft = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4 shrink-0"
+  >
     <path d="M19 12H5M12 5l-7 7 7 7" />
   </svg>
 );
 
 // ── Desktop: collapsible accordion ────────────────────────────────────────────
 
-function DesktopSectionGroup({ section, onNavigate }: { section: WikiNavSection; onNavigate: () => void }) {
+function DesktopSectionGroup({
+  section,
+  onNavigate,
+}: {
+  section: WikiNavSection;
+  onNavigate: () => void;
+}) {
   const pathname = usePathname();
-  const hasActive = section.pages.some((p) => pathname === `/wiki/${p.slug}` || pathname === `/${p.slug}`);
-  const [open, setOpen] = useState(hasActive || !section.title);
+  const hasActive = section.pages.some(
+    (p) => pathname === `/wiki/${p.slug}` || pathname === `/${p.slug}`,
+  );
+  const [open, setOpen] = useState<boolean>(hasActive || !section.title || true);
 
   if (!section.title) {
     return (
@@ -44,16 +74,24 @@ function DesktopSectionGroup({ section, onNavigate }: { section: WikiNavSection;
         {section.pages.map((page) => {
           const href = `/wiki/${page.slug}`;
           const isActive = pathname === href || pathname === `/${page.slug}`;
-          return <PageLink key={page.slug} href={href} title={page.title} isActive={isActive} onNavigate={onNavigate} />;
+          return (
+            <PageLink
+              key={page.slug}
+              href={href}
+              title={page.title}
+              isActive={isActive}
+              onNavigate={onNavigate}
+            />
+          );
         })}
       </>
     );
   }
 
   return (
-    <div className="mb-1">
+    <div className="mb-6">
       <button
-        className="flex w-full items-center justify-between gap-2 rounded-[2px] px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white/60"
+        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-[2px] py-1.5 text-left text-xs font-semibold tracking-[0.12em] text-white/40 uppercase transition-colors hover:text-white/60"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
@@ -65,7 +103,15 @@ function DesktopSectionGroup({ section, onNavigate }: { section: WikiNavSection;
           {section.pages.map((page) => {
             const href = `/wiki/${page.slug}`;
             const isActive = pathname === href || pathname === `/${page.slug}`;
-            return <PageLink key={page.slug} href={href} title={page.title} isActive={isActive} onNavigate={onNavigate} />;
+            return (
+              <PageLink
+                key={page.slug}
+                href={href}
+                title={page.title}
+                isActive={isActive}
+                onNavigate={onNavigate}
+              />
+            );
           })}
         </div>
       )}
@@ -73,14 +119,24 @@ function DesktopSectionGroup({ section, onNavigate }: { section: WikiNavSection;
   );
 }
 
-function PageLink({ href, title, isActive, onNavigate }: { href: string; title: string; isActive: boolean; onNavigate: () => void }) {
+function PageLink({
+  href,
+  title,
+  isActive,
+  onNavigate,
+}: {
+  href: string;
+  title: string;
+  isActive: boolean;
+  onNavigate: () => void;
+}) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
-      className={`-ml-4 mb-0.5 block rounded-[2px] py-1.5 no-underline transition-colors duration-200 ${
+      className={`mb-0.5 -ml-4 block rounded-[2px] py-1.5 no-underline transition-colors duration-200 ${
         isActive
-          ? "border-l-2 border-current bg-white/10 pl-[14px] pr-4 text-white"
+          ? "border-l-2 border-current bg-white/10 pr-4 pl-[14px] text-white"
           : "px-4 text-white/60 hover:bg-white/5"
       }`}
       aria-current={isActive ? "page" : undefined}
@@ -92,17 +148,29 @@ function PageLink({ href, title, isActive, onNavigate }: { href: string; title: 
 
 // ── Mobile: sliding panels ─────────────────────────────────────────────────────
 
-function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNavigate: () => void }) {
+function MobileNav({
+  sections,
+  onNavigate,
+}: {
+  sections: WikiNavSection[];
+  onNavigate: () => void;
+}) {
   const pathname = usePathname();
-  const [active, setActive] = useState<WikiNavSection | null>(() =>
-    sections.find((s) => s.pages.some((p) => pathname === `/wiki/${p.slug}` || pathname === `/${p.slug}`)) ?? null
+  const [active, setActive] = useState<WikiNavSection | null>(
+    () =>
+      sections.find((s) =>
+        s.pages.some((p) => pathname === `/wiki/${p.slug}` || pathname === `/${p.slug}`),
+      ) ?? null,
   );
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const allPages = useMemo(
-    () => sections.flatMap((s) => s.pages).filter((p, i, arr) => arr.findIndex((q) => q.slug === p.slug) === i),
-    [sections]
+    () =>
+      sections
+        .flatMap((s) => s.pages)
+        .filter((p, i, arr) => arr.findIndex((q) => q.slug === p.slug) === i),
+    [sections],
   );
 
   const searchResults = useMemo(() => {
@@ -133,7 +201,7 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
       {/* Panel 1 — search + category list */}
       <div style={{ width: "50%" }}>
         {/* Search */}
-        <div className="px-4 pt-3 pb-2">
+        <div className="p-2">
           <Input
             ref={searchRef}
             type="search"
@@ -143,8 +211,17 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
             autoComplete="off"
             spellCheck={false}
             leadIcon={
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
               </svg>
             }
             className="bg-white/5 py-2 text-white focus:bg-white/8"
@@ -163,8 +240,10 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
                     key={page.slug}
                     href={href}
                     onClick={onNavigate}
-                    className={`block px-4 py-2.5 text-sm no-underline transition-colors ${
-                      isActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"
+                    className={`block px-4 py-4 text-sm no-underline transition-colors ${
+                      isActive
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:bg-white/5 hover:text-white/80"
                     }`}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -185,12 +264,12 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
               return (
                 <button
                   key={i}
-                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors ${
+                  className={`flex w-full items-center justify-between px-4 py-4 text-left transition-colors ${
                     hasActive ? "text-white" : "text-white/60 hover:bg-white/5 hover:text-white/80"
                   }`}
                   onClick={() => setActive(s)}
                 >
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</span>
+                  <span className="text-xs font-semibold tracking-[0.12em] uppercase">{label}</span>
                   <ChevronRight />
                 </button>
               );
@@ -203,16 +282,16 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
       {/* Panel 2 — article list */}
       <div style={{ width: "50%" }}>
         {/* Back + section title */}
-        <div className="relative flex items-center px-4 py-2.5">
+        <div className="relative flex items-center px-4 py-6">
           <button
-            className="absolute left-4 text-white/50 transition-colors hover:text-white/80"
+            className="absolute left-0 p-6 text-white/50 transition-colors hover:text-white/80"
             onClick={() => setActive(null)}
             aria-label="Back"
           >
             <ArrowLeft />
           </button>
           {active?.title && (
-            <span className="w-full text-center text-xs font-semibold uppercase tracking-[0.12em] text-white/40">
+            <span className="w-full text-center text-xs font-semibold tracking-[0.12em] text-white/40 uppercase">
               {active.title}
             </span>
           )}
@@ -227,9 +306,9 @@ function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNav
               key={page.slug}
               href={href}
               onClick={onNavigate}
-              className={`block py-2.5 no-underline transition-colors ${
+              className={`mx-2 block rounded-sm py-2 pl-[14px] no-underline transition-colors ${
                 isActive
-                  ? "border-l-2 border-white/50 bg-white/10 pl-[14px] pr-4 text-white"
+                  ? "border-l-2 border-white/50 bg-white/10 pr-4 pl-[14px] text-white"
                   : "px-4 text-white/60 hover:bg-white/5 hover:text-white/80"
               }`}
               aria-current={isActive ? "page" : undefined}
@@ -265,14 +344,17 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
     <div>
       {/* Desktop heading */}
       <div className="mb-4 max-[768px]:hidden">
-        <Link href="/wiki" className="font-heading text-[2rem] font-normal uppercase tracking-[0.2em] text-white no-underline">
+        <Link
+          href="/wiki"
+          className="font-heading text-[2rem] font-normal tracking-[0.2em] text-white uppercase no-underline"
+        >
           The Unyha Wiki
         </Link>
       </div>
 
       {/* Mobile sliding panels — drops down from the fixed bar */}
       {mobileOpen && (
-        <div className="min-[768px]:hidden mt-6 mx-4 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md">
+        <div className="mx-4 mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md min-[768px]:hidden">
           <MobileNav sections={sections} onNavigate={closeMobile} />
         </div>
       )}
@@ -280,7 +362,11 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
       {/* Desktop accordion */}
       <div className="max-[768px]:hidden">
         {sections.map((section, i) => (
-          <DesktopSectionGroup key={section.title || i} section={section} onNavigate={closeMobile} />
+          <DesktopSectionGroup
+            key={section.title || i}
+            section={section}
+            onNavigate={closeMobile}
+          />
         ))}
       </div>
     </div>
