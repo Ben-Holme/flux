@@ -221,7 +221,7 @@ function extractFirstImage(doc: any): string | null {
 
 export interface WikiNavSection {
   title: string;
-  pages: { slug: string; title: string; imageUrl: string | null }[];
+  pages: { slug: string; title: string; imageUrl: string | null; excerpt: string | null }[];
 }
 
 export async function getWikiNav(): Promise<WikiNavSection[]> {
@@ -239,9 +239,12 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
 
     if (!navRes.items.length) return [];
 
-    // Build slug → imageUrl maps using the same getAssetUrl path that works everywhere
+    // Build slug → imageUrl/excerpt maps
     const postImageBySlug = new Map(
       postsRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
+    );
+    const postExcerptBySlug = new Map(
+      postsRes.items.map((p) => [String(p.fields.slug), p.fields.short ? String(p.fields.short) : null]),
     );
     const pageImageBySlug = new Map(
       pagesRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
@@ -263,6 +266,7 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
             slug,
             title: String(p.fields.title),
             imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
+            excerpt: postExcerptBySlug.get(slug) ?? null,
           };
         }).filter(Boolean) as WikiNavSection["pages"];
         if (pages.length) sections.push({ title: String(l.fields?.title ?? ""), pages });
@@ -275,6 +279,7 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
             slug,
             title: String(l.fields.title),
             imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
+            excerpt: postExcerptBySlug.get(slug) ?? null,
           }],
         });
       }
