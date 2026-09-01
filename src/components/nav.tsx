@@ -89,10 +89,10 @@ export default function Nav() {
       >
         {MENU_LINKS.map(({ href, label, external, discord, small }) => {
           const linkClass = small
-            ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[0.75em] text-white opacity-50${
+            ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
                 label === "Realspawn Studios" ? " mt-[50px]" : ""
               }`
-            : "no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[0.75em] text-white";
+            : "no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[calc(0.75em-4px)] text-white";
           const inner = discord ? (
             <span style={{ display: "flex", alignItems: "center" }}>
               {DISCORD_SVG}
