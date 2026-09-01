@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // useLayoutEffect on client (synchronous, no flash); useEffect on server (avoids SSR warning)
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -41,7 +41,17 @@ const DISCORD_SVG = (
   </svg>
 );
 
-export default function Nav() {
+interface NavArticle {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+}
+
+function tokenize(s: string) {
+  return s.toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+
+export default function Nav({ articles = [] }: { articles?: NavArticle[] }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
@@ -49,6 +59,8 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [wikiNavOpen, setWikiNavOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Reset wiki nav when leaving wiki section
   useEffect(() => { if (!isWiki) setWikiNavOpen(false); }, [isWiki]);
@@ -77,6 +89,30 @@ export default function Nav() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Focus search and clear query when menu opens; clear on close
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setTimeout(() => searchRef.current?.focus(), 50);
+    }
+  }, [open]);
+
+  const searchResults = useMemo(() => {
+    const tokens = tokenize(query);
+    if (!tokens.length) return null;
+    return articles
+      .map((a) => {
+        const title = a.title.toLowerCase();
+        const excerpt = (a.excerpt ?? "").toLowerCase();
+        const allMatch = tokens.every((t) => title.includes(t) || excerpt.includes(t));
+        if (!allMatch) return null;
+        return { article: a, score: tokens.filter((t) => title.includes(t)).length };
+      })
+      .filter((r): r is { article: NavArticle; score: number } => r !== null)
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.article);
+  }, [articles, query]);
+
   const active = scrolled || open;
 
   return (
@@ -87,7 +123,47 @@ export default function Nav() {
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {MENU_LINKS.map(({ href, label, external, discord, small }) => {
+        {/* Search */}
+        <div className="mb-8 w-full max-w-xs px-6">
+          <div className="relative">
+            <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-white/30">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              ref={searchRef}
+              type="search"
+              placeholder="Search wiki…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full rounded-[6px] border border-white/10 bg-white/5 py-2.5 pr-4 pl-10 text-sm text-white outline-none transition-colors placeholder:text-white/30 focus:border-white/25 focus:bg-white/8"
+            />
+          </div>
+          {searchResults !== null && (
+            <div className="mt-2 max-h-64 overflow-y-auto rounded-[6px] border border-white/10 bg-black/80 py-1 backdrop-blur-sm">
+              {searchResults.length > 0 ? (
+                searchResults.map((a) => (
+                  <Link
+                    key={a.slug}
+                    href={`/wiki/${a.slug}`}
+                    onClick={() => setOpen(false)}
+                    className="block px-4 py-2.5 text-sm text-white/70 no-underline transition-colors hover:bg-white/8 hover:text-white"
+                  >
+                    {a.title}
+                  </Link>
+                ))
+              ) : (
+                <p className="px-4 py-2.5 text-sm text-white/30">No results</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {searchResults === null && MENU_LINKS.map(({ href, label, external, discord, small }) => {
           const linkClass = small
             ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[0.75em] text-white opacity-50${
                 label === "Realspawn Studios" ? " mt-[50px]" : ""
