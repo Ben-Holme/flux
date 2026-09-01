@@ -89,7 +89,9 @@ function PageLink({ href, title, isActive, onNavigate }: { href: string; title: 
 
 function MobileNav({ sections, onNavigate }: { sections: WikiNavSection[]; onNavigate: () => void }) {
   const pathname = usePathname();
-  const [active, setActive] = useState<WikiNavSection | null>(null);
+  const [active, setActive] = useState<WikiNavSection | null>(() =>
+    sections.find((s) => s.pages.some((p) => pathname === `/wiki/${p.slug}` || pathname === `/${p.slug}`)) ?? null
+  );
 
   return (
     <div className="overflow-hidden">
