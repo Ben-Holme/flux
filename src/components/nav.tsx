@@ -53,6 +53,13 @@ export default function Nav() {
   // Reset wiki nav when leaving wiki section
   useEffect(() => { if (!isWiki) setWikiNavOpen(false); }, [isWiki]);
 
+  // Sync when sidebar closes itself (e.g. after a link click)
+  useEffect(() => {
+    const handler = (e: Event) => setWikiNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener("wiki-nav-open", handler);
+    return () => window.removeEventListener("wiki-nav-open", handler);
+  }, []);
+
   const toggleWikiNav = () => {
     const next = !wikiNavOpen;
     setWikiNavOpen(next);
