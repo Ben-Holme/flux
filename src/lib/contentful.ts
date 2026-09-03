@@ -230,24 +230,25 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
   cacheTag("wikiNav");
   try {
     // Fetch nav structure and all posts in parallel.
-    // Posts are fetched at include:1 — exactly how getAssetUrl works everywhere else.
-    const [navRes, postsRes, pagesRes] = await Promise.all([
+    // Posts are fetched separately at include:1 because the image asset inside a
+    // wikiSection → post → image chain would need include:3 from the wikiNav root,
+    // which Contentful's CDA caps at 10 but we keep low for performance.
+    const [navRes, postsRes] = await Promise.all([
       client.getEntries<WikiNavSkeleton>({ content_type: "wikiNav", limit: 1, include: 2 }),
       client.getEntries<PostSkeleton>({ content_type: "post", include: 1, limit: 500 }),
-      client.getEntries<PageSkeleton>({ content_type: "page", include: 1, limit: 500 }),
     ]);
 
     if (!navRes.items.length) return [];
 
-    // Build slug → imageUrl/excerpt maps
+    // Build slug → imageUrl/excerpt maps from the dedicated post fetch
     const postImageBySlug = new Map(
       postsRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
     );
     const postExcerptBySlug = new Map(
-      postsRes.items.map((p) => [String(p.fields.slug), p.fields.short ? String(p.fields.short) : null]),
-    );
-    const pageImageBySlug = new Map(
-      pagesRes.items.map((p) => [String(p.fields.slug), getAssetUrl(p.fields.image)]),
+      postsRes.items.map((p) => [
+        String(p.fields.slug),
+        p.fields.short ? String(p.fields.short) : null,
+      ]),
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -255,34 +256,21 @@ export async function getWikiNav(): Promise<WikiNavSection[]> {
     const sections: WikiNavSection[] = [];
 
     for (const l of links) {
-      const ct = l?.sys?.contentType?.sys?.id;
-      if (!ct) continue;
-      if (ct === "wikiSection") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pages = (l.fields?.pages ?? []).map((p: any) => {
+      if (l?.sys?.contentType?.sys?.id !== "wikiSection") continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pages = ((l.fields?.pages ?? []) as any[])
+        .map((p) => {
           if (!p?.fields?.slug || !p?.fields?.title) return null;
           const slug = String(p.fields.slug);
           return {
             slug,
             title: String(p.fields.title),
-            imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
+            imageUrl: postImageBySlug.get(slug) ?? null,
             excerpt: postExcerptBySlug.get(slug) ?? null,
           };
-        }).filter(Boolean) as WikiNavSection["pages"];
-        if (pages.length) sections.push({ title: String(l.fields?.title ?? ""), pages });
-      } else if (ct === "page" || ct === "post") {
-        if (!l?.fields?.slug || !l?.fields?.title) continue;
-        const slug = String(l.fields.slug);
-        sections.push({
-          title: "",
-          pages: [{
-            slug,
-            title: String(l.fields.title),
-            imageUrl: postImageBySlug.get(slug) ?? pageImageBySlug.get(slug) ?? null,
-            excerpt: postExcerptBySlug.get(slug) ?? null,
-          }],
-        });
-      }
+        })
+        .filter(Boolean) as WikiNavSection["pages"];
+      if (pages.length) sections.push({ title: String(l.fields?.title ?? ""), pages });
     }
 
     return sections;

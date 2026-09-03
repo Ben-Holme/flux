@@ -72,15 +72,13 @@ export type WikiSectionSkeleton = EntrySkeletonType & {
   contentTypeId: "wikiSection";
   fields: {
     title: EntryFieldTypes.Symbol;
-    pages: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<PageSkeleton>>;
+    pages: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<PostSkeleton>>;
   };
 };
 
 export type WikiNavSkeleton = EntrySkeletonType & {
   contentTypeId: "wikiNav";
   fields: {
-    links: EntryFieldTypes.Array<
-      EntryFieldTypes.EntryLink<PageSkeleton | WikiSectionSkeleton>
-    >;
+    links: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<WikiSectionSkeleton>>;
   };
 };
