@@ -28,9 +28,10 @@ interface User {
   approved: boolean;
   is_admin: boolean;
   spirit_xp: number;
+  banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "steam";
+type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
 
 function AdminContent() {
   const { session, ready } = useAuth();
@@ -40,6 +41,8 @@ function AdminContent() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [pending, setPending] = useState<Set<number>>(new Set());
+  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -85,12 +88,80 @@ function AdminContent() {
     }
   };
 
+  const setBanned = async (userId: number, banned: boolean) => {
+    if (!session) return;
+    setPending((p) => new Set(p).add(userId));
+    try {
+      const res = await fetch(`${API}/admin-ban-w.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
+        body: JSON.stringify({ user_id: userId, banned }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, banned } : u)),
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setPending((p) => { const next = new Set(p); next.delete(userId); return next; });
+    }
+  };
+
+  const unsyncSteam = async (userId: number) => {
+    if (!session) return;
+    setPending((p) => new Set(p).add(userId));
+    try {
+      const res = await fetch(`${API}/admin-unsync-steam-w.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, steam_id: null } : u)),
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setPending((p) => { const next = new Set(p); next.delete(userId); return next; });
+    }
+  };
+
+  const runPipeline = async () => {
+    if (!session) return;
+    setPipelineLoading(true);
+    setPipelineStatus(null);
+    try {
+      const res = await fetch(`${API}/admin-run-pipeline-w.php`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.sessionkey}` },
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setPipelineStatus("Pipeline triggered");
+    } catch (e: unknown) {
+      setPipelineStatus(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setPipelineLoading(false);
+    }
+  };
+
   if (!session) return null;
 
   const visible = users.filter((u) => {
     if (filter === "approved") return u.approved;
     if (filter === "unapproved") return !u.approved;
     if (filter === "steam") return !!u.steam_id;
+    if (filter === "banned") return u.banned;
     return true;
   });
 
@@ -99,6 +170,7 @@ function AdminContent() {
     approved: users.filter((u) => u.approved).length,
     unapproved: users.filter((u) => !u.approved).length,
     steam: users.filter((u) => !!u.steam_id).length,
+    banned: users.filter((u) => u.banned).length,
   };
 
   const filterLabels: { key: Filter; label: string }[] = [
@@ -106,12 +178,27 @@ function AdminContent() {
     { key: "approved", label: `Called (${counts.approved})` },
     { key: "unapproved", label: `Waiting (${counts.unapproved})` },
     { key: "steam", label: `Steam Synced (${counts.steam})` },
+    { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
   return (
     <Flow className="mx-auto min-h-[90vh] max-w-[900px] px-6 pt-[120px] pb-20">
       <Eyebrow>Admin</Eyebrow>
       <Heading level="h1">Players</Heading>
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={runPipeline}
+          disabled={pipelineLoading}
+        >
+          {pipelineLoading ? "Triggering…" : "Run Pipeline"}
+        </Button>
+        {pipelineStatus && (
+          <Text as="span" variant="muted">{pipelineStatus}</Text>
+        )}
+      </div>
 
       {error && <Text className="text-ember">Error: {error}</Text>}
 
@@ -142,6 +229,7 @@ function AdminContent() {
               {u.is_admin && <Badge>Admin</Badge>}
               {u.approved && <Badge>Called</Badge>}
               {!u.verified && <Badge>Unverified</Badge>}
+              {u.banned && <Badge>Banned</Badge>}
             </div>
             <Table>
               <TableBody>
@@ -151,7 +239,23 @@ function AdminContent() {
                 </TableRow>
                 <TableRow>
                   <Td variant="heading">Steam</Td>
-                  <Td>{u.steam_id ?? <Text as="span" variant="muted">Not linked</Text>}</Td>
+                  <Td>
+                    {u.steam_id ? (
+                      <span className="flex items-center gap-3">
+                        {u.steam_id}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => unsyncSteam(u.id)}
+                          disabled={pending.has(u.id)}
+                        >
+                          Unsync
+                        </Button>
+                      </span>
+                    ) : (
+                      <Text as="span" variant="muted">Not linked</Text>
+                    )}
+                  </Td>
                 </TableRow>
                 <TableRow>
                   <Td variant="heading">Spirit XP</Td>
@@ -160,7 +264,7 @@ function AdminContent() {
               </TableBody>
             </Table>
           </Flow>
-          <div className="shrink-0">
+          <div className="flex shrink-0 flex-col gap-2">
             {u.approved ? (
               <Button
                 variant="ghost"
@@ -178,6 +282,25 @@ function AdminContent() {
                 disabled={pending.has(u.id)}
               >
                 Call
+              </Button>
+            )}
+            {u.banned ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBanned(u.id, false)}
+                disabled={pending.has(u.id)}
+              >
+                Unban
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBanned(u.id, true)}
+                disabled={pending.has(u.id) || u.is_admin}
+              >
+                Ban
               </Button>
             )}
           </div>

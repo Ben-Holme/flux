@@ -28,7 +28,7 @@ if (!TOKEN) {
 
 // ─── HTTP helpers ─────────────────────────────────────────────────────────────
 
-function req(method, path, body) {
+function req(method, path, body, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const options = {
@@ -40,6 +40,7 @@ function req(method, path, body) {
         Authorization: `Bearer ${TOKEN}`,
         "Content-Type": "application/vnd.contentful.management.v1+json",
         ...(data ? { "Content-Length": Buffer.byteLength(data) } : {}),
+        ...extraHeaders,
       },
     };
     const r = https.request(options, (res) => {
@@ -142,8 +143,15 @@ async function main() {
 
   let ct;
   if (existingCT) {
-    console.log("  wikiSection already exists — skipping creation.");
+    console.log("  wikiSection already exists.");
     ct = existingCT;
+    // Ensure it's published (may not be if a previous run failed mid-way)
+    if (!existingCT.sys.publishedVersion) {
+      await req("PUT", `${base}/content_types/wikiSection/published`, null, {
+        "X-Contentful-Version": String(existingCT.sys.version),
+      });
+      console.log("  ✓ Published existing wikiSection.");
+    }
   } else {
     ct = await req("PUT", `${base}/content_types/wikiSection`, ctBody, {
       Authorization: `Bearer ${TOKEN}`,
