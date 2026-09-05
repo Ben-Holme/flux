@@ -52,8 +52,10 @@ export default function PrivacyPage() {
 
       <Heading level="h2">Data retention</Heading>
       <Text>
-        Your data is retained for as long as your account is active. Deleting your account
-        removes all associated data immediately and permanently.
+        Your personal data (email, username, password, achievements) is retained for as long as
+        your account is active. Deleting your account removes this data immediately and
+        permanently. In-game characters are anonymised rather than deleted — they remain as part
+        of the shared game world but are no longer linked to you.
       </Text>
 
       <Heading level="h2">Contact</Heading>
