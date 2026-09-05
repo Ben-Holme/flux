@@ -57,6 +57,8 @@ interface AccountData {
   house: string;
   steam_id: string | null;
   playstyle: 1 | 2 | null;
+  achievements: Record<string, number>;
+  spirit_xp: number;
   characters: Character[];
 }
 
@@ -178,7 +180,12 @@ function AccountContent() {
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setAccount((prev) => prev ? { ...prev, playstyle: value } : prev);
+      setAccount((prev) => prev ? {
+        ...prev,
+        playstyle: value,
+        achievements: data.achievements ?? prev.achievements,
+        spirit_xp: data.spirit_xp ?? prev.spirit_xp,
+      } : prev);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -260,6 +267,10 @@ function AccountContent() {
                 <Td className="text-right">{account.house || "—"}</Td>
               </TableRow>
               <TableRow>
+                <Td variant="heading">Spirit XP</Td>
+                <Td className="text-right">{account.spirit_xp}</Td>
+              </TableRow>
+              <TableRow>
                 <Td variant="heading">Steam</Td>
                 <Td className="text-right">
                   {account.steam_id ? (
@@ -290,6 +301,7 @@ function AccountContent() {
 
           <PlaystyleQuestion
             value={account.playstyle}
+            achievements={account.achievements}
             pending={playstylePending}
             onSelect={setPlaystyle}
           />
@@ -459,10 +471,12 @@ function CharacterDetail({ char }: { char: Character }) {
 
 function PlaystyleQuestion({
   value,
+  achievements,
   pending,
   onSelect,
 }: {
   value: 1 | 2 | null;
+  achievements: Record<string, number>;
   pending: boolean;
   onSelect: (v: 1 | 2) => void;
 }) {
