@@ -498,9 +498,9 @@ function PlaystyleQuestion({
 
   const label =
     value === 1
-      ? "I am ready to answer the call"
+      ? "Ready to play — here from the start"
       : value === 2
-        ? "I walk lightly. I may not stay long."
+        ? "Waiting for the right moment"
         : null;
 
   return (
@@ -510,7 +510,7 @@ function PlaystyleQuestion({
         onClick={() => setOpen(true)}
       >
         <Flow>
-          <Eyebrow deco>How do you come to Unyha?</Eyebrow>
+          <Eyebrow deco>When do you want to play?</Eyebrow>
           {label ? (
             <div className="flex items-baseline gap-3">
               <Text as="span">{label}</Text>
@@ -532,11 +532,13 @@ function PlaystyleQuestion({
             onClick={(e) => e.stopPropagation()}
           >
             <Flow>
-              <Eyebrow>How do you come to Unyha?</Eyebrow>
-              <Heading level="h3">Every spirit finds its own path.</Heading>
+              <Eyebrow>Your time is real.</Eyebrow>
+              <Heading level="h3">Unyha is still being built.</Heading>
               <Text>
-                Some come to dwell, to build, to leave their mark on the world.
-                Others walk lightly, drawn by curiosity alone. Both are welcome here.
+                You can play test now — rough edges included — or hold your
+                spot and come back when things are more complete. Either way,
+                your account is here waiting. This just helps us understand
+                where you are.
               </Text>
             </Flow>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -545,14 +547,14 @@ function PlaystyleQuestion({
                 disabled={pending}
                 onClick={() => { onSelect(2); setOpen(false); }}
               >
-                I&apos;m a casual player
+                I&apos;ll wait for the right moment
               </Button>
               <Button
                 variant={value === 1 ? "primary" : "ghost"}
                 disabled={pending}
                 onClick={() => { onSelect(1); setOpen(false); }}
               >
-                I&apos;m committed
+                I&apos;m ready now
               </Button>
             </div>
           </div>
