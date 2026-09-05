@@ -1,30 +1,95 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/context/auth-context";
 
-/**
- * Drop this into any wiki page. When a logged-in user lands on the page it
- * fires a one-shot POST to award +1 spirit_xp. Unauthenticated visitors are
- * silently ignored.
- */
-export function WikiXpTracker({ slug }: { slug: string }) {
-  const { session } = useAuth();
+const API = "https://api.unyhagame.com/ueserv";
 
-  useEffect(() => {
-    if (!session?.sessionkey) return;
-    fetch("https://api.unyhagame.com/ueserv/award-xp-w.php", {
+async function addAchievement(key: string, sessionkey: string) {
+  try {
+    await fetch(`${API}/add-achievement-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.sessionkey}`,
+        Authorization: `Bearer ${sessionkey}`,
       },
-      body: JSON.stringify({ amount: 1, slug: `wiki:${slug}` }),
-    }).catch(() => {
-      // Silently ignore — XP is best-effort
+      body: JSON.stringify({ key }),
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // fire once on mount
+  } catch {
+    // best-effort — XP is never critical
+  }
+}
+
+/**
+ * Drop into any wiki article page.
+ *
+ * WikiNoob  — awarded once, on first ever wiki visit.
+ * WikiPro   — awarded after 10 qualifying reads (1 min on page + scrolled ≥ 50%).
+ *             Count persists in localStorage; each slug counted once per browser session.
+ */
+export function WikiXpTracker({ slug }: { slug: string }) {
+  const { session } = useAuth();
+  const qualifiedRef = useRef(false);
+
+  // WikiNoob — first wiki visit
+  useEffect(() => {
+    if (!session?.sessionkey) return;
+    if (localStorage.getItem("unyha_ach_WikiNoob")) return;
+    addAchievement("WikiNoob", session.sessionkey).then(() => {
+      localStorage.setItem("unyha_ach_WikiNoob", "1");
+    });
+  }, [session]);
+
+  // WikiPro — deep-read tracking
+  useEffect(() => {
+    if (!session?.sessionkey) return;
+    if (localStorage.getItem("unyha_ach_WikiPro")) return; // already earned
+
+    // Don't count the same article twice in one browser session
+    const sessionKey = `unyha_wiki_session:${slug}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    qualifiedRef.current = false;
+    let scrolled = false;
+    let timed = false;
+
+    const qualify = () => {
+      if (qualifiedRef.current || !(scrolled && timed)) return;
+      qualifiedRef.current = true;
+      sessionStorage.setItem(sessionKey, "1");
+
+      const count = parseInt(localStorage.getItem("unyha_wiki_reads") || "0", 10) + 1;
+      localStorage.setItem("unyha_wiki_reads", String(count));
+
+      if (count >= 10 && session?.sessionkey) {
+        addAchievement("WikiPro", session.sessionkey).then(() => {
+          localStorage.setItem("unyha_ach_WikiPro", "1");
+        });
+      }
+    };
+
+    const timer = setTimeout(() => {
+      timed = true;
+      qualify();
+    }, 60_000);
+
+    const onScroll = () => {
+      if (scrolled) return;
+      const pct =
+        (window.scrollY + window.innerHeight) /
+        document.documentElement.scrollHeight;
+      if (pct >= 0.5) {
+        scrolled = true;
+        qualify();
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [session, slug]);
 
   return null;
 }
