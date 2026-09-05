@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { Alert, Eyebrow, FormLabel, Heading, Input, Text } from "@/components/ui";
+import { Alert, Checkbox, Eyebrow, FormLabel, Heading, Input, Text } from "@/components/ui";
 import Button from "@/components/button";
 
 function RegisterForm() {
@@ -10,6 +10,7 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -105,11 +106,27 @@ function RegisterForm() {
         />
       </div>
 
+      <div className="mb-6">
+        <Checkbox
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          required
+          label={
+            <>
+              I agree to the{" "}
+              <Link href="/privacy" className="text-white/60 underline">
+                Privacy Policy
+              </Link>
+            </>
+          }
+        />
+      </div>
+
       {error && <Alert className="mb-[18px]">{error}</Alert>}
 
       <Button
         type="submit"
-        disabled={loading}
+        disabled={loading || !consent}
         className="w-full justify-center max-[768px]:min-w-0"
       >
         {loading ? "Creating account…" : "Create Account"}

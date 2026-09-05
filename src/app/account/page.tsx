@@ -10,6 +10,7 @@ import {
   Alert,
   Badge,
   Card,
+  Checkbox,
   Eyebrow,
   Flow,
   FormLabel,
@@ -147,6 +148,7 @@ function AccountContent() {
   const [error, setError] = useState<string | null>(null);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [playstylePending, setPlaystylePending] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -313,6 +315,19 @@ function AccountContent() {
                 <CharacterCard key={char.id} char={char} />
               ))}
             </>
+          )}
+
+          <div className="border-t border-white/[0.06] pt-6">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
+              Delete Account
+            </Button>
+          </div>
+
+          {deleteOpen && (
+            <DeleteAccountModal
+              sessionkey={session.sessionkey}
+              onClose={() => setDeleteOpen(false)}
+            />
           )}
         </>
       )}
@@ -544,6 +559,94 @@ function PlaystyleQuestion({
         </div>
       )}
     </>
+  );
+}
+
+function DeleteAccountModal({
+  sessionkey,
+  onClose,
+}: {
+  sessionkey: string;
+  onClose: () => void;
+}) {
+  const { logout } = useAuth();
+  const [password, setPassword] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("https://api.unyhagame.com/ueserv/delete-account-w.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionkey}`,
+        },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      logout();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface flex w-full max-w-md flex-col gap-5 rounded-lg p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Flow>
+          <Heading level="h3">Delete Account</Heading>
+          <Text>
+            This permanently deletes your account, characters, and all associated data.
+            This cannot be undone.
+          </Text>
+        </Flow>
+        <form onSubmit={handleDelete} className="flex flex-col gap-4">
+          <div>
+            <FormLabel>Confirm your password</FormLabel>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="mt-1.5"
+              autoFocus
+            />
+          </div>
+          <Checkbox
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            label="I understand this is permanent and cannot be undone"
+          />
+          {error && <Alert>{error}</Alert>}
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              variant="ghost"
+              disabled={loading || !confirmed || !password}
+            >
+              {loading ? "Deleting…" : "Delete my account"}
+            </Button>
+            <Button variant="ghost" onClick={onClose} type="button">
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
