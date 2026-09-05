@@ -56,6 +56,7 @@ interface AccountData {
   email: string;
   house: string;
   steam_id: string | null;
+  playstyle: 1 | 2 | null;
   characters: Character[];
 }
 
@@ -143,6 +144,7 @@ function AccountContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [playstylePending, setPlaystylePending] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -161,6 +163,28 @@ function AccountContent() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [session, router, activeCharId]);
+
+  const setPlaystyle = async (value: 1 | 2) => {
+    if (!session || !account) return;
+    setPlaystylePending(true);
+    try {
+      const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
+        body: JSON.stringify({ playstyle: value }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setAccount((prev) => prev ? { ...prev, playstyle: value } : prev);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setPlaystylePending(false);
+    }
+  };
 
   if (!session) return null;
 
@@ -263,6 +287,12 @@ function AccountContent() {
               onSuccess={() => setPasswordOpen(false)}
             />
           )}
+
+          <PlaystyleQuestion
+            value={account.playstyle}
+            pending={playstylePending}
+            onSelect={setPlaystyle}
+          />
 
           {account.characters.length > 0 && (
             <>
@@ -426,6 +456,47 @@ function CharacterDetail({ char }: { char: Character }) {
   );
 }
 
+
+function PlaystyleQuestion({
+  value,
+  pending,
+  onSelect,
+}: {
+  value: 1 | 2 | null;
+  pending: boolean;
+  onSelect: (v: 1 | 2) => void;
+}) {
+  return (
+    <Card>
+      <Flow>
+        <Eyebrow>How do you come to Unyha?</Eyebrow>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant={value === 1 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(1)}
+          >
+            I am ready to answer the call
+          </Button>
+          <Button
+            variant={value === 2 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(2)}
+          >
+            I walk lightly. I may not stay long.
+          </Button>
+        </div>
+        {value && (
+          <Text variant="muted">
+            {value === 1
+              ? "This world will have your time and attention."
+              : "You're welcome here all the same."}
+          </Text>
+        )}
+      </Flow>
+    </Card>
+  );
+}
 
 function ChangePasswordForm({
   sessionkey,
