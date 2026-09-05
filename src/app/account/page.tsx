@@ -471,7 +471,6 @@ function CharacterDetail({ char }: { char: Character }) {
 
 function PlaystyleQuestion({
   value,
-  achievements,
   pending,
   onSelect,
 }: {
@@ -480,35 +479,71 @@ function PlaystyleQuestion({
   pending: boolean;
   onSelect: (v: 1 | 2) => void;
 }) {
+  const [open, setOpen] = useState(false);
+
+  const label =
+    value === 1
+      ? "I am ready to answer the call"
+      : value === 2
+        ? "I walk lightly. I may not stay long."
+        : null;
+
   return (
-    <Card>
-      <Flow>
-        <Eyebrow>How do you come to Unyha?</Eyebrow>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            variant={value === 1 ? "primary" : "ghost"}
-            disabled={pending}
-            onClick={() => onSelect(1)}
+    <>
+      <Card
+        className="cursor-pointer transition-opacity hover:opacity-80"
+        onClick={() => setOpen(true)}
+      >
+        <Flow>
+          <Eyebrow deco>How do you come to Unyha?</Eyebrow>
+          {label ? (
+            <div className="flex items-baseline gap-3">
+              <Text as="span">{label}</Text>
+              <Text as="span" variant="muted" className="text-[0.75rem]">change</Text>
+            </div>
+          ) : (
+            <Text variant="muted">Click to answer</Text>
+          )}
+        </Flow>
+      </Card>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
+            onClick={(e) => e.stopPropagation()}
           >
-            I am ready to answer the call
-          </Button>
-          <Button
-            variant={value === 2 ? "primary" : "ghost"}
-            disabled={pending}
-            onClick={() => onSelect(2)}
-          >
-            I walk lightly. I may not stay long.
-          </Button>
+            <Flow>
+              <Eyebrow>How do you come to Unyha?</Eyebrow>
+              <Heading level="h3">Every spirit finds its own path.</Heading>
+              <Text>
+                Some come to dwell, to build, to leave their mark on the world.
+                Others walk lightly, drawn by curiosity alone. Both are welcome here.
+              </Text>
+            </Flow>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant={value === 2 ? "primary" : "ghost"}
+                disabled={pending}
+                onClick={() => { onSelect(2); setOpen(false); }}
+              >
+                I&apos;m a casual player
+              </Button>
+              <Button
+                variant={value === 1 ? "primary" : "ghost"}
+                disabled={pending}
+                onClick={() => { onSelect(1); setOpen(false); }}
+              >
+                I&apos;m committed
+              </Button>
+            </div>
+          </div>
         </div>
-        {value && (
-          <Text variant="muted">
-            {value === 1
-              ? "This world will have your time and attention."
-              : "You're welcome here all the same."}
-          </Text>
-        )}
-      </Flow>
-    </Card>
+      )}
+    </>
   );
 }
 
