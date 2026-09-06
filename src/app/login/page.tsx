@@ -22,7 +22,7 @@ function LoginForm() {
     setLoading(true);
     try {
       await login(username, password);
-      const redirect = searchParams.get("redirect") ?? "/play-test";
+      const redirect = searchParams.get("redirect") ?? "/account";
       router.push(redirect);
     } catch (err) {
       setError((err as Error).message);
