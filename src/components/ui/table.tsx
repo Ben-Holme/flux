@@ -70,7 +70,7 @@ export function Th({ children, className }: ThProps) {
   return (
     <th
       className={cn(
-        "font-heading bg-white/[0.02] px-4 py-2.5 text-left text-[0.6rem] font-normal tracking-[0.15em] text-white/25 uppercase",
+        "font-heading bg-white/[0.02] px-6 py-[15px] text-left text-[0.6rem] font-normal tracking-[0.15em] text-white/25 uppercase",
         className,
       )}
     >
@@ -93,7 +93,7 @@ export function Td({ children, variant = "default", className }: TdProps) {
   return (
     <td
       className={cn(
-        "px-4 py-3",
+        "px-6 py-[18px]",
         variant === "default" && "text-white/70",
         variant === "heading" && "text-white",
         className,
@@ -113,7 +113,7 @@ interface TableEllipsisProps {
 
 export function TableEllipsis({ onClick, className }: TableEllipsisProps) {
   return (
-    <td className={cn("w-10 px-2 py-3 text-right", className)}>
+    <td className={cn("w-10 px-3 py-[18px] text-right", className)}>
       <button
         onClick={
           onClick
