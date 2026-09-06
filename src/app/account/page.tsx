@@ -319,9 +319,6 @@ function AccountContent() {
                   We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
                   you&apos;ll hear from us at <strong>{account.email}</strong>.
                 </Text>
-                <Text variant="muted">
-                  If you&apos;re ready to jump in now, update your player style above.
-                </Text>
               </Flow>
             </Card>
           )}
