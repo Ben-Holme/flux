@@ -319,6 +319,13 @@ function AccountContent() {
                   We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
                   you&apos;ll hear from us at <strong>{account.email}</strong>.
                 </Text>
+                <Text>
+                  In the meantime — arm yourself.{" "}
+                  <Link href="/wiki" className="text-white underline underline-offset-2 hover:text-white/70">
+                    The wiki
+                  </Link>{" "}
+                  covers the lore, the world, and what to expect when your call comes.
+                </Text>
               </Flow>
             </Card>
           )}
