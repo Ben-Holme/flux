@@ -248,6 +248,9 @@ function AccountContent() {
       {account && !activeCharId && (
         <>
           <Heading level="h1">Account</Heading>
+          <pre className="text-xs text-white/40 font-mono whitespace-pre-wrap break-all">
+            {JSON.stringify(account.achievements, null, 2)}
+          </pre>
           <Table>
             <TableBody>
               <TableRow>
