@@ -293,7 +293,7 @@ function AccountContent() {
                 </Td>
               </TableRow>
               <TableRow>
-                <Td variant="heading">Player type</Td>
+                <Td variant="heading">Player style</Td>
                 <Td className="text-right">
                   <div className="flex items-center justify-end gap-3">
                     <Text as="span" variant={account.playstyle ? undefined : "muted"}>
@@ -521,22 +521,27 @@ function PlayerTypeModal({
         onClick={(e) => e.stopPropagation()}
       >
         <Flow>
-          <Heading level="h3">How do you want to play?</Heading>
+          <Heading level="h3">Player style</Heading>
+          <Text>
+            Are you ready for the full early access experience, and lead the
+            spiritfolk to glory? Or do you want to follow the action from the
+            sidelines for now?
+          </Text>
         </Flow>
-        <div className="flex flex-col gap-3">
-          <Button
-            variant={value === 1 ? "primary" : "ghost"}
-            disabled={pending}
-            onClick={() => onSelect(1)}
-          >
-            I&apos;m ready for the next wave.
-          </Button>
+        <div className="flex gap-3">
           <Button
             variant={value === 2 ? "primary" : "ghost"}
             disabled={pending}
             onClick={() => onSelect(2)}
           >
-            I&apos;m happy to idle and follow the action for now.
+            Idle
+          </Button>
+          <Button
+            variant={value === 1 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(1)}
+          >
+            Active
           </Button>
         </div>
       </div>
