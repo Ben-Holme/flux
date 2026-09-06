@@ -277,9 +277,7 @@ function AccountContent() {
                 <Td variant="heading">Steam</Td>
                 <Td className="text-right">
                   {account.steam_id ? (
-                    <Text as="span" variant="muted">
-                      Linked ({account.steam_id})
-                    </Text>
+                    <Badge variant="success">Linked</Badge>
                   ) : (
                     <Button
                       href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
