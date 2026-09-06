@@ -57,6 +57,7 @@ interface AccountData {
   email: string;
   house: string;
   steam_id: string | null;
+  approved: boolean;
   playstyle: 1 | 2 | null;
   achievements: Record<string, number>;
   spirit_xp: number;
@@ -310,7 +311,7 @@ function AccountContent() {
             </TableBody>
           </Table>
 
-          {account.playstyle !== 1 && (
+          {!account.approved && (
             <Card>
               <Flow>
                 <Eyebrow deco>You&apos;re in the queue</Eyebrow>
