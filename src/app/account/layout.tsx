@@ -1,5 +1,6 @@
 import { SidebarNavLinks, type NavItem } from "@/components/sidebar-nav-links";
 import { AccountMobileNav } from "./account-mobile-nav";
+import { AccountSignOut } from "./account-sign-out";
 
 export const ACCOUNT_NAV: NavItem[] = [
   { label: "Dashboard", href: "/account", exact: true },
@@ -19,6 +20,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
             </span>
           </div>
           <SidebarNavLinks items={ACCOUNT_NAV} />
+          <AccountSignOut />
         </div>
       </div>
 

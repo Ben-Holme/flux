@@ -43,7 +43,7 @@ const DISCORD_SVG = (
 );
 
 export default function Nav() {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
@@ -152,14 +152,6 @@ export default function Nav() {
             </Link>
           );
         })}
-        {session && (
-          <button
-            className="no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[calc(0.75em-4px)] text-white opacity-50 cursor-pointer bg-transparent border-0"
-            onClick={() => { logout(); setOpen(false); }}
-          >
-            Sign Out
-          </button>
-        )}
       </div>
 
       {/* Nav bar */}

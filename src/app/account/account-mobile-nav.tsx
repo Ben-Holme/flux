@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SidebarNavLinks, type NavItem } from "@/components/sidebar-nav-links";
+import { AccountSignOut } from "./account-sign-out";
 
 export function AccountMobileNav({ items }: { items: NavItem[] }) {
   const [open, setOpen] = useState(false);
@@ -27,6 +28,9 @@ export function AccountMobileNav({ items }: { items: NavItem[] }) {
     >
       <div className="p-3">
         <SidebarNavLinks items={items} onNavigate={close} />
+        <div className="px-4 pb-2">
+          <AccountSignOut />
+        </div>
       </div>
     </div>
   );
