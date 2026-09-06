@@ -110,30 +110,6 @@ function DashboardContent() {
             </Text>
           )}
 
-          {!account.approved ? (
-            <Card>
-              <Flow>
-                <Heading level="h3">In queue</Heading>
-                <Text>
-                  We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
-                  you&apos;ll hear from us at <strong>{account.email}</strong>.
-                </Text>
-                <Text>
-                  In the meantime — arm yourself.{" "}
-                  <Link
-                    href="/wiki"
-                    className="text-white underline underline-offset-2 hover:text-white/70"
-                  >
-                    The wiki
-                  </Link>{" "}
-                  covers the lore, the world, and what to expect when your call comes.
-                </Text>
-              </Flow>
-            </Card>
-          ) : account.characters.length > 0 ? (
-            <CharacterCard char={account.characters[0]} />
-          ) : null}
-
           {/* Onboarding nudges — shown when action is not yet taken */}
           {!account.steam_id && (
             <Card>
@@ -169,6 +145,30 @@ function DashboardContent() {
               </Flow>
             </Card>
           )}
+
+          {!account.approved ? (
+            <Card>
+              <Flow>
+                <Heading level="h3">In queue</Heading>
+                <Text>
+                  We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
+                  you&apos;ll hear from us at <strong>{account.email}</strong>.
+                </Text>
+                <Text>
+                  In the meantime — arm yourself.{" "}
+                  <Link
+                    href="/wiki"
+                    className="text-white underline underline-offset-2 hover:text-white/70"
+                  >
+                    The wiki
+                  </Link>{" "}
+                  covers the lore, the world, and what to expect when your call comes.
+                </Text>
+              </Flow>
+            </Card>
+          ) : account.characters.length > 0 ? (
+            <CharacterCard char={account.characters[0]} />
+          ) : null}
 
           {playstyleOpen && (
             <PlayerTypeModal
