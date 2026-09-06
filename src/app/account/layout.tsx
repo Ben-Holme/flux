@@ -1,6 +1,7 @@
 import { SidebarNavLinks, type NavItem } from "@/components/sidebar-nav-links";
+import { AccountMobileNav } from "./account-mobile-nav";
 
-const ACCOUNT_NAV: NavItem[] = [
+export const ACCOUNT_NAV: NavItem[] = [
   { label: "Dashboard", href: "/account", exact: true },
   { label: "Characters", href: "/account/characters" },
   { label: "Settings", href: "/account/settings" },
@@ -21,12 +22,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         </div>
       </div>
 
+      {/* Mobile dropdown — fixed below nav bar, same pattern as wiki */}
+      <div className="fixed inset-x-0 top-[64px] z-40 min-[768px]:hidden">
+        <AccountMobileNav items={ACCOUNT_NAV} />
+      </div>
+
       {/* Content */}
       <div className="pb-[100px] max-[768px]:pt-[80px] max-[768px]:pb-20">
-        {/* Mobile tab strip */}
-        <div className="px-6 pt-6 pb-0 min-[768px]:hidden">
-          <SidebarNavLinks items={ACCOUNT_NAV} horizontal />
-        </div>
         {children}
       </div>
     </div>

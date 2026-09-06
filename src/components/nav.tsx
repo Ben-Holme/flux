@@ -46,24 +46,39 @@ export default function Nav() {
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
   const isWiki = pathname?.startsWith("/wiki") ?? false;
+  const isAccount = pathname?.startsWith("/account") ?? false;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [wikiNavOpen, setWikiNavOpen] = useState(false);
+  const [accountNavOpen, setAccountNavOpen] = useState(false);
 
-  // Reset wiki nav when leaving wiki section
+  // Reset section navs when leaving their section
   useEffect(() => { if (!isWiki) setWikiNavOpen(false); }, [isWiki]);
+  useEffect(() => { if (!isAccount) setAccountNavOpen(false); }, [isAccount]);
 
-  // Sync when sidebar closes itself (e.g. after a link click)
+  // Sync when sidebars close themselves (e.g. after a link click)
   useEffect(() => {
     const handler = (e: Event) => setWikiNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
     window.addEventListener("wiki-nav-open", handler);
     return () => window.removeEventListener("wiki-nav-open", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: Event) => setAccountNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener("account-nav-open", handler);
+    return () => window.removeEventListener("account-nav-open", handler);
+  }, []);
+
   const toggleWikiNav = () => {
     const next = !wikiNavOpen;
     setWikiNavOpen(next);
     window.dispatchEvent(new CustomEvent("wiki-nav-open", { detail: { open: next } }));
+  };
+
+  const toggleAccountNav = () => {
+    const next = !accountNavOpen;
+    setAccountNavOpen(next);
+    window.dispatchEvent(new CustomEvent("account-nav-open", { detail: { open: next } }));
   };
 
   useIsomorphicLayoutEffect(() => {
@@ -177,7 +192,7 @@ export default function Nav() {
           </svg>
         </Link>
 
-        {/* Wiki nav toggle — mobile only, wiki pages only */}
+        {/* Section nav toggles — mobile only */}
         {isWiki && (
           <button
             className="hidden max-[768px]:flex items-center gap-1.5 text-white"
@@ -190,6 +205,23 @@ export default function Nav() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
               className="h-4 w-4 shrink-0 transition-transform duration-200"
               style={{ transform: wikiNavOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
+        {isAccount && (
+          <button
+            className="hidden max-[768px]:flex items-center gap-1.5 text-white"
+            onClick={toggleAccountNav}
+            aria-expanded={accountNavOpen}
+          >
+            <span className="font-heading text-[1.1rem] uppercase tracking-[0.15em] leading-none">
+              My Account
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              className="h-4 w-4 shrink-0 transition-transform duration-200"
+              style={{ transform: accountNavOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             >
               <path d="M6 9l6 6 6-6" />
             </svg>

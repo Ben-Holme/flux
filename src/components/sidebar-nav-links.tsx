@@ -17,9 +17,12 @@ export interface NavItem {
 export function SidebarNavLinks({
   items,
   horizontal,
+  onNavigate,
 }: {
   items: NavItem[];
   horizontal?: boolean;
+  /** Called when any link is clicked (e.g. to close a mobile dropdown). */
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -32,7 +35,8 @@ export function SidebarNavLinks({
             <Link
               key={href}
               href={href}
-              className={`rounded px-3 py-1.5 text-sm no-underline transition-colors duration-200 ${
+              onClick={onNavigate}
+            className={`rounded px-3 py-1.5 text-sm no-underline transition-colors duration-200 ${
                 isActive
                   ? "bg-white/10 text-white"
                   : "text-white/50 hover:bg-white/5 hover:text-white/80"
@@ -55,6 +59,7 @@ export function SidebarNavLinks({
           <Link
             key={href}
             href={href}
+            onClick={onNavigate}
             className={`mb-0.5 -ml-4 block rounded-[2px] py-1.5 no-underline transition-colors duration-200 ${
               isActive
                 ? "border-l-2 border-current bg-white/10 pr-4 pl-[14px] text-white"
