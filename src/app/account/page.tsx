@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
+import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
