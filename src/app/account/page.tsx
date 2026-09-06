@@ -115,6 +115,42 @@ function DashboardContent() {
           ) : account.characters.length > 0 ? (
             <CharacterCard char={account.characters[0]} />
           ) : null}
+
+          {/* Onboarding nudges — shown when action is not yet taken */}
+          {!account.steam_id && (
+            <Card>
+              <Flow>
+                <Heading level="h3">Connect Steam</Heading>
+                <Text>
+                  Link your Steam account to earn Spirit XP and sync your identity across the
+                  Unyha universe.
+                </Text>
+                <Button
+                  href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
+                  external
+                  variant="secondary"
+                  size="sm"
+                >
+                  Connect Steam
+                </Button>
+              </Flow>
+            </Card>
+          )}
+
+          {account.playstyle === null && (
+            <Card>
+              <Flow>
+                <Heading level="h3">Set your player style</Heading>
+                <Text>
+                  Are you ready to jump into the next wave, or happy to follow the action from
+                  the sidelines for now? Let us know so we can plan accordingly.
+                </Text>
+                <Button href="/account/settings" variant="secondary" size="sm">
+                  Set player style
+                </Button>
+              </Flow>
+            </Card>
+          )}
         </>
       )}
     </Flow>
