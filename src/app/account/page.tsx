@@ -296,9 +296,13 @@ function AccountContent() {
                 <Td variant="heading">Player style</Td>
                 <Td className="text-right">
                   <div className="flex items-center justify-end gap-3">
-                    <Text as="span" variant={account.playstyle ? undefined : "muted"}>
-                      {account.playstyle === 1 ? "Active" : account.playstyle === 2 ? "Idle" : "Unset"}
-                    </Text>
+                    {account.playstyle === 1 ? (
+                      <Badge variant="success">Active</Badge>
+                    ) : account.playstyle === 2 ? (
+                      <Badge variant="warning">Idle</Badge>
+                    ) : (
+                      <Text as="span" variant="muted">Unset</Text>
+                    )}
                     <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>
                       Edit
                     </Button>
