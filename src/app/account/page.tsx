@@ -58,6 +58,7 @@ interface AccountData {
   house: string;
   steam_id: string | null;
   approved: boolean;
+  is_admin: boolean;
   playstyle: 1 | 2 | null;
   achievements: Record<string, number>;
   spirit_xp: number;
@@ -248,6 +249,11 @@ function AccountContent() {
       {account && !activeCharId && (
         <>
           <Heading level="h1">Account</Heading>
+          {account.is_admin && (
+            <Link href="/admin" className="text-xs text-white/40 hover:text-white/70 font-mono">
+              /admin
+            </Link>
+          )}
           <pre className="text-xs text-white/40 font-mono whitespace-pre-wrap break-all">
             {JSON.stringify(account.achievements, null, 2)}
           </pre>
