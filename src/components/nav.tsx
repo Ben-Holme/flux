@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 const CRAFTER_ICON = (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
     <path
@@ -42,6 +43,7 @@ const DISCORD_SVG = (
 );
 
 export default function Nav() {
+  const { session, logout } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
@@ -109,7 +111,7 @@ export default function Nav() {
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {MENU_LINKS.map(({ href, label, external, discord, small }) => {
+        {MENU_LINKS.filter(({ href }) => !(href === "/account" && !session)).map(({ href, label, external, discord, small }) => {
           const linkClass = small
             ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
                 label === "Realspawn Studios" ? " mt-[50px]" : ""
@@ -150,6 +152,14 @@ export default function Nav() {
             </Link>
           );
         })}
+        {session && (
+          <button
+            className="no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[calc(0.75em-4px)] text-white opacity-50 cursor-pointer bg-transparent border-0"
+            onClick={() => { logout(); setOpen(false); }}
+          >
+            Sign Out
+          </button>
+        )}
       </div>
 
       {/* Nav bar */}

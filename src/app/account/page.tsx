@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
@@ -39,7 +38,7 @@ function XpDisplay({ account }: { account: AccountData }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 function DashboardContent() {
-  const { session, logout } = useAuth();
+  const { session } = useAuth();
   const router = useRouter();
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,19 +88,12 @@ function DashboardContent() {
 
   return (
     <Flow className="min-h-[90vh] px-6 pb-20">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        {account?.is_admin ? (
-          <Link href="/admin" className="font-mono text-xs text-white/40 hover:text-white/70">
-            /admin
-          </Link>
-        ) : (
-          <span />
-        )}
-        <Button onClick={logout} variant="ghost">
-          Sign Out
-        </Button>
-      </div>
+      {/* Admin link */}
+      {account?.is_admin && (
+        <Link href="/admin" className="font-mono text-xs text-white/40 hover:text-white/70">
+          /admin
+        </Link>
+      )}
 
       {loading && <Text>Loading…</Text>}
       {error && <Alert>Error: {error}</Alert>}
