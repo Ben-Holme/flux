@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import styles from "./button.module.css";
 
-type Variant = "primary" | "default" | "ghost";
+type Variant = "primary" | "default" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -36,6 +36,7 @@ const SIZE_CLASS: Record<Size, string> = {
 const VARIANT_CLASS: Record<Variant, string> = {
   default: "",
   primary: cn("bg-[#111]", styles.primary),
+  secondary: "bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.14] after:hidden",
   ghost: "bg-transparent after:hidden hover:bg-transparent disabled:bg-transparent max-[768px]:min-w-0",
 };
 

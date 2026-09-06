@@ -257,7 +257,7 @@ function AccountContent() {
                 <Td variant="heading">Password</Td>
                 <Td className="text-right">
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setPasswordOpen(true)}
                   >
@@ -284,7 +284,7 @@ function AccountContent() {
                     <Button
                       href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
                       external
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
                     >
                       Connect Steam
@@ -299,7 +299,7 @@ function AccountContent() {
                     <Text as="span" variant={account.playstyle ? undefined : "muted"}>
                       {account.playstyle === 1 ? "Active" : account.playstyle === 2 ? "Idle" : "Unset"}
                     </Text>
-                    <Button variant="ghost" size="sm" onClick={() => setPlaystyleOpen(true)}>
+                    <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>
                       Edit
                     </Button>
                   </div>
