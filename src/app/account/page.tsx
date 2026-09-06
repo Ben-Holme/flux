@@ -38,7 +38,7 @@ function XpDisplay({ account }: { account: AccountData }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 function DashboardContent() {
-  const { session } = useAuth();
+  const { session, ready } = useAuth();
   const router = useRouter();
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +47,7 @@ function DashboardContent() {
   const [playstylePending, setPlaystylePending] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
     if (!session) {
       router.push("/login?redirect=/account");
       return;
@@ -61,7 +62,7 @@ function DashboardContent() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [session, router]);
+  }, [session, ready, router]);
 
   const setPlaystyle = async (value: 1 | 2) => {
     if (!session || !account) return;

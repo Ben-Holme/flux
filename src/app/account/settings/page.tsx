@@ -163,7 +163,7 @@ function DeleteAccountModal({
 // ── Settings page ─────────────────────────────────────────────────────────────
 
 function SettingsContent() {
-  const { session } = useAuth();
+  const { session, ready } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const steamParam = searchParams.get("steam");
@@ -178,6 +178,7 @@ function SettingsContent() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
     if (!session) {
       router.push("/login?redirect=/account/settings");
       return;
@@ -192,7 +193,7 @@ function SettingsContent() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [session, router]);
+  }, [session, ready, router]);
 
   const setPlaystyle = async (value: 1 | 2) => {
     if (!session || !account) return;

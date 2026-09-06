@@ -9,7 +9,7 @@ import { Alert, Flow, Heading, Text } from "@/components/ui";
 import type { AccountData } from "../account-types";
 
 function CharactersContent() {
-  const { session } = useAuth();
+  const { session, ready } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const charParam = searchParams.get("char");
@@ -20,6 +20,7 @@ function CharactersContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!ready) return;
     if (!session) {
       const redirect = activeCharId
         ? `/account/characters?char=${activeCharId}`
@@ -37,7 +38,7 @@ function CharactersContent() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [session, router, activeCharId]);
+  }, [session, ready, router, activeCharId]);
 
   if (!session) return null;
 
