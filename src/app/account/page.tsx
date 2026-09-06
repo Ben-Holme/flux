@@ -312,6 +312,23 @@ function AccountContent() {
             </TableBody>
           </Table>
 
+          {account.playstyle !== 1 && (
+            <Card>
+              <Flow>
+                <Eyebrow deco>You&apos;re in the queue</Eyebrow>
+                <Heading level="h3">Your call is coming.</Heading>
+                <Text>
+                  We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
+                  you&apos;ll hear from us at <strong>{account.email}</strong>. Nothing to do
+                  in the meantime — your account is ready and your spot is held.
+                </Text>
+                <Text variant="muted">
+                  If you&apos;re ready to jump in now, update your player style above.
+                </Text>
+              </Flow>
+            </Card>
+          )}
+
           {account.characters.length > 0 && (
             <>
               <Heading level="h2">Characters</Heading>
