@@ -24,7 +24,7 @@ const BASE =
   "disabled:cursor-not-allowed disabled:pointer-events-none disabled:text-white/20 disabled:bg-white/[0.08] disabled:scale-90 " +
   "after:content-[''] after:pointer-events-none after:absolute after:inset-[2px] after:rounded-[3px] after:border after:border-white after:opacity-10 after:transition-[opacity] after:duration-500 " +
   "hover:after:opacity-20 hover:after:duration-200 disabled:after:hidden " +
-  "max-[768px]:min-w-[10em] " +
+  "max-[768px]:min-w-[5em] " +
   "[&_svg]:inline-block [&_svg]:h-6 [&_svg]:mb-[-24px] [&_svg]:mr-2 [&_svg]:-translate-y-[13px]";
 
 const SIZE_CLASS: Record<Size, string> = {
@@ -36,7 +36,7 @@ const SIZE_CLASS: Record<Size, string> = {
 const VARIANT_CLASS: Record<Variant, string> = {
   default: "",
   primary: cn("bg-[#111]", styles.primary),
-  ghost: "bg-transparent p-0 rounded-none after:hidden hover:bg-transparent disabled:bg-transparent max-[768px]:min-w-0",
+  ghost: "bg-transparent after:hidden hover:bg-transparent disabled:bg-transparent max-[768px]:min-w-0",
 };
 
 export default function Button({
