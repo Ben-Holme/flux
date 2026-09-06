@@ -148,6 +148,7 @@ function AccountContent() {
   const [error, setError] = useState<string | null>(null);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [playstylePending, setPlaystylePending] = useState(false);
+  const [playstyleOpen, setPlaystyleOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
@@ -258,9 +259,9 @@ function AccountContent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setPasswordOpen((v) => !v)}
+                    onClick={() => setPasswordOpen(true)}
                   >
-                    {passwordOpen ? "Cancel" : "Change"}
+                    Change
                   </Button>
                 </Td>
               </TableRow>
@@ -291,22 +292,21 @@ function AccountContent() {
                   )}
                 </Td>
               </TableRow>
+              <TableRow>
+                <Td variant="heading">Player type</Td>
+                <Td className="text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    <Text as="span" variant={account.playstyle ? undefined : "muted"}>
+                      {account.playstyle === 1 ? "Active" : account.playstyle === 2 ? "Idle" : "Unset"}
+                    </Text>
+                    <Button variant="ghost" size="sm" onClick={() => setPlaystyleOpen(true)}>
+                      Edit
+                    </Button>
+                  </div>
+                </Td>
+              </TableRow>
             </TableBody>
           </Table>
-
-          {passwordOpen && (
-            <ChangePasswordForm
-              sessionkey={session.sessionkey}
-              onSuccess={() => setPasswordOpen(false)}
-            />
-          )}
-
-          <PlaystyleQuestion
-            value={account.playstyle}
-            achievements={account.achievements}
-            pending={playstylePending}
-            onSelect={setPlaystyle}
-          />
 
           {account.characters.length > 0 && (
             <>
@@ -322,6 +322,22 @@ function AccountContent() {
               Delete Account
             </Button>
           </div>
+
+          {passwordOpen && (
+            <ChangePasswordModal
+              sessionkey={session.sessionkey}
+              onClose={() => setPasswordOpen(false)}
+            />
+          )}
+
+          {playstyleOpen && (
+            <PlayerTypeModal
+              value={account.playstyle}
+              pending={playstylePending}
+              onSelect={(v) => { setPlaystyle(v); setPlaystyleOpen(false); }}
+              onClose={() => setPlaystyleOpen(false)}
+            />
+          )}
 
           {deleteOpen && (
             <DeleteAccountModal
@@ -484,83 +500,47 @@ function CharacterDetail({ char }: { char: Character }) {
 }
 
 
-function PlaystyleQuestion({
+function PlayerTypeModal({
   value,
   pending,
   onSelect,
+  onClose,
 }: {
   value: 1 | 2 | null;
-  achievements: Record<string, number>;
   pending: boolean;
   onSelect: (v: 1 | 2) => void;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-
-  const label =
-    value === 1
-      ? "Ready to play — here from the start"
-      : value === 2
-        ? "Waiting for the right moment"
-        : null;
-
   return (
-    <>
-      <Card
-        className="cursor-pointer transition-opacity hover:opacity-80"
-        onClick={() => setOpen(true)}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
+        onClick={(e) => e.stopPropagation()}
       >
         <Flow>
-          <Eyebrow deco>When do you want to play?</Eyebrow>
-          {label ? (
-            <div className="flex items-baseline gap-3">
-              <Text as="span">{label}</Text>
-              <Text as="span" variant="muted" className="text-[0.75rem]">change</Text>
-            </div>
-          ) : (
-            <Text variant="muted">Click to answer</Text>
-          )}
+          <Heading level="h3">How do you want to play?</Heading>
         </Flow>
-      </Card>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
-            onClick={(e) => e.stopPropagation()}
+        <div className="flex flex-col gap-3">
+          <Button
+            variant={value === 1 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(1)}
           >
-            <Flow>
-              <Eyebrow>Your time is real.</Eyebrow>
-              <Heading level="h3">Unyha is still being built.</Heading>
-              <Text>
-                You can play test now — rough edges included — or hold your
-                spot and come back when things are more complete. Either way,
-                your account is here waiting. This just helps us understand
-                where you are.
-              </Text>
-            </Flow>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                variant={value === 2 ? "primary" : "ghost"}
-                disabled={pending}
-                onClick={() => { onSelect(2); setOpen(false); }}
-              >
-                I&apos;ll wait for the right moment
-              </Button>
-              <Button
-                variant={value === 1 ? "primary" : "ghost"}
-                disabled={pending}
-                onClick={() => { onSelect(1); setOpen(false); }}
-              >
-                I&apos;m ready now
-              </Button>
-            </div>
-          </div>
+            I&apos;m ready for the next wave.
+          </Button>
+          <Button
+            variant={value === 2 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(2)}
+          >
+            I&apos;m happy to idle and follow the action for now.
+          </Button>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -652,12 +632,12 @@ function DeleteAccountModal({
   );
 }
 
-function ChangePasswordForm({
+function ChangePasswordModal({
   sessionkey,
-  onSuccess,
+  onClose,
 }: {
   sessionkey: string;
-  onSuccess: () => void;
+  onClose: () => void;
 }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -684,7 +664,7 @@ function ChangePasswordForm({
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      onSuccess();
+      onClose();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -693,47 +673,61 @@ function ChangePasswordForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div>
-        <FormLabel>Current Password</FormLabel>
-        <Input
-          type="password"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          autoComplete="current-password"
-          required
-          className="mt-1.5"
-          autoFocus
-        />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Heading level="h3">Change Password</Heading>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <FormLabel>Current Password</FormLabel>
+            <Input
+              type="password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              autoComplete="current-password"
+              required
+              className="mt-1.5"
+              autoFocus
+            />
+          </div>
+          <div>
+            <FormLabel>New Password</FormLabel>
+            <Input
+              type="password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              autoComplete="new-password"
+              required
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <FormLabel>Confirm New Password</FormLabel>
+            <Input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              autoComplete="new-password"
+              required
+              className="mt-1.5"
+            />
+          </div>
+          {error && <Alert>{error}</Alert>}
+          <div className="flex gap-3">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving…" : "Save Password"}
+            </Button>
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+          </div>
+        </form>
       </div>
-      <div>
-        <FormLabel>New Password</FormLabel>
-        <Input
-          type="password"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          autoComplete="new-password"
-          required
-          className="mt-1.5"
-        />
-      </div>
-      <div>
-        <FormLabel>Confirm New Password</FormLabel>
-        <Input
-          type="password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          autoComplete="new-password"
-          required
-          className="mt-1.5"
-        />
-      </div>
-      {error && <Alert>{error}</Alert>}
-      <div>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving…" : "Save Password"}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }
