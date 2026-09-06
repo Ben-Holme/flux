@@ -31,13 +31,10 @@ export function WikiXpTracker({ slug }: { slug: string }) {
   const { session } = useAuth();
   const qualifiedRef = useRef(false);
 
-  // WikiNoob — first wiki visit
+  // WikiNoob — first wiki visit. Server is idempotent; no localStorage gate needed.
   useEffect(() => {
     if (!session?.sessionkey) return;
-    if (localStorage.getItem("unyha_ach_WikiNoob")) return;
-    addAchievement("WikiNoob", session.sessionkey).then(() => {
-      localStorage.setItem("unyha_ach_WikiNoob", "1");
-    });
+    addAchievement("WikiNoob", session.sessionkey);
   }, [session]);
 
   // WikiPro — deep-read tracking
