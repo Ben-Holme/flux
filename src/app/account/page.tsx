@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
+import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
 import type { AccountData } from "./account-types";
 
@@ -43,6 +44,8 @@ function DashboardContent() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playstyleOpen, setPlaystyleOpen] = useState(false);
+  const [playstylePending, setPlaystylePending] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -60,6 +63,27 @@ function DashboardContent() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [session, router]);
+
+  const setPlaystyle = async (value: 1 | 2) => {
+    if (!session || !account) return;
+    setPlaystylePending(true);
+    try {
+      const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        body: JSON.stringify({ playstyle: value }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setAccount((prev) =>
+        prev ? { ...prev, playstyle: value, achievements: data.achievements ?? prev.achievements, spirit_xp: data.spirit_xp ?? prev.spirit_xp } : prev,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setPlaystylePending(false);
+    }
+  };
 
   if (!session) return null;
 
@@ -145,11 +169,20 @@ function DashboardContent() {
                   Are you ready to jump into the next wave, or happy to follow the action from
                   the sidelines for now? Let us know so we can plan accordingly.
                 </Text>
-                <Button href="/account/settings" variant="secondary" size="sm">
+                <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>
                   Set player style
                 </Button>
               </Flow>
             </Card>
+          )}
+
+          {playstyleOpen && (
+            <PlayerTypeModal
+              value={account.playstyle}
+              pending={playstylePending}
+              onSelect={(v) => { setPlaystyle(v); setPlaystyleOpen(false); }}
+              onClose={() => setPlaystyleOpen(false)}
+            />
           )}
         </>
       )}
