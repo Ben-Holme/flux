@@ -12,7 +12,15 @@ interface WikiArticle {
 }
 
 const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
     <circle cx="11" cy="11" r="8" />
     <path d="M21 21l-4.35-4.35" />
   </svg>
@@ -66,7 +74,10 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
               href={`/wiki/${article.slug}`}
               className="group block no-underline"
             >
-              <Card variant="raised" className="overflow-hidden p-0 transition-colors hover:border-white/25">
+              <Card
+                variant="raised"
+                className="overflow-hidden p-0 transition-colors hover:border-white/25 lg:p-0"
+              >
                 <div className="relative aspect-video w-full overflow-hidden">
                   {article.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -80,7 +91,7 @@ export function WikiSearch({ articles }: { articles: WikiArticle[] }) {
                   )}
                 </div>
                 <div className="px-3 py-2.5">
-                  <span className="font-heading text-sm uppercase tracking-wide text-white/80 group-hover:text-white">
+                  <span className="font-heading text-sm tracking-wide text-white/80 uppercase group-hover:text-white">
                     {article.title}
                   </span>
                 </div>

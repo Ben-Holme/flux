@@ -36,7 +36,8 @@ const SIZE_CLASS: Record<Size, string> = {
 const VARIANT_CLASS: Record<Variant, string> = {
   default: "",
   primary: cn("bg-[#111]", styles.primary),
-  secondary: "",
+  secondary:
+    "bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.14] after:hidden",
   ghost:
     "bg-transparent after:hidden hover:bg-transparent disabled:bg-transparent max-[768px]:min-w-0",
 };
