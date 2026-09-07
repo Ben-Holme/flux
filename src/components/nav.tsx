@@ -55,8 +55,12 @@ export default function Nav() {
   const [accountNavOpen, setAccountNavOpen] = useState(false);
 
   // Reset section navs when leaving their section
-  useEffect(() => { if (!isWiki) setWikiNavOpen(false); }, [isWiki]);
-  useEffect(() => { if (!isAccount) setAccountNavOpen(false); }, [isAccount]);
+  useEffect(() => {
+    if (!isWiki) setWikiNavOpen(false);
+  }, [isWiki]);
+  useEffect(() => {
+    if (!isAccount) setAccountNavOpen(false);
+  }, [isAccount]);
 
   // Sync when sidebars close themselves (e.g. after a link click)
   useEffect(() => {
@@ -66,7 +70,8 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    const handler = (e: Event) => setAccountNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    const handler = (e: Event) =>
+      setAccountNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
     window.addEventListener("account-nav-open", handler);
     return () => window.removeEventListener("account-nav-open", handler);
   }, []);
@@ -111,7 +116,7 @@ export default function Nav() {
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {MENU_LINKS.filter(({ href }) => !(href === "/account" && !session)).map(({ href, label, external, discord, small }) => {
+        {MENU_LINKS.map(({ href, label, external, discord, small }) => {
           const linkClass = small
             ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
                 label === "Realspawn Studios" ? " mt-[50px]" : ""
@@ -130,11 +135,10 @@ export default function Nav() {
                   fill="currentColor"
                 />
               </svg>
-
               {label}
             </span>
           ) : (
-            label
+            <>{label}</>
           );
           return external ? (
             <a
@@ -197,14 +201,20 @@ export default function Nav() {
         {/* Section nav toggles — mobile only */}
         {isWiki && (
           <button
-            className="hidden max-[768px]:flex items-center gap-1.5 text-white"
+            className="hidden items-center gap-1.5 text-white max-[768px]:flex"
             onClick={toggleWikiNav}
             aria-expanded={wikiNavOpen}
           >
-            <span className="font-heading text-[1.1rem] uppercase tracking-[0.15em] leading-none">
+            <span className="font-heading text-[1.1rem] leading-none tracking-[0.15em] uppercase">
               The Unyha Wiki
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="h-4 w-4 shrink-0 transition-transform duration-200"
               style={{ transform: wikiNavOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             >
@@ -214,14 +224,20 @@ export default function Nav() {
         )}
         {isAccount && (
           <button
-            className="hidden max-[768px]:flex items-center gap-1.5 text-white"
+            className="hidden items-center gap-1.5 text-white max-[768px]:flex"
             onClick={toggleAccountNav}
             aria-expanded={accountNavOpen}
           >
-            <span className="font-heading text-[1.1rem] uppercase tracking-[0.15em] leading-none">
+            <span className="font-heading text-[1.1rem] leading-none tracking-[0.15em] uppercase">
               My Account
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               className="h-4 w-4 shrink-0 transition-transform duration-200"
               style={{ transform: accountNavOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             >
