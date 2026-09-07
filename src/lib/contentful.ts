@@ -119,10 +119,16 @@ export async function getLatestPosts(limit = 3) {
     const res = await client.getEntries<PostSkeleton>({
       content_type: "post",
       order: ["-fields.date"],
-      limit,
+      // Fetch extra so filtering wiki posts doesn't leave us short
+      limit: limit * 4,
       include: 1,
     });
-    return res.items;
+    return res.items
+      .filter((p) => {
+        const cat = (p.fields.categry as { fields?: { name?: string } } | undefined)?.fields?.name;
+        return cat !== "Unyha Wiki";
+      })
+      .slice(0, limit);
   } catch {
     return [];
   }
