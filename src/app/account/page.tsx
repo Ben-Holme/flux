@@ -16,19 +16,22 @@ import type { AccountData } from "./account-types";
 function parseXpMap(raw: unknown): Record<string, number> {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw as Record<string, number>;
   if (typeof raw === "string") {
-    try { return JSON.parse(raw); } catch { return {}; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
   }
   return {};
 }
 
 // ── XP / Fame display ─────────────────────────────────────────────────────────
 
-function XpDisplay({ account, xpMap }: { account: AccountData; xpMap: Record<string, number> }) {
+function XpDisplay({ account }: { account: AccountData }) {
   const isApproved = account.approved;
-  const totalXp = Object.values(xpMap).reduce((a: number, b: number) => a + b, 0);
   const value = isApproved
     ? Math.max(0, ...account.characters.map((c) => c.fame))
-    : totalXp;
+    : account.spirit_xp;
   const label = isApproved ? "Fame" : "Spirit XP";
   const color = isApproved ? "#ffd98f" : "#88ccff";
   const glow = isApproved
@@ -83,13 +86,23 @@ function DashboardContent() {
     try {
       const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
         body: JSON.stringify({ playstyle: value }),
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
       setAccount((prev) =>
-        prev ? { ...prev, playstyle: value, spirit_xp: data.spirit_xp ?? prev.spirit_xp } : prev,
+        prev
+          ? {
+              ...prev,
+              playstyle: value,
+              spirit_xp: data.spirit_xp ?? prev.spirit_xp,
+              achievements: data.achievements ?? prev.achievements,
+            }
+          : prev,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
@@ -105,7 +118,7 @@ function DashboardContent() {
       {/* Admin link */}
       {account?.is_admin && (
         <Link href="/admin" className="font-mono text-xs text-white/40 hover:text-white/70">
-          /admin
+          <Button>Admin page</Button>
         </Link>
       )}
 
@@ -114,7 +127,7 @@ function DashboardContent() {
 
       {account && (
         <>
-          <XpDisplay account={account} xpMap={parseXpMap(account.spirit_xp)} />
+          <XpDisplay account={account} />
 
           {account.house && (
             <Text className="text-center text-sm tracking-[0.15em] text-white/50 uppercase">
@@ -123,7 +136,7 @@ function DashboardContent() {
           )}
 
           <div className="flex justify-center">
-            <AccountBadgeList spiritXp={parseXpMap(account.spirit_xp)} />
+            <AccountBadgeList achievements={parseXpMap(account.achievements)} />
           </div>
 
           {/* Onboarding nudges — shown when action is not yet taken */}
@@ -132,8 +145,8 @@ function DashboardContent() {
               <Flow>
                 <Heading level="h3">Connect Steam</Heading>
                 <Text>
-                  Link your Steam account to earn Spirit XP and sync your identity across the
-                  Unyha universe.
+                  Link your Steam account to earn Spirit XP and sync your identity across the Unyha
+                  universe.
                 </Text>
                 <Button
                   href={`https://api.unyhagame.com/ueserv/steam-link-start.php?sk=${session.sessionkey}`}
@@ -152,8 +165,8 @@ function DashboardContent() {
               <Flow>
                 <Heading level="h3">Set your player style</Heading>
                 <Text>
-                  Are you ready to jump into the next wave, or happy to follow the action from
-                  the sidelines for now? Let us know so we can plan accordingly.
+                  Are you ready to jump into the next wave, or happy to follow the action from the
+                  sidelines for now? Let us know so we can plan accordingly.
                 </Text>
                 <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>
                   Set player style
@@ -190,7 +203,10 @@ function DashboardContent() {
             <PlayerTypeModal
               value={account.playstyle}
               pending={playstylePending}
-              onSelect={(v) => { setPlaystyle(v); setPlaystyleOpen(false); }}
+              onSelect={(v) => {
+                setPlaystyle(v);
+                setPlaystyleOpen(false);
+              }}
               onClose={() => setPlaystyleOpen(false)}
             />
           )}

@@ -56,7 +56,7 @@ export function AccountBadge({ badgeKey, className }: { badgeKey: BadgeKey; clas
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em]",
+        "inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase",
         def.className,
         className,
       )}
@@ -69,9 +69,9 @@ export function AccountBadge({ badgeKey, className }: { badgeKey: BadgeKey; clas
 
 // ── AccountBadgeList ──────────────────────────────────────────────────────────
 
-export function AccountBadgeList({ spiritXp }: { spiritXp: Record<string, number> }) {
+export function AccountBadgeList({ achievements }: { achievements: Record<string, number> }) {
   const earned = (Object.keys(BADGE_DEFS) as BadgeKey[]).filter((k) =>
-    BADGE_DEFS[k].earned(spiritXp),
+    BADGE_DEFS[k].earned(achievements),
   );
   if (!earned.length) return null;
   return (

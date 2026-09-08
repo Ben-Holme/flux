@@ -211,6 +211,7 @@ function SettingsContent() {
           ...prev,
           playstyle: value,
           spirit_xp: data.spirit_xp ?? prev.spirit_xp,
+          achievements: data.achievements ?? prev.achievements,
         } : prev,
       );
     } catch (e) {
