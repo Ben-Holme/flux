@@ -27,7 +27,7 @@ interface User {
   verified: boolean;
   approved: boolean;
   is_admin: boolean;
-  spirit_xp: number;
+  spirit_xp: Record<string, number> | null;
   banned: boolean;
 }
 
@@ -259,7 +259,7 @@ function AdminContent() {
                 </TableRow>
                 <TableRow>
                   <Td variant="heading">Spirit XP</Td>
-                  <Td>{u.spirit_xp}</Td>
+                  <Td>{u.spirit_xp ? Object.values(u.spirit_xp).reduce((a, b) => a + b, 0) : 0}</Td>
                 </TableRow>
               </TableBody>
             </Table>

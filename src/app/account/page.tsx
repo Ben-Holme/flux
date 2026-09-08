@@ -15,9 +15,10 @@ import type { AccountData } from "./account-types";
 
 function XpDisplay({ account }: { account: AccountData }) {
   const isApproved = account.approved;
+  const totalXp = Object.values(account.spirit_xp).reduce((a, b) => a + b, 0);
   const value = isApproved
     ? Math.max(0, ...account.characters.map((c) => c.fame))
-    : account.spirit_xp;
+    : totalXp;
   const label = isApproved ? "Fame" : "Spirit XP";
   const color = isApproved ? "#ffd98f" : "#88ccff";
   const glow = isApproved
@@ -112,7 +113,7 @@ function DashboardContent() {
           )}
 
           <div className="flex justify-center">
-            <AccountBadgeList achievements={account.achievements} />
+            <AccountBadgeList spiritXp={account.spirit_xp} />
           </div>
 
           {/* Onboarding nudges — shown when action is not yet taken */}

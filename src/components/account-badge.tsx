@@ -42,7 +42,7 @@ const BADGE_DEFS = {
     Icon: HeirloomIcon,
     className: "border-red-800/50 bg-red-950/70 text-red-300",
     iconClassName: "text-red-400",
-    earned: (xp) => (xp["badge:founder"] ?? 0) >= 1,
+    earned: (xp) => "Founder" in xp,
   },
 } as const satisfies Record<string, BadgeDef>;
 
@@ -69,9 +69,9 @@ export function AccountBadge({ badgeKey, className }: { badgeKey: BadgeKey; clas
 
 // ── AccountBadgeList ──────────────────────────────────────────────────────────
 
-export function AccountBadgeList({ achievements }: { achievements: Record<string, number> }) {
+export function AccountBadgeList({ spiritXp }: { spiritXp: Record<string, number> }) {
   const earned = (Object.keys(BADGE_DEFS) as BadgeKey[]).filter((k) =>
-    BADGE_DEFS[k].earned(achievements),
+    BADGE_DEFS[k].earned(spiritXp),
   );
   if (!earned.length) return null;
   return (
