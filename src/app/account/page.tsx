@@ -8,6 +8,7 @@ import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
+import { AccountBadgeList } from "@/components/account-badge";
 import type { AccountData } from "./account-types";
 
 // ── XP / Fame display ─────────────────────────────────────────────────────────
@@ -108,6 +109,12 @@ function DashboardContent() {
             <Text className="text-center text-sm tracking-[0.15em] text-white/50 uppercase">
               House {account.house}
             </Text>
+          )}
+
+          {account.badges?.length > 0 && (
+            <div className="flex justify-center">
+              <AccountBadgeList badges={account.badges} />
+            </div>
           )}
 
           {/* Onboarding nudges — shown when action is not yet taken */}
