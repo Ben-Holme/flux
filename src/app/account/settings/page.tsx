@@ -210,7 +210,6 @@ function SettingsContent() {
         prev ? {
           ...prev,
           playstyle: value,
-          achievements: data.achievements ?? prev.achievements,
           spirit_xp: data.spirit_xp ?? prev.spirit_xp,
         } : prev,
       );
