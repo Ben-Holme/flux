@@ -11,11 +11,21 @@ import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
 import { AccountBadgeList } from "@/components/account-badge";
 import type { AccountData } from "./account-types";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function parseXpMap(raw: unknown): Record<string, number> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw as Record<string, number>;
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw); } catch { return {}; }
+  }
+  return {};
+}
+
 // ── XP / Fame display ─────────────────────────────────────────────────────────
 
-function XpDisplay({ account }: { account: AccountData }) {
+function XpDisplay({ account, xpMap }: { account: AccountData; xpMap: Record<string, number> }) {
   const isApproved = account.approved;
-  const totalXp = Object.values(account.spirit_xp).reduce((a, b) => a + b, 0);
+  const totalXp = Object.values(xpMap).reduce((a: number, b: number) => a + b, 0);
   const value = isApproved
     ? Math.max(0, ...account.characters.map((c) => c.fame))
     : totalXp;
@@ -104,7 +114,7 @@ function DashboardContent() {
 
       {account && (
         <>
-          <XpDisplay account={account} />
+          <XpDisplay account={account} xpMap={parseXpMap(account.spirit_xp)} />
 
           {account.house && (
             <Text className="text-center text-sm tracking-[0.15em] text-white/50 uppercase">
@@ -113,7 +123,7 @@ function DashboardContent() {
           )}
 
           <div className="flex justify-center">
-            <AccountBadgeList spiritXp={account.spirit_xp} />
+            <AccountBadgeList spiritXp={parseXpMap(account.spirit_xp)} />
           </div>
 
           {/* Onboarding nudges — shown when action is not yet taken */}
