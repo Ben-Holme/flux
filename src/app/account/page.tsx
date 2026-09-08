@@ -111,11 +111,9 @@ function DashboardContent() {
             </Text>
           )}
 
-          {account.badges?.length > 0 && (
-            <div className="flex justify-center">
-              <AccountBadgeList badges={account.badges} />
-            </div>
-          )}
+          <div className="flex justify-center">
+            <AccountBadgeList achievements={account.achievements} />
+          </div>
 
           {/* Onboarding nudges — shown when action is not yet taken */}
           {!account.steam_id && (

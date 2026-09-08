@@ -2,9 +2,8 @@
 
 import { cn } from "@/lib/cn";
 
-// ── Badge definitions ─────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
-// Heirloom icon — gem/crystal shape from public/unyha-icons/heirloom.svg
 const HeirloomIcon = ({ className }: { className?: string }) => (
   <svg
     viewBox="0 0 24 24"
@@ -27,25 +26,31 @@ const HeirloomIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// ── Badge definitions ─────────────────────────────────────────────────────────
+
+type BadgeDef = {
+  label: string;
+  Icon: (props: { className?: string }) => React.ReactNode;
+  className: string;
+  iconClassName: string;
+  earned: (xp: Record<string, number>) => boolean;
+};
+
 const BADGE_DEFS = {
   founder: {
     label: "Founder",
     Icon: HeirloomIcon,
     className: "border-red-800/50 bg-red-950/70 text-red-300",
     iconClassName: "text-red-400",
+    earned: (xp) => (xp["badge:founder"] ?? 0) >= 1,
   },
-} as const;
+} as const satisfies Record<string, BadgeDef>;
 
-export type BadgeKey = keyof typeof BADGE_DEFS;
+type BadgeKey = keyof typeof BADGE_DEFS;
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── AccountBadge ──────────────────────────────────────────────────────────────
 
-interface AccountBadgeProps {
-  badgeKey: BadgeKey;
-  className?: string;
-}
-
-export function AccountBadge({ badgeKey, className }: AccountBadgeProps) {
+export function AccountBadge({ badgeKey, className }: { badgeKey: BadgeKey; className?: string }) {
   const def = BADGE_DEFS[badgeKey];
   const { Icon } = def;
   return (
@@ -62,14 +67,16 @@ export function AccountBadge({ badgeKey, className }: AccountBadgeProps) {
   );
 }
 
-// ── BadgeList ─────────────────────────────────────────────────────────────────
+// ── AccountBadgeList ──────────────────────────────────────────────────────────
 
-export function AccountBadgeList({ badges }: { badges: string[] }) {
-  const known = badges.filter((k): k is BadgeKey => k in BADGE_DEFS);
-  if (!known.length) return null;
+export function AccountBadgeList({ achievements }: { achievements: Record<string, number> }) {
+  const earned = (Object.keys(BADGE_DEFS) as BadgeKey[]).filter((k) =>
+    BADGE_DEFS[k].earned(achievements),
+  );
+  if (!earned.length) return null;
   return (
     <div className="flex flex-wrap gap-2">
-      {known.map((k) => (
+      {earned.map((k) => (
         <AccountBadge key={k} badgeKey={k} />
       ))}
     </div>
