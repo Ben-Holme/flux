@@ -13,18 +13,18 @@ async function WikiIndex() {
   const sections = await getWikiNav();
   // Flatten sections into a deduplicated article list for search
   const seen = new Set<string>();
-  const articles = sections.flatMap((s) => s.pages).filter((p) => {
-    if (seen.has(p.slug)) return false;
-    seen.add(p.slug);
-    return true;
-  });
+  const articles = sections
+    .flatMap((s) => s.pages)
+    .filter((p) => {
+      if (seen.has(p.slug)) return false;
+      seen.add(p.slug);
+      return true;
+    });
 
   return (
     <Flow as="article" className="mx-auto min-h-[90vh] max-w-[1100px] px-6 pb-6">
       <Heading level="h1">The Unyha Wiki</Heading>
-      <Text>
-        A growing reference for Unyha — lore, mechanics, and everything in between.
-      </Text>
+      <Text>A growing reference for Unyha — lore, mechanics, and everything in between.</Text>
       <WikiSearch articles={articles} />
     </Flow>
   );

@@ -98,23 +98,31 @@ function DesktopSectionGroup({
         {section.title}
         <ChevronDown open={open} />
       </button>
-      {open && (
-        <div className="mb-2">
-          {section.pages.map((page) => {
-            const href = `/wiki/${page.slug}`;
-            const isActive = pathname === href || pathname === `/${page.slug}`;
-            return (
-              <PageLink
-                key={page.slug}
-                href={href}
-                title={page.title}
-                isActive={isActive}
-                onNavigate={onNavigate}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div
+        className="mb-2"
+        style={{
+          opacity: open ? 1 : 0,
+          height: open ? "auto" : "0px",
+          transition: open ? "padding-bottom 1s cubic-bezier(0, 1, 0, 1)" : "all .2s",
+          transform: open ? "translateY(0)" : "translateY(-10px)",
+          paddingBottom: open ? "8px" : "0px",
+          visibility: open ? "visible" : "hidden",
+        }}
+      >
+        {section.pages.map((page) => {
+          const href = `/wiki/${page.slug}`;
+          const isActive = pathname === href || pathname === `/${page.slug}`;
+          return (
+            <PageLink
+              key={page.slug}
+              href={href}
+              title={page.title}
+              isActive={isActive}
+              onNavigate={onNavigate}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -346,7 +354,7 @@ export function WikiSidebarNav({ sections }: { sections: WikiNavSection[] }) {
       <div className="mb-4 max-[768px]:hidden">
         <Link
           href="/wiki"
-          className="font-heading text-[2rem] font-normal tracking-[0.2em] text-white uppercase no-underline"
+          className="font-heading text-[2rem] leading-tight font-normal tracking-[0.2em] text-white uppercase no-underline"
         >
           The Unyha Wiki
         </Link>
