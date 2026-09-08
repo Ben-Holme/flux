@@ -34,7 +34,6 @@ export interface AccountData {
   approved: boolean;
   is_admin: boolean;
   playstyle: 1 | 2 | null;
-  achievements: Record<string, number>;
   spirit_xp: Record<string, number>;
   characters: Character[];
 }

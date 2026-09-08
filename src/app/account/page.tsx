@@ -79,7 +79,7 @@ function DashboardContent() {
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
       setAccount((prev) =>
-        prev ? { ...prev, playstyle: value, achievements: data.achievements ?? prev.achievements, spirit_xp: data.spirit_xp ?? prev.spirit_xp } : prev,
+        prev ? { ...prev, playstyle: value, spirit_xp: data.spirit_xp ?? prev.spirit_xp } : prev,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
