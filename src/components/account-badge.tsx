@@ -36,7 +36,7 @@ const BADGE_DEFS = {
   unyhaStreamer: {
     label: "Unyha Streamer",
     icon: "fame",
-    className: "border-gold/30 bg-gold/10 text-gold",
+    className: "border-indigo-500/30 bg-indigo-500/10 text-indigo-300",
     description: "Sharing the world of Unyha, live on stream.",
     iconClassName: "",
     earned: (xp) => "UnyhaStreamer" in xp,

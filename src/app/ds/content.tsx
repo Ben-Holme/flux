@@ -208,7 +208,9 @@ export default function DSContent() {
                   <Text>
                     Hover or focus a badge to read its description. Press Escape to dismiss.
                   </Text>
-                  <AccountBadgeList achievements={{ Founder: 1, CommittedPlayer: 25, UnyhaStreamer: 1 }} />
+                  <AccountBadgeList
+                    achievements={{ Founder: 1, CommittedPlayer: 25, UnyhaStreamer: 1 }}
+                  />
                 </Flow>
               </DemoSection>
 
