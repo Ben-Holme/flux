@@ -116,7 +116,7 @@ export async function getLatestPosts(limit = 3) {
   cacheLife("hours");
   cacheTag("posts");
   try {
-    const posts: Entry<PostSkeleton>[] = [];
+    const posts: Entry<PostSkeleton, undefined>[] = [];
     let skip = 0;
 
     // Wiki articles share the post type. Keep paging until enough news is found
