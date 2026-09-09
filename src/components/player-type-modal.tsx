@@ -26,16 +26,24 @@ export function PlayerTypeModal({
         <Flow>
           <Heading level="h3">Player style</Heading>
           <Text>
-            Are you ready for the full early access experience, and lead the spiritfolk to glory?
-            Or do you want to follow the action from the sidelines for now?
+            Ready to play when your invitation arrives, or following along for now? Let us know so
+            we can plan. You can change this in Settings.
           </Text>
         </Flow>
-        <div className="flex gap-3">
-          <Button variant={value === 2 ? "primary" : "ghost"} disabled={pending} onClick={() => onSelect(2)}>
-            Idle
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button
+            variant={value === 1 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(1)}
+          >
+            I&apos;m so ready!!!
           </Button>
-          <Button variant={value === 1 ? "primary" : "ghost"} disabled={pending} onClick={() => onSelect(1)}>
-            Active
+          <Button
+            variant={value === 2 ? "primary" : "ghost"}
+            disabled={pending}
+            onClick={() => onSelect(2)}
+          >
+            Lurker for now
           </Button>
         </div>
       </div>

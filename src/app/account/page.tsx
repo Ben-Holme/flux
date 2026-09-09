@@ -173,11 +173,11 @@ function DashboardContent() {
               <Flow>
                 <Heading level="h3">In queue</Heading>
                 <Text>
-                  We&apos;re opening the world of Unyha in waves. When it&apos;s your turn,
-                  you&apos;ll hear from us at <strong>{account.email}</strong>.
+                  Early access starts October 1. We&apos;ll invite players in small waves. When
+                  it&apos;s your turn, we&apos;ll email you at <strong>{account.email}</strong>.
                 </Text>
                 <Text>
-                  In the meantime — arm yourself.{" "}
+                  In the meantime, arm yourself.{" "}
                   <Link
                     href="/wiki"
                     className="text-white underline underline-offset-2 hover:text-white/70"
@@ -190,7 +190,17 @@ function DashboardContent() {
             </Card>
           ) : account.characters.length > 0 ? (
             <CharacterCard char={account.characters[0]} />
-          ) : null}
+          ) : (
+            <Card>
+              <Flow>
+                <Heading level="h3">You&apos;re in!</Heading>
+                <Text>Your access is ready. The world of Unyha is waiting for you to join.</Text>
+                <Text>
+                  Launch Unyha on Steam and create your first character. Your story starts there.
+                </Text>
+              </Flow>
+            </Card>
+          )}
 
           {playstyleOpen && (
             <PlayerTypeModal

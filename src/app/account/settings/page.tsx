@@ -316,14 +316,14 @@ function SettingsContent() {
               <TableRow>
                 <Td variant="heading">Player style</Td>
                 <Td className="text-right">
-                  <div className="flex items-center justify-end gap-3">
+                  <div className="flex flex-wrap items-center justify-end gap-3">
                     {account.playstyle === 1 ? (
-                      <Badge variant="success">Active</Badge>
+                      <Badge variant="success">I&apos;m so ready!!!</Badge>
                     ) : account.playstyle === 2 ? (
-                      <Badge variant="warning">Idle</Badge>
+                      <Badge variant="warning">Lurker for now</Badge>
                     ) : (
                       <Text as="span" variant="muted">
-                        Unset
+                        Not chosen
                       </Text>
                     )}
                     <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>

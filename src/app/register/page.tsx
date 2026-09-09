@@ -148,12 +148,11 @@ export default function RegisterPage() {
         <div className="mb-8 text-center">
           <Eyebrow className="mb-3 justify-center">Unyha · Early Access</Eyebrow>
           <Heading level="h1" className="mb-4">
-            Join the List
+            Sign Up
           </Heading>
           <Text variant="muted">
-            Creating an account puts you on the founders&apos; list. We bring people in manually,
-            in small waves — most will wait a little before getting access. When your wave opens,
-            you&apos;ll hear first.
+            Early access starts October 1. Create an account and verify your email. We&apos;ll
+            invite players in small waves and email you when it&apos;s your turn.
           </Text>
         </div>
         <Suspense>

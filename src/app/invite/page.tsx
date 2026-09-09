@@ -13,7 +13,7 @@ import { Divider } from "@/components/ui/divider";
 export const metadata = {
   title: { absolute: "Unyha - Early Access Invite" },
   description:
-    "We've been building Unyha for a long time. Now we're opening the doors - a few of you at first, then more. Come play.",
+    "Unyha early access starts October 1. Sign up now. We'll invite players in small waves and email you when it's your turn.",
 };
 
 const STATIC_SCREENSHOTS = [
@@ -81,8 +81,8 @@ export default async function InvitePage() {
                 The season you&apos;d be walking into, The Golden City, is the one exception -
                 written by hand, built to sit right on the seam between Unyha&apos;s long backstory
                 and its living present. Season one is where the world stops being history and starts
-                being made. After it, the world takes the pen. We&apos;re opening the doors now, a
-                few at a time, and we&apos;re asking you to come play - and to take the project
+                being made. After it, the world takes the pen. We&apos;re opening the doors October
+                1, a few at a time, and we&apos;re asking you to come play - and to take the project
                 seriously enough to see what it is.
               </Text>
             </Flow>
@@ -196,16 +196,12 @@ export default async function InvitePage() {
           <Flow>
             <Heading level="h2">Join us</Heading>
             <Text>
-              Here&apos;s how getting in works. You sign up and link your Steam account - that puts
-              you on the founders&apos; list. From there we bring people in ourselves, in waves, a
-              handful at a time. We&apos;re doing it by hand because we want the early world to hold
-              together, not flood.
+              Early access starts October 1. Sign up and verify your email. We&apos;ll invite
+              players in small waves and email you when it&apos;s your turn.
             </Text>
             <Text>
-              So most of you will wait a little, and that&apos;s the point, not a brush-off.
-              Everyone on the list is part of this founding cohort - the waves just open one after
-              another. While you wait, we&apos;ll keep you in the loop and give you reasons to stick
-              around.
+              Not everyone will get in on day one. We&apos;re bringing people in by hand so the
+              early world has room to grow. While you wait, read the wiki or join us on Discord.
             </Text>
             <Button variant="primary" href="/register">
               <svg
@@ -264,7 +260,6 @@ export default async function InvitePage() {
                 </svg>
                 Join Discord
               </Button>
-              <Button href="/register">Newsletter</Button>
             </div>
           </Flow>
         </Card>
@@ -298,11 +293,11 @@ export default async function InvitePage() {
             },
             {
               q: "Is it free to play?",
-              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Early founders don't help us financially - but they do help the game, by populating the world early enough that it starts generating real history before it scales.",
+              a: "Yes, and we intend to keep it that way. We're not publisher-funded, so honestly: free for as long as we can afford the servers. Early players help the game by populating the world and giving it real history before it scales.",
             },
             {
               q: "When can I actually play?",
-              a: "We'll announce a date - it's TBD for now. When it's set, everyone on the founders list will hear first. From there we bring people in manually, in small waves, so most will wait a little before getting access. We're going slowly on purpose: the early world needs room to breathe before it scales.",
+              a: "Early access starts October 1. Sign up and verify your email. We'll invite players in small waves and email you when it's your turn. Not everyone will get in on day one.",
             },
             {
               q: "What platform does it run on?",
