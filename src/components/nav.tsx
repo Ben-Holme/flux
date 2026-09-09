@@ -23,6 +23,7 @@ const MENU_LINKS = [
   { href: "/wiki", label: "Wiki" },
   { href: "/chronicle", label: "Chronicle" },
   { href: "/account", label: "My Account" },
+  { href: "/admin", label: "Admin", adminOnly: true },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
   { href: "/privacy-policy", label: "Privacy Policy", small: true },
@@ -43,7 +44,7 @@ const DISCORD_SVG = (
 );
 
 export default function Nav() {
-  const { session } = useAuth();
+  const { isAdmin } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
@@ -116,46 +117,48 @@ export default function Nav() {
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {MENU_LINKS.map(({ href, label, external, discord, small }) => {
-          const linkClass = small
-            ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
-                label === "Realspawn Studios" ? " mt-[50px]" : ""
-              }`
-            : "no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[calc(0.75em-4px)] text-white";
-          const inner = discord ? (
-            <span style={{ display: "flex", alignItems: "center" }}>
-              {DISCORD_SVG}
-              {label}
-            </span>
-          ) : href === "/account" ? (
-            <span className="flex items-center gap-3">
-              <svg width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M14.6324 4.15914V0.253784H9.36787V4.15914H3.87109V14.9204H7.04529V10.6624H8.284V23.7462H11.3808V14.7462H12.6195V23.7462H15.7937V10.6624H16.955V14.9204H20.1292V4.15914H14.6324Z"
-                  fill="currentColor"
-                />
-              </svg>
-              {label}
-            </span>
-          ) : (
-            <>{label}</>
-          );
-          return external ? (
-            <a
-              key={href}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={linkClass}
-            >
-              {inner}
-            </a>
-          ) : (
-            <Link key={href} href={href} className={linkClass} onClick={() => setOpen(false)}>
-              {inner}
-            </Link>
-          );
-        })}
+        {MENU_LINKS.filter((link) => !link.adminOnly || isAdmin).map(
+          ({ href, label, external, discord, small }) => {
+            const linkClass = small
+              ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
+                  label === "Realspawn Studios" ? " mt-[50px]" : ""
+                }`
+              : "no-underline font-heading uppercase tracking-[0.2em] text-[1.25em] my-[calc(0.75em-4px)] text-white";
+            const inner = discord ? (
+              <span style={{ display: "flex", alignItems: "center" }}>
+                {DISCORD_SVG}
+                {label}
+              </span>
+            ) : href === "/account" ? (
+              <span className="flex items-center gap-3">
+                <svg width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M14.6324 4.15914V0.253784H9.36787V4.15914H3.87109V14.9204H7.04529V10.6624H8.284V23.7462H11.3808V14.7462H12.6195V23.7462H15.7937V10.6624H16.955V14.9204H20.1292V4.15914H14.6324Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                {label}
+              </span>
+            ) : (
+              <>{label}</>
+            );
+            return external ? (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClass}
+              >
+                {inner}
+              </a>
+            ) : (
+              <Link key={href} href={href} className={linkClass} onClick={() => setOpen(false)}>
+                {inner}
+              </Link>
+            );
+          },
+        )}
       </div>
 
       {/* Nav bar */}

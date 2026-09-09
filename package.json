@@ -13,6 +13,7 @@
   "dependencies": {
     "@contentful/rich-text-react-renderer": "^16.2.1",
     "@contentful/rich-text-types": "^17.2.7",
+    "@radix-ui/react-tooltip": "^1.2.16",
     "@types/three": "^0.184.1",
     "clsx": "^2.1.1",
     "contentful": "^11.12.2",
@@ -27,6 +28,7 @@
     "three": "^0.184.0"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

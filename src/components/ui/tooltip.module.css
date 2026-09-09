@@ -1,0 +1,22 @@
+.content[data-state="delayed-open"],
+.content[data-state="instant-open"] {
+  animation: enter 180ms ease-out both;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content[data-state="delayed-open"],
+  .content[data-state="instant-open"] {
+    animation: none;
+  }
+}

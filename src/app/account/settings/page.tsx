@@ -23,13 +23,7 @@ import type { AccountData } from "../account-types";
 
 // ── Modals ────────────────────────────────────────────────────────────────────
 
-function ChangePasswordModal({
-  sessionkey,
-  onClose,
-}: {
-  sessionkey: string;
-  onClose: () => void;
-}) {
+function ChangePasswordModal({ sessionkey, onClose }: { sessionkey: string; onClose: () => void }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -38,7 +32,10 @@ function ChangePasswordModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (next !== confirm) { setError("New passwords do not match."); return; }
+    if (next !== confirm) {
+      setError("New passwords do not match.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -70,20 +67,46 @@ function ChangePasswordModal({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <FormLabel>Current Password</FormLabel>
-            <Input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required className="mt-1.5" autoFocus />
+            <Input
+              type="password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              autoComplete="current-password"
+              required
+              className="mt-1.5"
+              autoFocus
+            />
           </div>
           <div>
             <FormLabel>New Password</FormLabel>
-            <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" required className="mt-1.5" />
+            <Input
+              type="password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              autoComplete="new-password"
+              required
+              className="mt-1.5"
+            />
           </div>
           <div>
             <FormLabel>Confirm New Password</FormLabel>
-            <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required className="mt-1.5" />
+            <Input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              autoComplete="new-password"
+              required
+              className="mt-1.5"
+            />
           </div>
           {error && <Alert>{error}</Alert>}
           <div className="flex gap-3">
-            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Save Password"}</Button>
-            <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving…" : "Save Password"}
+            </Button>
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancel
+            </Button>
           </div>
         </form>
       </div>
@@ -91,13 +114,7 @@ function ChangePasswordModal({
   );
 }
 
-function DeleteAccountModal({
-  sessionkey,
-  onClose,
-}: {
-  sessionkey: string;
-  onClose: () => void;
-}) {
+function DeleteAccountModal({ sessionkey, onClose }: { sessionkey: string; onClose: () => void }) {
   const { logout } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -135,12 +152,21 @@ function DeleteAccountModal({
       >
         <Flow>
           <Heading level="h3">Delete Account</Heading>
-          <Text>This permanently deletes your account and all associated data. This cannot be undone.</Text>
+          <Text>
+            This permanently deletes your account and all associated data. This cannot be undone.
+          </Text>
         </Flow>
         <form onSubmit={handleDelete} className="flex flex-col gap-4">
           <div>
             <FormLabel>Confirm your password</FormLabel>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1.5" autoFocus />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="mt-1.5"
+              autoFocus
+            />
           </div>
           <Checkbox
             checked={confirmed}
@@ -152,7 +178,9 @@ function DeleteAccountModal({
             <Button type="submit" variant="ghost" disabled={loading || !confirmed || !password}>
               {loading ? "Deleting…" : "Delete my account"}
             </Button>
-            <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancel
+            </Button>
           </div>
         </form>
       </div>
@@ -201,18 +229,23 @@ function SettingsContent() {
     try {
       const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
         body: JSON.stringify({ playstyle: value }),
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
       setAccount((prev) =>
-        prev ? {
-          ...prev,
-          playstyle: value,
-          spirit_xp: data.spirit_xp ?? prev.spirit_xp,
-          achievements: data.achievements ?? prev.achievements,
-        } : prev,
+        prev
+          ? {
+              ...prev,
+              playstyle: value,
+              spirit_xp: data.spirit_xp ?? prev.spirit_xp,
+              achievements: data.achievements ?? prev.achievements,
+            }
+          : prev,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save");
@@ -289,7 +322,9 @@ function SettingsContent() {
                     ) : account.playstyle === 2 ? (
                       <Badge variant="warning">Idle</Badge>
                     ) : (
-                      <Text as="span" variant="muted">Unset</Text>
+                      <Text as="span" variant="muted">
+                        Unset
+                      </Text>
                     )}
                     <Button variant="secondary" size="sm" onClick={() => setPlaystyleOpen(true)}>
                       Edit
@@ -309,13 +344,19 @@ function SettingsContent() {
       )}
 
       {passwordOpen && session && (
-        <ChangePasswordModal sessionkey={session.sessionkey} onClose={() => setPasswordOpen(false)} />
+        <ChangePasswordModal
+          sessionkey={session.sessionkey}
+          onClose={() => setPasswordOpen(false)}
+        />
       )}
       {playstyleOpen && (
         <PlayerTypeModal
           value={account?.playstyle ?? null}
           pending={playstylePending}
-          onSelect={(v) => { setPlaystyle(v); setPlaystyleOpen(false); }}
+          onSelect={(v) => {
+            setPlaystyle(v);
+            setPlaystyleOpen(false);
+          }}
           onClose={() => setPlaystyleOpen(false)}
         />
       )}

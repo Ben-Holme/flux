@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 interface Session {
   sessionkey: string;
@@ -15,6 +9,7 @@ interface Session {
 
 interface AuthContextValue {
   session: Session | null;
+  isAdmin: boolean;
   ready: boolean; // true once localStorage has been read
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -45,11 +40,37 @@ function clearSession() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [adminSession, setAdminSession] = useState<Session | null>(null);
+  const isAdmin = session !== null && adminSession === session;
 
   useEffect(() => {
     setSession(loadSession());
     setReady(true);
   }, []);
+
+  // Menu visibility only; admin endpoints must still enforce authorization.
+  useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+      headers: { Authorization: `Bearer ${session.sessionkey}` },
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to check admin status");
+        return response.json();
+      })
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setAdminSession(data.status === "OK" && data.is_admin === true ? session : null);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setAdminSession(null);
+      });
+    return () => controller.abort();
+  }, [session]);
 
   // After session is available (fresh login or restored from storage),
   // fire a background check for Steam wishlist XP. Best-effort — never throws.
@@ -83,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, ready, login, logout }}>
+    <AuthContext.Provider value={{ session, isAdmin, ready, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

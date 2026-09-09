@@ -1,48 +1,37 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
-const HeirloomIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-hidden
-  >
-    <path d="M11.5 2H12.5V5H11.5V2Z" />
-    <path d="M5.5 3H6.5L8 6H7L5.5 3Z" />
-    <path d="M18.5 3H17.5L16 6H17L18.5 3Z" />
-    <path d="M2 5H3L4.5 8H3.5L2 5Z" />
-    <path d="M22 5H21L19.5 8H20.5L22 5Z" />
-    <path d="M2 12.5L6 8.5H10L6 12.5H2Z" />
-    <path d="M8 14L12 22L16 14H8Z" />
-    <path d="M22 12.5H18L14 8.5H18L22 12.5Z" />
-    <path d="M18 14L14 22L22 14H18Z" />
-    <path d="M6 14L10 22L2 14H6Z" />
-    <path d="M8 12.5L12 8.5L16 12.5H8Z" />
-  </svg>
-);
+import { UnyhaIcon } from "./unyha-icon";
+import { Text, Tooltip } from "./ui";
+import type { ComponentProps } from "react";
 
 // ── Badge definitions ─────────────────────────────────────────────────────────
 
 type BadgeDef = {
   label: string;
-  Icon: (props: { className?: string }) => React.ReactNode;
+  icon: ComponentProps<typeof UnyhaIcon>["name"];
   className: string;
   iconClassName: string;
+  description: string;
   earned: (xp: Record<string, number>) => boolean;
 };
 
 const BADGE_DEFS = {
   founder: {
     label: "Founder",
-    Icon: HeirloomIcon,
-    className: "border-red-800/50 bg-red-950/70 text-red-300",
-    iconClassName: "text-red-400",
+    icon: "history",
+    className: "border-red-800/30 bg-red-500/10 text-red-300",
+    description: "True veteran from the early days <3",
+    iconClassName: "",
     earned: (xp) => "Founder" in xp,
+  },
+  committedPlayer: {
+    label: "READY!!!",
+    icon: "fire",
+    className: "border-teal-500/30 bg-teal-500/10 text-teal-300",
+    description: "Committed and ready to play NOW!!",
+    iconClassName: "",
+    earned: (xp) => "CommittedPlayer" in xp,
   },
 } as const satisfies Record<string, BadgeDef>;
 
@@ -52,18 +41,22 @@ type BadgeKey = keyof typeof BADGE_DEFS;
 
 export function AccountBadge({ badgeKey, className }: { badgeKey: BadgeKey; className?: string }) {
   const def = BADGE_DEFS[badgeKey];
-  const { Icon } = def;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase",
-        def.className,
-        className,
-      )}
-    >
-      <Icon className={cn("h-3 w-3 shrink-0", def.iconClassName)} />
-      {def.label}
-    </span>
+    <Tooltip content={def.description}>
+      <span
+        tabIndex={0}
+        className={cn(
+          "focus-visible:outline-gold inline-flex cursor-help items-center gap-1.5 rounded border px-2.5 py-1 text-[0.65rem] font-semibold tracking-[0.12em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2",
+          def.className,
+          className,
+        )}
+      >
+        <UnyhaIcon name={def.icon} className={cn("size-3", def.iconClassName)} />
+        <Text as="span" className="text-inherit">
+          {def.label}
+        </Text>
+      </span>
+    </Tooltip>
   );
 }
 

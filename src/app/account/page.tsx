@@ -115,13 +115,6 @@ function DashboardContent() {
 
   return (
     <Flow className="min-h-[90vh] px-6 pb-20">
-      {/* Admin link */}
-      {account?.is_admin && (
-        <Link href="/admin" className="font-mono text-xs text-white/40 hover:text-white/70">
-          <Button>Admin page</Button>
-        </Link>
-      )}
-
       {loading && <Text>Loading…</Text>}
       {error && <Alert>Error: {error}</Alert>}
 
@@ -130,7 +123,7 @@ function DashboardContent() {
           <XpDisplay account={account} />
 
           {account.house && (
-            <Text className="text-center text-sm tracking-[0.15em] text-white/50 uppercase">
+            <Text className="font-heading max-w-full text-center text-6xl tracking-[0.15em] uppercase">
               House {account.house}
             </Text>
           )}
