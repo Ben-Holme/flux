@@ -5,14 +5,13 @@ import { useAuth } from "@/context/auth-context";
 import type { Entry } from "contentful";
 import type { HeroSkeleton, SectionSkeleton } from "@/types/contentful";
 import type { Document } from "@contentful/rich-text-types";
-import Link from "next/link";
 import Button from "@/components/button";
 import VideoModal from "@/components/video-modal";
 import HeroScene from "@/components/hero-scene";
 import RichText from "@/components/rich-text";
 import { PostCard } from "@/components/post-card";
 import { SectionImage } from "@/components/section-image";
-import { Eyebrow, Heading } from "./ui";
+import { Eyebrow, Flow, Heading } from "./ui";
 
 const VIDEOS = [
   { name: "gameplay trailer", id: "okXJWVGoaeo" },
@@ -232,25 +231,21 @@ export default function HomePageClient({ blockItems, posts }: HomePageClientProp
 
       {/* ── News preview ────────────────────────────────────── */}
       {posts.length > 0 && (
-        <section className="mx-auto max-w-[1200px] px-6 py-16 md:py-20">
-          <Eyebrow className="mb-6" deco>
-            Latest
-          </Eyebrow>
+        <Flow as="section" className="mx-auto box-content max-w-[1200px] px-6 py-16 md:py-20">
+          <Eyebrow deco>Latest</Eyebrow>
           <Heading level="h1" as="h2">
             News
           </Heading>
-          <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
             {posts.map((post) => (
               <PostCard key={post.sys.id} post={post} />
             ))}
           </div>
 
-          <div className="mt-8 flex items-center justify-center">
-            <Link href="/devlog">
-              <Button>More news</Button>
-            </Link>
+          <div className="flex items-center justify-center">
+            <Button href="/devlog">More news</Button>
           </div>
-        </section>
+        </Flow>
       )}
 
       {/* ── Final hero (The Black Mine) — only if Contentful blockList doesn't already include scene 3 */}

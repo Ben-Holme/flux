@@ -116,19 +116,28 @@ export async function getLatestPosts(limit = 3) {
   cacheLife("hours");
   cacheTag("posts");
   try {
-    const res = await client.getEntries<PostSkeleton>({
-      content_type: "post",
-      order: ["-fields.date"],
-      // Fetch extra so filtering wiki posts doesn't leave us short
-      limit: limit * 4,
-      include: 1,
-    });
-    return res.items
-      .filter((p) => {
+    const posts: Entry<PostSkeleton>[] = [];
+    let skip = 0;
+
+    // Wiki articles share the post type. Keep paging until enough news is found
+    // rather than letting a batch of recent wiki updates hide older news.
+    while (posts.length < limit) {
+      const res = await client.getEntries<PostSkeleton>({
+        content_type: "post",
+        order: ["-fields.date", "sys.id"],
+        limit: Math.min(limit * 4, 1000),
+        skip,
+        include: 1,
+      });
+      posts.push(...res.items.filter((p) => {
         const cat = (p.fields.categry as { fields?: { name?: string } } | undefined)?.fields?.name;
         return cat !== "Unyha Wiki";
-      })
-      .slice(0, limit);
+      }));
+      skip += res.items.length;
+      if (res.items.length === 0 || skip >= res.total) break;
+    }
+
+    return posts.slice(0, limit);
   } catch {
     return [];
   }
