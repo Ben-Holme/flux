@@ -43,6 +43,7 @@ function AdminContent() {
   const [pending, setPending] = useState<Set<number>>(new Set());
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineConfirmOpen, setPipelineConfirmOpen] = useState(false);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -190,7 +191,7 @@ function AdminContent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={runPipeline}
+          onClick={() => setPipelineConfirmOpen(true)}
           disabled={pipelineLoading}
         >
           {pipelineLoading ? "Triggering…" : "Run Pipeline"}
@@ -199,6 +200,39 @@ function AdminContent() {
           <Text as="span" variant="muted">{pipelineStatus}</Text>
         )}
       </div>
+
+      {pipelineConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+          onClick={() => setPipelineConfirmOpen(false)}
+        >
+          <div
+            className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Flow>
+              <Heading level="h3">Run Build Pipeline?</Heading>
+              <Text>
+                This will kill the game server, rebuild the shipping client, upload to Steam,
+                rebuild the dev server, and restart it. Players currently in-game will be
+                disconnected.
+              </Text>
+            </Flow>
+            <div className="flex gap-3">
+              <Button
+                variant="primary"
+                onClick={() => { setPipelineConfirmOpen(false); runPipeline(); }}
+                disabled={pipelineLoading}
+              >
+                Yes, run it
+              </Button>
+              <Button variant="ghost" onClick={() => setPipelineConfirmOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <Text className="text-ember">Error: {error}</Text>}
 

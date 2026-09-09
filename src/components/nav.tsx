@@ -21,7 +21,7 @@ const MENU_LINKS = [
   { href: "/screenshots", label: "Screenshots" },
   { href: "/devlog", label: "News & Devlog" },
   { href: "/wiki", label: "Wiki" },
-  { href: "/chronicle", label: "Chronicle" },
+  // { href: "/chronicle", label: "Chronicle" },
   { href: "/account", label: "My Account" },
   { href: "/admin", label: "Admin", adminOnly: true },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
