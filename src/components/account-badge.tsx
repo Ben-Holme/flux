@@ -18,7 +18,7 @@ type BadgeDef = {
 
 const BADGE_DEFS = {
   founder: {
-    label: "Founder",
+    label: "Veteran",
     icon: "history",
     className: "border-red-800/30 bg-red-500/10 text-red-300",
     description: "True veteran from the early days <3",
