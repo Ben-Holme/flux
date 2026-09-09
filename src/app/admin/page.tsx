@@ -183,7 +183,7 @@ function AdminContent() {
   ];
 
   return (
-    <Flow className="mx-auto min-h-[90vh] max-w-[900px] px-6 pt-[120px] pb-20">
+    <Flow className="min-h-[90vh] px-6 pb-20">
       <Eyebrow>Admin</Eyebrow>
       <Heading level="h1">Players</Heading>
 

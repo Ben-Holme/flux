@@ -23,7 +23,7 @@ export function AccountMobileNav({ items }: { items: NavItem[] }) {
 
   return (
     <div
-      className="mx-4 mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md min-[768px]:hidden"
+      className="mx-4 mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md min-[769px]:hidden"
       style={{ animation: "wiki-nav-in 0.18s ease-out both" }}
     >
       <div className="p-3">

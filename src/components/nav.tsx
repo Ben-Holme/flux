@@ -6,7 +6,6 @@ import { useEffect, useLayoutEffect, useState } from "react";
 const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
 const CRAFTER_ICON = (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
     <path
@@ -23,7 +22,6 @@ const MENU_LINKS = [
   { href: "/wiki", label: "Wiki" },
   // { href: "/chronicle", label: "Chronicle" },
   { href: "/account", label: "My Account" },
-  { href: "/admin", label: "Admin", adminOnly: true },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
   { href: "/privacy-policy", label: "Privacy Policy", small: true },
@@ -44,12 +42,12 @@ const DISCORD_SVG = (
 );
 
 export default function Nav() {
-  const { isAdmin } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isChronicle = pathname === "/chronicle";
   const isWiki = pathname?.startsWith("/wiki") ?? false;
-  const isAccount = pathname?.startsWith("/account") ?? false;
+  const isAccount = pathname === "/account" || pathname.startsWith("/account/") ||
+    pathname === "/admin" || pathname.startsWith("/admin/");
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [wikiNavOpen, setWikiNavOpen] = useState(false);
@@ -117,7 +115,7 @@ export default function Nav() {
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        {MENU_LINKS.filter((link) => !link.adminOnly || isAdmin).map(
+        {MENU_LINKS.map(
           ({ href, label, external, discord, small }) => {
             const linkClass = small
               ? `no-underline font-heading uppercase tracking-[0.2em] text-[0.9em] my-[calc(0.75em-4px)] text-white opacity-50${
@@ -227,7 +225,7 @@ export default function Nav() {
         )}
         {isAccount && (
           <button
-            className="hidden items-center gap-1.5 text-white max-[768px]:flex"
+            className="hidden items-center gap-1.5 text-white max-[769px]:flex"
             onClick={toggleAccountNav}
             aria-expanded={accountNavOpen}
           >
