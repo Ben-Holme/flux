@@ -24,7 +24,10 @@ export function AccountShell({ children }: { children: ReactNode }) {
       <div className="max-[769px]:hidden">
         <div className="fixed w-[300px] max-[1200px]:w-[200px]">
           <div className="mb-6">
-            <Text as="span" className="font-heading text-[2rem] font-normal tracking-[0.2em] text-white uppercase">
+            <Text
+              as="span"
+              className="font-heading text-[2rem] font-normal tracking-[0.2em] text-white uppercase"
+            >
               My Account
             </Text>
           </div>
@@ -37,9 +40,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
         <AccountMobileNav items={items} />
       </div>
 
-      <div className="pb-[100px] max-[769px]:pt-[80px] max-[769px]:pb-20">
-        {children}
-      </div>
+      <div className="pb-[100px] max-[769px]:pt-[80px] max-[769px]:pb-20">{children}</div>
     </div>
   );
 }

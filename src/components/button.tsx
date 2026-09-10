@@ -11,6 +11,8 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
   href?: string;
   external?: boolean;
+  /** Decorative golden particles around the button. */
+  glimmer?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -47,12 +49,24 @@ export default function Button({
   size = "md",
   href,
   external,
+  glimmer = false,
   className,
   children,
   ...rest
 }: Props) {
   const cls = cn(BASE, SIZE_CLASS[size], VARIANT_CLASS[variant], className);
-  const content = <span className="relative z-[2]">{children}</span>;
+  const content = (
+    <>
+      {glimmer && (
+        <span className={styles.glimmer} aria-hidden="true">
+          {Array.from({ length: 10 }, (_, index) => (
+            <span key={index} className={styles.particle} />
+          ))}
+        </span>
+      )}
+      <span className="relative z-[2]">{children}</span>
+    </>
+  );
 
   if (href) {
     if (external) {

@@ -8,8 +8,7 @@ export function AccountMobileNav({ items }: { items: NavItem[] }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const handler = (e: Event) =>
-      setOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    const handler = (e: Event) => setOpen((e as CustomEvent<{ open: boolean }>).detail.open);
     window.addEventListener("account-nav-open", handler);
     return () => window.removeEventListener("account-nav-open", handler);
   }, []);

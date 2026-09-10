@@ -47,3 +47,61 @@
 .primary:disabled::before {
   display: none;
 }
+
+/* Separate decoration keeps the existing primary pseudo-elements intact. */
+:hover > .glimmer {
+  opacity: 0;
+  transition: .5s;
+}
+
+.glimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transition: 1.5s;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 8px #fe57, 0 0 64px #f307;
+}
+
+.particle {
+  --drift: 6px;
+  position: absolute;
+  width:  8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 5px var(--gold), 0 0 12px var(--gold);
+  opacity: 0;
+  animation: glimmer-rise 3.6s ease-in-out infinite;
+}
+
+.particle:nth-child(1) { left: 8%; top: 0; animation-delay: -0.4s; }
+.particle:nth-child(2) { left: 30%; top: 0; animation-delay: -2.1s; --drift: -8px; }
+.particle:nth-child(3) { left: 58%; top: 0; animation-delay: -1.2s; }
+.particle:nth-child(4) { left: 86%; top: 0; animation-delay: -3s; --drift: 10px; }
+.particle:nth-child(5) { left: 0; top: 45%; animation-delay: -1.7s; --drift: -10px; }
+.particle:nth-child(6) { right: 0; top: 65%; animation-delay: -0.7s; --drift: 12px; }
+.particle:nth-child(7) { left: 16%; bottom: 0; animation-delay: -2.8s; --drift: -7px; }
+.particle:nth-child(8) { left: 43%; bottom: 0; animation-delay: -0.1s; }
+.particle:nth-child(9) { left: 70%; bottom: 0; animation-delay: -1.5s; --drift: -5px; }
+.particle:nth-child(10) { right: 0; top: 15%; animation-delay: -2.4s; --drift: 9px; }
+
+@keyframes glimmer-rise {
+  0%, 100% { opacity: 0; transform: translate3d(0, 3px, 0) scale(0.3); }
+  25% { opacity: 0.85; }
+  55% { opacity: 0.5; }
+  85% { opacity: 0; transform: translate3d(var(--drift), -18px, 0) scale(0.1); }
+}
+
+:disabled > .glimmer,
+[aria-disabled="true"] > .glimmer {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none;
+    opacity: 0.45;
+  }
+}

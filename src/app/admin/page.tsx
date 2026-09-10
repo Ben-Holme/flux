@@ -61,7 +61,10 @@ function AdminContent() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!session) { router.push("/login?redirect=/admin"); return; }
+    if (!session) {
+      router.push("/login?redirect=/admin");
+      return;
+    }
     fetchUsers();
   }, [session, ready, router, fetchUsers]);
 
@@ -79,13 +82,15 @@ function AdminContent() {
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, approved } : u)),
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approved } : u)));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
-      setPending((p) => { const next = new Set(p); next.delete(userId); return next; });
+      setPending((p) => {
+        const next = new Set(p);
+        next.delete(userId);
+        return next;
+      });
     }
   };
 
@@ -103,13 +108,15 @@ function AdminContent() {
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, banned } : u)),
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, banned } : u)));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
-      setPending((p) => { const next = new Set(p); next.delete(userId); return next; });
+      setPending((p) => {
+        const next = new Set(p);
+        next.delete(userId);
+        return next;
+      });
     }
   };
 
@@ -127,13 +134,15 @@ function AdminContent() {
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, steam_id: null } : u)),
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, steam_id: null } : u)));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
-      setPending((p) => { const next = new Set(p); next.delete(userId); return next; });
+      setPending((p) => {
+        const next = new Set(p);
+        next.delete(userId);
+        return next;
+      });
     }
   };
 
@@ -197,7 +206,9 @@ function AdminContent() {
           {pipelineLoading ? "Triggering…" : "Run Pipeline"}
         </Button>
         {pipelineStatus && (
-          <Text as="span" variant="muted">{pipelineStatus}</Text>
+          <Text as="span" variant="muted">
+            {pipelineStatus}
+          </Text>
         )}
       </div>
 
@@ -221,7 +232,10 @@ function AdminContent() {
             <div className="flex gap-3">
               <Button
                 variant="primary"
-                onClick={() => { setPipelineConfirmOpen(false); runPipeline(); }}
+                onClick={() => {
+                  setPipelineConfirmOpen(false);
+                  runPipeline();
+                }}
                 disabled={pipelineLoading}
               >
                 Yes, run it
@@ -259,7 +273,9 @@ function AdminContent() {
         <Card key={u.id} className="flex items-center justify-between gap-4">
           <Flow className="min-w-0 flex-1">
             <div className="flex items-baseline gap-3">
-              <Heading level="h4" as="span">{u.username}</Heading>
+              <Heading level="h4" as="span">
+                {u.username}
+              </Heading>
               {u.is_admin && <Badge>Admin</Badge>}
               {u.approved && <Badge>Called</Badge>}
               {!u.verified && <Badge>Unverified</Badge>}
@@ -287,7 +303,9 @@ function AdminContent() {
                         </Button>
                       </span>
                     ) : (
-                      <Text as="span" variant="muted">Not linked</Text>
+                      <Text as="span" variant="muted">
+                        Not linked
+                      </Text>
                     )}
                   </Td>
                 </TableRow>
