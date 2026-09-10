@@ -296,7 +296,7 @@ export function WorldMap({
     const H = Math.max(1, mount.clientHeight);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     renderer.setSize(W, H);
     renderer.shadowMap.enabled = true;
     mount.appendChild(renderer.domElement);
@@ -337,7 +337,7 @@ export function WorldMap({
     // Terrain
     const dispTexture = new THREE.TextureLoader().load("/heightmap.png", requestRender);
     const terrainSize = 20;
-    const segments = 256;
+    const segments = W < 768 ? 128 : 256;
     const geo = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
 
     const mapOffset = (1 - MAP_SCALE) / 2;
