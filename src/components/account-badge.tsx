@@ -76,7 +76,7 @@ export function AccountBadgeList({ achievements }: { achievements: Record<string
   );
   if (!earned.length) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap justify-center gap-2">
       {earned.map((k) => (
         <AccountBadge key={k} badgeKey={k} />
       ))}
