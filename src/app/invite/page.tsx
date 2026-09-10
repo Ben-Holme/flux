@@ -203,7 +203,7 @@ export default async function InvitePage() {
               Not everyone will get in on day one. We&apos;re bringing people in by hand so the
               early world has room to grow. While you wait, read the wiki or join us on Discord.
             </Text>
-            <Button variant="primary" href="/register">
+            <Button variant="primary" href="/register" glimmer>
               <svg
                 width="24"
                 height="24"
