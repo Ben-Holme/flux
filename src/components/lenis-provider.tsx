@@ -11,7 +11,9 @@ export function LenisProvider({ children }: { children: ReactNode }) {
         lerp: 0.1,
         smoothWheel: true,
         syncTouch: true,
-        syncTouchLerp: 0.075,
+        syncTouchLerp: 0.05,          // lower = longer coast after lift (iOS-like)
+        touchInertiaExponent: 2,       // higher = more aggressive initial slowdown
+        touchMultiplier: 1,
       }}
     >
       {children}
