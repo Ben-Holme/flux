@@ -9,6 +9,7 @@ import Nav from "@/components/nav";
 import { NavGradientBlur } from "@/components/nav-gradient-blur";
 import Year from "@/components/year";
 import { AuthProvider } from "@/context/auth-context";
+import { LenisProvider } from "@/components/lenis-provider";
 
 const odebeeSans = Odibee_Sans({
   variable: "--font-odibee",
@@ -50,6 +51,7 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col bg-void antialiased">
         <Script src="https://scripts.simpleanalyticscdn.com/latest.js" />
         <AuthProvider>
+          <LenisProvider>
           <NavGradientBlur />
           <Suspense fallback={null}>
             <Nav />
@@ -83,6 +85,7 @@ export default function RootLayout({
               </Suspense>
             </p>
           </footer>
+          </LenisProvider>
         </AuthProvider>
       </body>
     </html>
