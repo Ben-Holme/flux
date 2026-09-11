@@ -258,7 +258,7 @@ function AdminContent() {
         placeholder="Search username…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
+        className="w-full max-w-sm rounded-md border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder-white/30 outline-none focus:border-white/30"
       />
 
       <div className="flex flex-wrap gap-2">
