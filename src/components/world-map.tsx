@@ -512,7 +512,7 @@ export function WorldMap({
     }
     camera.lookAt(camTarget);
     const camInitPos = camera.position.clone();
-    const camForward = new THREE.Vector3().subVectors(camTarget, camInitPos).normalize();
+    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
 
     // Fog + cloud values scale with the effective camera distance
     const rEff = Math.max(R_MIN, Math.min(R_MAX, camera.position.distanceTo(camTarget)));
@@ -661,14 +661,12 @@ export function WorldMap({
         (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
       ));
 
-      // Parallax dolly along camera's forward vector (±1.5 units)
-      if (isScrolling) needsRender = true;
+      // Parallax: slide camera along its screen-up axis with scroll
       const dollyDist = (progress - 0.5) * 3;
-      const targetPos = camInitPos.clone().addScaledVector(camForward, dollyDist);
+      const targetPos = camInitPos.clone().addScaledVector(camUp, dollyDist);
       if (camera.position.distanceTo(targetPos) > 0.002) {
         camera.position.copy(targetPos);
         camera.lookAt(camTarget);
-        needsRender = true;
       }
 
       // When idle, park the light at the responsive default and travel along the camera axis with scroll.
@@ -702,8 +700,6 @@ export function WorldMap({
         cursorLight.intensity = targetIntensity;
         needsRender = true;
       }
-      if (!needsRender) return;
-      needsRender = false;
       composer.render();
       positionMarkers();
       fpsCount++;
