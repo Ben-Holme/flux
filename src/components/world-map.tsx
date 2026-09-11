@@ -511,7 +511,8 @@ export function WorldMap({
       );
     }
     camera.lookAt(camTarget);
-    const camInitY = camera.position.y;
+    const camInitPos = camera.position.clone();
+    const camForward = new THREE.Vector3().subVectors(camTarget, camInitPos).normalize();
 
     // Fog + cloud values scale with the effective camera distance
     const rEff = Math.max(R_MIN, Math.min(R_MAX, camera.position.distanceTo(camTarget)));
@@ -627,7 +628,15 @@ export function WorldMap({
     // Track scroll so the idle light position updates as the section scrolls.
     const scrollRef = { value: window.scrollY };
     const mountPageTop = mount.getBoundingClientRect().top + window.scrollY;
-    const onWindowScroll = () => { scrollRef.value = window.scrollY; requestRender(); };
+    let scrollingTimer = 0;
+    let isScrolling = false;
+    const onWindowScroll = () => {
+      scrollRef.value = window.scrollY;
+      isScrolling = true;
+      needsRender = true;
+      clearTimeout(scrollingTimer);
+      scrollingTimer = window.setTimeout(() => { isScrolling = false; }, 200);
+    };
     window.addEventListener("scroll", onWindowScroll, { passive: true });
 
     const idleTarget = new THREE.Vector3(camTarget.x, LIGHT_PLANE_Y, camTarget.z);
@@ -652,10 +661,12 @@ export function WorldMap({
         (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
       ));
 
-      // Dolly camera up/down with scroll (±1 unit)
-      const targetCamY = camInitY + (0.5 - progress) * 2;
-      if (Math.abs(camera.position.y - targetCamY) > 0.002) {
-        camera.position.y = targetCamY;
+      // Parallax dolly along camera's forward vector (±1.5 units)
+      if (isScrolling) needsRender = true;
+      const dollyDist = (progress - 0.5) * 3;
+      const targetPos = camInitPos.clone().addScaledVector(camForward, dollyDist);
+      if (camera.position.distanceTo(targetPos) > 0.002) {
+        camera.position.copy(targetPos);
         camera.lookAt(camTarget);
         needsRender = true;
       }
@@ -867,7 +878,7 @@ export function WorldMap({
   return (
     <div className={cn("relative", className)}>
       <div ref={mountRef} className="absolute inset-0" />
-      <div ref={fpsRef} className="pointer-events-none absolute top-2 right-2 font-mono text-[11px] text-white/50" />
+      <div ref={fpsRef} className="pointer-events-none absolute top-2 right-2 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[11px] text-white/90" />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {markers.map((m, i) => {
           const kind = m.kind ?? "city";
