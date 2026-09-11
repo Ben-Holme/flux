@@ -672,7 +672,7 @@ export function WorldMap({
       // Parallax: slide camera along its screen-up axis with scroll
       const dollyDist = (progress - 0.5) * 6;
       const targetPos = camInitPos.clone().addScaledVector(camUp, dollyDist);
-      camera.position.lerp(targetPos, 0.5);
+      camera.position.lerp(targetPos, 0.15);
       // No lookAt — camera keeps its initial orientation while translating (true parallax)
 
       // When idle, park the light at the responsive default and travel along the camera axis with scroll.
