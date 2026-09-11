@@ -10,8 +10,8 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       options={{
         lerp: 0.1,
         smoothWheel: true,
-        // Prevent Lenis from intercepting scroll on the world-map canvas
-        // (it has its own wheel handler for camera control)
+        syncTouch: true,        // drive touch scroll via RAF on iOS (fixes momentum choppiness)
+        syncTouchLerp: 0.075,
         prevent: (node) => node.tagName === "CANVAS",
       }}
     >
