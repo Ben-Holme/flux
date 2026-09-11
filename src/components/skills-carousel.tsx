@@ -179,6 +179,7 @@ export default function SkillsCarousel() {
     <div
       ref={ref}
       className={styles.carouselWrapper}
+      data-lenis-prevent
       onMouseDown={onMouseDown}
       onMouseLeave={onMouseLeave}
       onMouseUp={onMouseUp}
