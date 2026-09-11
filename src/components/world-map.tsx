@@ -693,7 +693,7 @@ export function WorldMap({
       }
       // Always lerp toward the target — applies to both hover and idle so there's no snap.
       if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
-        cursorLight.position.lerp(idleTarget, 0.5);
+        cursorLight.position.lerp(idleTarget, 0.15);
         needsRender = true;
       }
       // Ease the cursor light toward its hover target intensity.
