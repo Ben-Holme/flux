@@ -655,14 +655,15 @@ export function WorldMap({
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
       // Scroll progress (0 = section top entering view, 1 = section leaving bottom)
-      const scrollY = scrollRef.value;
+      // Read window.scrollY directly in RAF — scroll events fire too slowly during iOS momentum scroll
+      const scrollY = window.scrollY;
       const sectionH = mount?.clientHeight ?? 800;
       const progress = Math.max(0, Math.min(1,
         (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
       ));
 
       // Parallax: slide camera along its screen-up axis with scroll
-      const dollyDist = (progress - 0.5) * 3;
+      const dollyDist = (0.5 - progress) * 6;
       const targetPos = camInitPos.clone().addScaledVector(camUp, dollyDist);
       if (camera.position.distanceTo(targetPos) > 0.002) {
         camera.position.copy(targetPos);
