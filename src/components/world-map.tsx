@@ -510,6 +510,7 @@ export function WorldMap({
       );
     }
     camera.lookAt(camTarget);
+    const camInitY = camera.position.y;
 
     // Fog + cloud values scale with the effective camera distance
     const rEff = Math.max(R_MIN, Math.min(R_MAX, camera.position.distanceTo(camTarget)));
@@ -641,16 +642,26 @@ export function WorldMap({
     function loop() {
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
+      // Scroll progress (0 = section top entering view, 1 = section leaving bottom)
+      const scrollY = scrollRef.value;
+      const sectionH = mount?.clientHeight ?? 800;
+      const progress = Math.max(0, Math.min(1,
+        (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
+      ));
+
+      // Dolly camera up/down with scroll (±1 unit)
+      const targetCamY = camInitY + (0.5 - progress) * 2;
+      if (Math.abs(camera.position.y - targetCamY) > 0.002) {
+        camera.position.y = targetCamY;
+        camera.lookAt(camTarget);
+        needsRender = true;
+      }
+
       // When idle, park the light at the responsive default and travel along the camera axis with scroll.
       if (!lightHover) {
         const isMobile = curW < 768;
         const ndcX = isMobile ? 0 : Math.min(0.95, 600 / curW);
         const ndcY = isMobile ? 0.5 : 0;
-        const scrollY = scrollRef.value;
-        const sectionH = mount?.clientHeight ?? 800;
-        const progress = Math.max(0, Math.min(1,
-          (scrollY - mountPageTop + window.innerHeight) / (sectionH + window.innerHeight)
-        ));
         ndc.set(ndcX, ndcY);
         raycaster.setFromCamera(ndc, camera);
         if (raycaster.ray.intersectPlane(lightPlane, hitPoint)) {
