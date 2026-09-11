@@ -666,10 +666,8 @@ export function WorldMap({
       // Parallax: slide camera along its screen-up axis with scroll
       const dollyDist = (0.5 - progress) * 6;
       const targetPos = camInitPos.clone().addScaledVector(camUp, dollyDist);
-      if (camera.position.distanceTo(targetPos) > 0.002) {
-        camera.position.copy(targetPos);
-        camera.lookAt(camTarget);
-      }
+      camera.position.lerp(targetPos, 0.5);
+      camera.lookAt(camTarget);
 
       // When idle, park the light at the responsive default and travel along the camera axis with scroll.
       if (!lightHover) {
@@ -689,7 +687,7 @@ export function WorldMap({
       }
       // Always lerp toward the target — applies to both hover and idle so there's no snap.
       if (cursorLight.position.distanceTo(idleTarget) > 0.005) {
-        cursorLight.position.lerp(idleTarget, 0.9);
+        cursorLight.position.lerp(idleTarget, 0.5);
         needsRender = true;
       }
       // Ease the cursor light toward its hover target intensity.
