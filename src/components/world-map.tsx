@@ -512,7 +512,8 @@ export function WorldMap({
     }
     camera.lookAt(camTarget);
     const camInitPos = camera.position.clone();
-    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    // Camera screen-up projected onto the horizontal plane — parallel with the water surface
+    const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
 
     // Fog + cloud values scale with the effective camera distance
     const rEff = Math.max(R_MIN, Math.min(R_MAX, camera.position.distanceTo(camTarget)));
