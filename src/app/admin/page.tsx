@@ -40,6 +40,7 @@ function AdminContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
   const [pending, setPending] = useState<Set<number>>(new Set());
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
@@ -167,11 +168,13 @@ function AdminContent() {
 
   if (!session) return null;
 
+  const q = search.trim().toLowerCase();
   const visible = users.filter((u) => {
-    if (filter === "approved") return u.approved;
-    if (filter === "unapproved") return !u.approved;
-    if (filter === "steam") return !!u.steam_id;
-    if (filter === "banned") return u.banned;
+    if (filter === "approved" && !u.approved) return false;
+    if (filter === "unapproved" && u.approved) return false;
+    if (filter === "steam" && !u.steam_id) return false;
+    if (filter === "banned" && !u.banned) return false;
+    if (q && !u.username.toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -249,6 +252,14 @@ function AdminContent() {
       )}
 
       {error && <Text className="text-ember">Error: {error}</Text>}
+
+      <input
+        type="search"
+        placeholder="Search username…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full max-w-sm rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
+      />
 
       <div className="flex flex-wrap gap-2">
         {filterLabels.map(({ key, label }) => (
