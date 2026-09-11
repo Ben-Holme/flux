@@ -302,7 +302,7 @@ export function WorldMap({
     renderer.shadowMap.enabled = !isMobileInit;
     // Allow native vertical scroll through the canvas — without this iOS opts the element
     // out of native scroll compositing and throttles RAF during momentum scroll.
-    renderer.domElement.style.touchAction = "pan-y";
+    renderer.domElement.style.touchAction = "none";
     // Own compositor layer — isolates canvas repaints from surrounding HTML
     renderer.domElement.style.willChange = "transform";
     mount.appendChild(renderer.domElement);
