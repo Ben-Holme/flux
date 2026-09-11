@@ -296,13 +296,16 @@ export function WorldMap({
     const W = Math.max(1, mount.clientWidth);
     const H = Math.max(1, mount.clientHeight);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const isMobileInit = W < 768;
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobileInit, alpha: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     renderer.setSize(W, H);
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !isMobileInit;
     // Allow native vertical scroll through the canvas — without this iOS opts the element
     // out of native scroll compositing and throttles RAF during momentum scroll.
     renderer.domElement.style.touchAction = "pan-y";
+    // Own compositor layer — isolates canvas repaints from surrounding HTML
+    renderer.domElement.style.willChange = "transform";
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -876,7 +879,7 @@ export function WorldMap({
 
   return (
     <div className={cn("relative", className)}>
-      <div ref={mountRef} className="absolute inset-0" />
+      <div ref={mountRef} className="absolute inset-0" style={{ willChange: "transform" }} />
       <div ref={fpsRef} className="pointer-events-none absolute top-2 right-2 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[11px] text-white/90" />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {markers.map((m, i) => {
