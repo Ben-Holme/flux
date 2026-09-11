@@ -300,6 +300,9 @@ export function WorldMap({
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     renderer.setSize(W, H);
     renderer.shadowMap.enabled = true;
+    // Allow native vertical scroll through the canvas — without this iOS opts the element
+    // out of native scroll compositing and throttles RAF during momentum scroll.
+    renderer.domElement.style.touchAction = "pan-y";
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
