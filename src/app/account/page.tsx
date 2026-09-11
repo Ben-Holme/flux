@@ -76,7 +76,13 @@ function DashboardContent() {
         if (data.status !== "OK") throw new Error(data.status);
         setAccount(data);
       })
-      .catch((e: Error) => setError(e.message))
+      .catch((e: Error) => {
+        if (e.message === "Unauthorized") {
+          router.push("/login?redirect=/account");
+        } else {
+          setError(e.message);
+        }
+      })
       .finally(() => setLoading(false));
   }, [session, ready, router]);
 
