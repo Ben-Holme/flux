@@ -274,6 +274,7 @@ export function WorldMap({
   className,
 }: WorldMapProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const fpsRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLDivElement>(null);
   const snippetRef = useRef("");
   const viewRef = useRef(view);
@@ -639,6 +640,8 @@ export function WorldMap({
 
     let raf = 0;
     let onFrame: (() => void) | null = null;
+    let fpsLast = performance.now();
+    let fpsCount = 0;
     function loop() {
       raf = requestAnimationFrame(loop);
       if (onFrame) onFrame();
@@ -692,6 +695,14 @@ export function WorldMap({
       needsRender = false;
       composer.render();
       positionMarkers();
+      fpsCount++;
+      const now = performance.now();
+      if (now - fpsLast >= 500) {
+        const fps = Math.round(fpsCount * 1000 / (now - fpsLast));
+        if (fpsRef.current) fpsRef.current.textContent = `${fps} fps`;
+        fpsCount = 0;
+        fpsLast = now;
+      }
     }
     loop();
 
@@ -856,6 +867,7 @@ export function WorldMap({
   return (
     <div className={cn("relative", className)}>
       <div ref={mountRef} className="absolute inset-0" />
+      <div ref={fpsRef} className="pointer-events-none absolute top-2 right-2 font-mono text-[11px] text-white/50" />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {markers.map((m, i) => {
           const kind = m.kind ?? "city";
