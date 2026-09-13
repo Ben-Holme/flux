@@ -27,24 +27,9 @@ interface User {
   verified: boolean;
   approved: boolean;
   is_admin: boolean;
-  spirit_xp: Record<string, number> | string | null;
+  spirit_xp: number;
+  achievements: Record<string, number>;
   banned: boolean;
-}
-
-function parseXpMap(raw: User["spirit_xp"]): Record<string, number> {
-  if (!raw) return {};
-  if (typeof raw === "string") {
-    try { return JSON.parse(raw) as Record<string, number>; } catch { return {}; }
-  }
-  return raw;
-}
-
-function xpTotal(raw: User["spirit_xp"]): number {
-  return Object.values(parseXpMap(raw)).reduce((a, b) => a + b, 0);
-}
-
-function xpKeys(raw: User["spirit_xp"]): string[] {
-  return Object.keys(parseXpMap(raw));
 }
 
 type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
@@ -339,10 +324,10 @@ function AdminContent() {
                 <TableRow>
                   <Td variant="heading">Spirit XP</Td>
                   <Td>
-                    {xpTotal(u.spirit_xp)}
-                    {xpKeys(u.spirit_xp).length > 0 && (
+                    {u.spirit_xp}
+                    {Object.keys(u.achievements).length > 0 && (
                       <Text as="span" variant="muted" className="ml-2 text-xs">
-                        ({xpKeys(u.spirit_xp).join(", ")})
+                        ({Object.keys(u.achievements).join(", ")})
                       </Text>
                     )}
                   </Td>
