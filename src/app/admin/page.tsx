@@ -282,9 +282,9 @@ function AdminContent() {
       )}
 
       {visible.map((u) => (
-        <Card key={u.id} className="flex items-center justify-between gap-4">
-          <Flow className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-3">
+        <Card key={u.id} className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-baseline gap-2">
               <Heading level="h4" as="span">
                 {u.username}
               </Heading>
@@ -293,88 +293,61 @@ function AdminContent() {
               {!u.verified && <Badge>Unverified</Badge>}
               {u.banned && <Badge>Banned</Badge>}
             </div>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <Td variant="heading">Email</Td>
-                  <Td>{u.email}</Td>
-                </TableRow>
-                <TableRow>
-                  <Td variant="heading">Steam</Td>
-                  <Td>
-                    {u.steam_id ? (
-                      <span className="flex items-center gap-3">
-                        {u.steam_id}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => unsyncSteam(u.id)}
-                          disabled={pending.has(u.id)}
-                        >
-                          Unsync
-                        </Button>
-                      </span>
-                    ) : (
-                      <Text as="span" variant="muted">
-                        Not linked
-                      </Text>
-                    )}
-                  </Td>
-                </TableRow>
-                <TableRow>
-                  <Td variant="heading">Spirit XP</Td>
-                  <Td>
-                    {u.spirit_xp}
-                    {Object.keys(u.achievements).length > 0 && (
-                      <Text as="span" variant="muted" className="ml-2 text-xs">
-                        ({Object.keys(u.achievements).join(", ")})
-                      </Text>
-                    )}
-                  </Td>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Flow>
-          <div className="flex shrink-0 flex-col gap-2">
-            {u.approved ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setApproved(u.id, false)}
-                disabled={pending.has(u.id)}
-              >
-                Revoke
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setApproved(u.id, true)}
-                disabled={pending.has(u.id)}
-              >
-                Call
-              </Button>
-            )}
-            {u.banned ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBanned(u.id, false)}
-                disabled={pending.has(u.id)}
-              >
-                Unban
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBanned(u.id, true)}
-                disabled={pending.has(u.id) || u.is_admin}
-              >
-                Ban
-              </Button>
-            )}
+            <div className="flex shrink-0 gap-2">
+              {u.approved ? (
+                <Button variant="ghost" size="sm" onClick={() => setApproved(u.id, false)} disabled={pending.has(u.id)}>
+                  Revoke
+                </Button>
+              ) : (
+                <Button variant="primary" size="sm" onClick={() => setApproved(u.id, true)} disabled={pending.has(u.id)}>
+                  Call
+                </Button>
+              )}
+              {u.banned ? (
+                <Button variant="ghost" size="sm" onClick={() => setBanned(u.id, false)} disabled={pending.has(u.id)}>
+                  Unban
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setBanned(u.id, true)} disabled={pending.has(u.id) || u.is_admin}>
+                  Ban
+                </Button>
+              )}
+            </div>
           </div>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <Td variant="heading">Email</Td>
+                <Td className="break-all">{u.email}</Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam</Td>
+                <Td>
+                  {u.steam_id ? (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="break-all font-mono text-sm">{u.steam_id}</span>
+                      <Button variant="ghost" size="sm" onClick={() => unsyncSteam(u.id)} disabled={pending.has(u.id)}>
+                        Unsync
+                      </Button>
+                    </span>
+                  ) : (
+                    <Text as="span" variant="muted">Not linked</Text>
+                  )}
+                </Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Spirit XP</Td>
+                <Td>
+                  {u.spirit_xp}
+                  {Object.keys(u.achievements).length > 0 && (
+                    <Text as="span" variant="muted" className="ml-2 text-xs">
+                      ({Object.keys(u.achievements).join(", ")})
+                    </Text>
+                  )}
+                </Td>
+              </TableRow>
+            </TableBody>
+          </Table>
         </Card>
       ))}
     </Flow>
