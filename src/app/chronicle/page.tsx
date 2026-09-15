@@ -1793,7 +1793,7 @@ export default function ChroniclePage() {
       {/* Season selector — eyebrow overlay at top-center of map */}
       {apiSeasons.length > 0 && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2"
+          className="pointer-events-none absolute z-[102] -translate-x-1/2"
           style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "46px" : "38px" }}
         >
           <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-3 py-1.5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
