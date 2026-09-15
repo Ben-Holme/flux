@@ -41,6 +41,14 @@ const BADGE_DEFS = {
     iconClassName: "",
     earned: (xp) => "UnyhaStreamer" in xp,
   },
+  legend: {
+    label: "Legend",
+    icon: "heirloom",
+    className: "border-yellow-400/40 bg-yellow-400/10 text-yellow-300",
+    description: "A true legend of Unyha.",
+    iconClassName: "",
+    earned: (xp) => "Legend" in xp,
+  },
 } as const satisfies Record<string, BadgeDef>;
 
 type BadgeKey = keyof typeof BADGE_DEFS;
