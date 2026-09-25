@@ -10,6 +10,7 @@ import { AccountSignOut } from "@/app/account/account-sign-out";
 const ACCOUNT_NAV: NavItem[] = [
   { label: "Dashboard", href: "/account", exact: true },
   { label: "Characters", href: "/account/characters" },
+  { label: "Bug Reports", href: "/bugs" },
   { label: "Settings", href: "/account/settings" },
 ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo, startTransition } from "react";
+import { useLenis } from "lenis/react";
 import EVENT_TYPES from "@/components/story-events/event-types";
 import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
@@ -412,15 +413,18 @@ export default function ChroniclePage() {
     texture.needsUpdate = true;
   }
 
-  // Lock body scroll and hide footer while this page is mounted
+  // Stop Lenis and lock body scroll while this full-screen page is mounted
+  const lenis = useLenis();
   useEffect(() => {
+    lenis?.stop();
     document.body.style.overflow = "hidden";
     document.body.classList.add("chronicle-page");
     return () => {
+      lenis?.start();
       document.body.style.overflow = "";
       document.body.classList.remove("chronicle-page");
     };
-  }, []);
+  }, [lenis]);
 
   useEffect(() => {
     fetch("https://api.unyhagame.com/ueserv/getLocations-w.php")
@@ -1789,7 +1793,7 @@ export default function ChroniclePage() {
       {/* Season selector — eyebrow overlay at top-center of map */}
       {apiSeasons.length > 0 && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2"
+          className="pointer-events-none absolute z-[102] -translate-x-1/2"
           style={{ left: !isMobile ? "calc(50% - 170px)" : "50%", top: !isMobile ? "46px" : "38px" }}
         >
           <div className="pointer-events-auto relative flex items-center gap-2 rounded-full border border-white/15 bg-black/80 px-3 py-1.5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>
@@ -1899,7 +1903,7 @@ export default function ChroniclePage() {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8" data-lenis-prevent>
             <div ref={desktopAnimRef}>
               {/* Details — always mounted when nav active; shown/hidden via CSS to avoid remounting events */}
               {currentNav && (
@@ -2047,6 +2051,7 @@ export default function ChroniclePage() {
           <div
             className="flex-1 overflow-y-auto px-4 pt-3 pb-8"
             style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
+            data-lenis-prevent
           >
             <div ref={mobileAnimRef}>
               {currentNav && (
