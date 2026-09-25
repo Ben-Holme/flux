@@ -15,8 +15,10 @@ interface Bug {
   title: string;
   description: string;
   status: Status;
+  hidden: boolean;
   created_at: string;
   reporter: string;
+  reporter_id: number;
   vote_count: number;
   i_voted: boolean;
 }
@@ -95,6 +97,19 @@ function BugsContent() {
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug_id ? { ...b, status } : b)));
+    }
+  };
+
+  const toggleHidden = async (bug: Bug) => {
+    if (!session) return;
+    const res = await fetch(`${API}/admin-bug-hide-w.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      body: JSON.stringify({ bug_id: bug.id, hidden: !bug.hidden }),
+    });
+    const data = await res.json();
+    if (data.status === "OK") {
+      setBugs((prev) => prev.map((b) => (b.id === bug.id ? { ...b, hidden: !bug.hidden } : b)));
     }
   };
 
@@ -185,12 +200,15 @@ function BugsContent() {
       )}
 
       {bugs.map((bug) => (
-        <Card key={bug.id}>
+        <Card key={bug.id} className={bug.hidden ? "opacity-50" : ""}>
           <Flow>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Heading level="h4" as="span">{bug.title}</Heading>
                 <Badge className={STATUS_CLASS[bug.status]}>{STATUS_LABEL[bug.status]}</Badge>
+                {bug.hidden && (
+                  <Badge className="border-white/10 bg-white/5 text-white/30">Hidden</Badge>
+                )}
               </div>
               <button
                 onClick={() => vote(bug)}
@@ -220,6 +238,13 @@ function BugsContent() {
                     {STATUS_LABEL[s]}
                   </Button>
                 ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleHidden(bug)}
+                >
+                  {bug.hidden ? "Unhide" : "Hide"}
+                </Button>
               </div>
             )}
           </Flow>
