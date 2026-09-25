@@ -147,7 +147,9 @@ function BugsContent() {
   const [showFilter, setShowFilter]   = useState(false);
 
   // Admin tag editor state: bug id → draft tags
-  const [editingTags, setEditingTags] = useState<Record<number, string[] | undefined>>({});
+  const [editingTags, setEditingTags]     = useState<Record<number, string[] | undefined>>({});
+  // Admin delete confirm: set of bug ids currently showing the confirm button
+  const [confirmDelete, setConfirmDelete] = useState<Set<number>>(new Set());
 
   const fetchBugs = useCallback(() => {
     if (!session) return;
@@ -214,6 +216,20 @@ function BugsContent() {
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug.id ? { ...b, hidden: !bug.hidden } : b)));
+    }
+  };
+
+  const deleteBug = async (bug_id: number) => {
+    if (!session) return;
+    const res  = await fetch(`${API}/admin-bug-delete-w.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      body: JSON.stringify({ bug_id }),
+    });
+    const data = await res.json();
+    if (data.status === "OK") {
+      setBugs((prev) => prev.filter((b) => b.id !== bug_id));
+      setConfirmDelete((prev) => { const n = new Set(prev); n.delete(bug_id); return n; });
     }
   };
 
@@ -432,6 +448,34 @@ function BugsContent() {
                     >
                       {isEditingTag ? "Cancel Tags" : "Edit Tags"}
                     </Button>
+                    {confirmDelete.has(bug.id) ? (
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => deleteBug(bug.id)}
+                          className="border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                        >
+                          Confirm Delete
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmDelete((prev) => { const n = new Set(prev); n.delete(bug.id); return n; })}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmDelete((prev) => new Set(prev).add(bug.id))}
+                        className="text-red-400/70 hover:text-red-300"
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
 
                   {/* Inline tag editor */}
