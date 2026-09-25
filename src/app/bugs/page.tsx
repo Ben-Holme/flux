@@ -72,7 +72,6 @@ function BugsContent() {
 
   const vote = async (bug: Bug) => {
     if (!session) return;
-    // Optimistic update
     setBugs((prev) =>
       prev.map((b) =>
         b.id === bug.id
@@ -124,9 +123,15 @@ function BugsContent() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
         body: JSON.stringify({ title, description }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { status: string; xp_awarded?: number };
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server error (${res.status})`);
+      }
       if (data.status !== "OK") throw new Error(data.status);
-      if (data.xp_awarded > 0) setXpAwarded(data.xp_awarded);
+      if (data.xp_awarded && data.xp_awarded > 0) setXpAwarded(data.xp_awarded);
       setTitle("");
       setDescription("");
       setShowForm(false);
@@ -157,37 +162,37 @@ function BugsContent() {
       </div>
 
       {showForm && (
-        <Card>
-          <form onSubmit={submitBug}>
-            <Flow>
-              <Heading level="h3">New Bug Report</Heading>
-              <div>
-                <FormLabel>Title</FormLabel>
-                <Input
-                  className="mt-1.5"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Short summary of the bug"
-                  required
-                  maxLength={255}
-                />
-              </div>
-              <div>
-                <FormLabel>Description</FormLabel>
-                <textarea
-                  className="mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none transition-colors placeholder:text-white/30 focus:border-white/25 focus:bg-white/[0.04] resize-y"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Steps to reproduce, what you expected, what happened…"
-                  required
-                  rows={5}
-                />
-              </div>
-              {submitError && <Alert>{submitError}</Alert>}
+        <Card className="max-w-2xl">
+          <Heading level="h3">New Bug Report</Heading>
+          <form onSubmit={submitBug} className="mt-5 flex flex-col gap-4">
+            <div>
+              <FormLabel>Title</FormLabel>
+              <Input
+                className="mt-1.5"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Short summary of the bug"
+                required
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <FormLabel>Description</FormLabel>
+              <textarea
+                className="mt-1.5 block w-full resize-y rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none transition-colors placeholder:text-white/30 focus:border-white/25 focus:bg-white/[0.04]"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Steps to reproduce, what you expected, what happened…"
+                required
+                rows={5}
+              />
+            </div>
+            {submitError && <Alert>{submitError}</Alert>}
+            <div>
               <Button type="submit" disabled={submitting}>
                 {submitting ? "Submitting…" : "Submit Bug"}
               </Button>
-            </Flow>
+            </div>
           </form>
         </Card>
       )}
@@ -210,16 +215,14 @@ function BugsContent() {
                   <Badge className="border-white/10 bg-white/5 text-white/30">Hidden</Badge>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => vote(bug)}
-                className={`flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
-                  bug.i_voted
-                    ? "border-gold/40 bg-gold/10 text-gold"
-                    : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70"
-                }`}
+                className={bug.i_voted ? "border-gold/40 bg-gold/10 text-gold hover:text-gold" : ""}
               >
                 ▲ {bug.vote_count}
-              </button>
+              </Button>
             </div>
             <Text variant="muted" className="text-sm whitespace-pre-wrap">{bug.description}</Text>
             <Text as="span" variant="muted" className="text-xs">
