@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchAccount } from "@/context/auth-context";
 import { buildLookup } from "./utils";
 
 export interface StoryEvent {
@@ -24,13 +25,12 @@ export default function useStoryEvents(sessionkey: string | undefined) {
   const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    const headers: Record<string, string> = sessionkey
-      ? { Authorization: `Bearer ${sessionkey}` }
-      : {};
+    if (!sessionkey) return;
+    const headers = { Authorization: `Bearer ${sessionkey}` };
 
-    const eventsReq = fetch("https://api.unyhagame.com/ueserv/getstoryevents-w.php", { headers }).then((r) => r.json());
-    const namesReq  = fetch("https://api.unyhagame.com/ueserv/getplayernames-w.php", { headers }).then((r) => r.json()).catch(() => null);
-    const iconsReq  = fetch("https://api.unyhagame.com/ueserv/getIcons-w.php", { headers }).then((r) => r.json()).catch(() => null);
+    const eventsReq = fetchAccount("https://api.unyhagame.com/ueserv/getstoryevents-w.php", { headers }).then((r) => r.json());
+    const namesReq  = fetchAccount("https://api.unyhagame.com/ueserv/getplayernames-w.php", { headers }).then((r) => r.json()).catch(() => null);
+    const iconsReq  = fetchAccount("https://api.unyhagame.com/ueserv/getIcons-w.php", { headers }).then((r) => r.json()).catch(() => null);
 
     Promise.all([eventsReq, namesReq, iconsReq])
       .then(([evData, namesData, iconsData]) => {
@@ -64,8 +64,7 @@ export default function useStoryEvents(sessionkey: string | undefined) {
         setError(err.message);
         setLoading(false);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionkey]);
 
   return { events, players, items, icons, loading, error };
 }

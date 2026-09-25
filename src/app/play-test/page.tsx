@@ -10,13 +10,13 @@ import Button from "@/components/button";
 import { Eyebrow, Flow, Heading, Text } from "@/components/ui";
 
 export default function PlayTestPage() {
-  const { session, logout } = useAuth();
+  const { session, logout, ready } = useAuth();
   const router = useRouter();
   const { events, players, items, icons, loading, error } = useStoryEvents(session?.sessionkey);
 
   useEffect(() => {
-    if (!session) router.push("/login");
-  }, [session, router]);
+    if (ready && !session) router.replace("/login?redirect=/play-test");
+  }, [session, ready, router]);
 
   if (!session) return null;
 

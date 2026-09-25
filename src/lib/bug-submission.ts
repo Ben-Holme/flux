@@ -1,5 +1,5 @@
 interface BugSubmissionResult {
-  status: "OK";
+  status: "OK" | "unconfirmed";
   xp_awarded?: number;
 }
 
@@ -9,6 +9,7 @@ export async function readBugSubmissionResponse(response: Response): Promise<Bug
   const unconfirmed = "Your draft has been kept. Check the reports list before submitting again to avoid a duplicate.";
 
   if (!body.trim()) {
+    if (response.ok) return { status: "unconfirmed" };
     throw new Error(`The bug-report server returned an empty response (${httpStatus}). Submission could not be confirmed. ${unconfirmed}`);
   }
 
@@ -17,10 +18,12 @@ export async function readBugSubmissionResponse(response: Response): Promise<Bug
     data = JSON.parse(body);
   } catch {
     // Do not expose raw PHP errors or proxy HTML in the UI.
+    if (response.ok) return { status: "unconfirmed" };
     throw new Error(`The bug-report server returned invalid JSON (${httpStatus}). Submission could not be confirmed. ${unconfirmed}`);
   }
 
   if (typeof data !== "object" || data === null || !("status" in data) || typeof data.status !== "string") {
+    if (response.ok) return { status: "unconfirmed" };
     throw new Error(`The bug-report server returned an unexpected response (${httpStatus}). Submission could not be confirmed. ${unconfirmed}`);
   }
 

@@ -2,7 +2,8 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { ChevronDown } from "lucide-react";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import { findSimilarBugs, normalizeBugSearch } from "@/lib/bug-search";
 import { readBugSubmissionResponse } from "@/lib/bug-submission";
 import {
@@ -83,6 +84,11 @@ const STATUS_CLASS: Record<Status, string> = {
   resolved: "border-teal-500/30 bg-teal-500/10 text-teal-300 ml-2",
   wont_fix: "border-white/10 bg-white/5 text-white/40 ml-2",
 };
+
+function bugDescriptionPreview(description: string): string {
+  const fields = parseBugDescription(description);
+  return fields?.description.trim() || bugDescriptionText(description);
+}
 
 function BugDescription({ description }: { description: string }) {
   const fields = parseBugDescription(description);
@@ -199,13 +205,15 @@ function BugsContent() {
 
   const fetchBugs = useCallback(() => {
     if (!session) return;
-    fetch(`${API}/bugs-list-w.php`, {
+    fetchAccount(`${API}/bugs-list-w.php`, {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
+      cache: "no-store",
     })
       .then((r) => r.json())
       .then((data) => {
         if (data.status !== "OK") throw new Error(data.status);
         setBugs(data.bugs);
+        setError(null);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -243,26 +251,30 @@ function BugsContent() {
           : b,
       ),
     );
-    await fetch(`${API}/bug-vote-w.php`, {
+    await fetchAccount(`${API}/bug-vote-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
       body: JSON.stringify({ bug_id: bug.id }),
-    });
+    }).catch((e: Error) => setError(e.message));
   };
 
   const setStatus = async (bug_id: number, status: Status) => {
     if (!session) return;
-    const res = await fetch(`${API}/admin-bug-status-w.php`, {
+    const res = await fetchAccount(`${API}/admin-bug-status-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
       body: JSON.stringify({ bug_id, status }),
+    }).catch((e: Error) => {
+      setError(e.message);
+      return null;
     });
+    if (!res) return;
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug_id ? { ...b, status } : b)));
@@ -271,14 +283,18 @@ function BugsContent() {
 
   const toggleHidden = async (bug: Bug) => {
     if (!session) return;
-    const res = await fetch(`${API}/admin-bug-hide-w.php`, {
+    const res = await fetchAccount(`${API}/admin-bug-hide-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
       body: JSON.stringify({ bug_id: bug.id, hidden: !bug.hidden }),
+    }).catch((e: Error) => {
+      setError(e.message);
+      return null;
     });
+    if (!res) return;
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug.id ? { ...b, hidden: !bug.hidden } : b)));
@@ -287,14 +303,18 @@ function BugsContent() {
 
   const deleteBug = async (bug_id: number) => {
     if (!session) return;
-    const res = await fetch(`${API}/admin-bug-delete-w.php`, {
+    const res = await fetchAccount(`${API}/admin-bug-delete-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
       body: JSON.stringify({ bug_id }),
+    }).catch((e: Error) => {
+      setError(e.message);
+      return null;
     });
+    if (!res) return;
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.filter((b) => b.id !== bug_id));
@@ -309,14 +329,18 @@ function BugsContent() {
   const saveTags = async (bug_id: number) => {
     if (!session) return;
     const tags = editingTags[bug_id] ?? [];
-    const res = await fetch(`${API}/admin-bug-tags-w.php`, {
+    const res = await fetchAccount(`${API}/admin-bug-tags-w.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.sessionkey}`,
       },
       body: JSON.stringify({ bug_id, tags }),
+    }).catch((e: Error) => {
+      setError(e.message);
+      return null;
     });
+    if (!res) return;
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug_id ? { ...b, tags } : b)));
@@ -344,7 +368,7 @@ function BugsContent() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`${API}/bug-submit-w.php`, {
+      const res = await fetchAccount(`${API}/bug-submit-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -354,10 +378,15 @@ function BugsContent() {
       });
       const data = await readBugSubmissionResponse(res);
       if (data.xp_awarded !== undefined && data.xp_awarded > 0) setXpAwarded(data.xp_awarded);
-      setTitle("");
-      setDescription({ description: "", repro: "", expected: "", actual: "" });
-      setFormTags([]);
+      // Empty successful responses are common: refresh without discarding an unconfirmed draft.
+      if (data.status === "OK") {
+        setTitle("");
+        setDescription({ description: "", repro: "", expected: "", actual: "" });
+        setFormTags([]);
+      }
       setShowForm(false);
+      setSearch("");
+      setFilterTags([]);
       fetchBugs();
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : "Failed to submit");
@@ -370,7 +399,6 @@ function BugsContent() {
 
   return (
     <Flow className="min-h-[90vh] px-6 pb-20">
-      <Eyebrow>Community</Eyebrow>
       <Heading level="h1">Bug Reports</Heading>
 
       {/* Actions row */}
@@ -529,11 +557,11 @@ function BugsContent() {
       {loading && <Text>Loading…</Text>}
       {error && <Alert>{error}</Alert>}
 
-      {!loading && bugs.length === 0 && (
+      {!loading && !error && bugs.length === 0 && (
         <Text variant="muted">No bugs reported yet. You could be the first.</Text>
       )}
 
-      {!loading && bugs.length > 0 && visibleBugs.length === 0 && (
+      {!loading && !error && bugs.length > 0 && visibleBugs.length === 0 && (
         <Text variant="muted">No bugs match your search and selected tags.</Text>
       )}
 
@@ -542,147 +570,187 @@ function BugsContent() {
         const isEditingTag = draftTags !== undefined;
 
         return (
-          <Card key={bug.id} className={bug.hidden ? "opacity-50" : ""}>
-            <Flow>
-              {/* Header row */}
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Heading level="h4" as="span">
-                    {bug.title}
-                  </Heading>
-                  <Badge className={STATUS_CLASS[bug.status]}>{STATUS_LABEL[bug.status]}</Badge>
-                  {bug.hidden && (
-                    <Badge className="border-white/10 bg-white/5 text-white/30">Hidden</Badge>
+          <Card key={bug.id} className={bug.hidden ? "p-0 opacity-50 lg:p-0" : "p-0 lg:p-0"}>
+            <details className="group/bug">
+              <summary className="focus-visible:outline-gold flex cursor-pointer list-none items-start gap-3 rounded-lg p-4 transition-colors hover:bg-white/5 focus-visible:outline-2 [&::-webkit-details-marker]:hidden">
+                <span className="grid min-w-0 flex-1 gap-2 group-open/bug:hidden">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Text as="span" variant="strong" className="min-w-0 font-semibold break-words">
+                      {bug.title}
+                    </Text>
+                    <Badge className={STATUS_CLASS[bug.status]}>{STATUS_LABEL[bug.status]}</Badge>
+                    {bug.hidden && <Badge>Hidden</Badge>}
+                  </span>
+                  <Text
+                    as="span"
+                    variant="muted"
+                    className="line-clamp-2 max-w-none text-sm break-words"
+                  >
+                    {bugDescriptionPreview(bug.description)}
+                  </Text>
+                  {bug.tags.length > 0 && (
+                    <span className="flex flex-wrap gap-1.5">
+                      {bug.tags.map((tag) => (
+                        <TagBadge key={tag} tag={tag} />
+                      ))}
+                    </span>
                   )}
-                </div>
-                <button
-                  onClick={() => vote(bug)}
-                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold tracking-wide transition-colors ${
-                    bug.i_voted
-                      ? "border-gold/40 bg-gold/10 text-gold"
-                      : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70"
-                  }`}
+                </span>
+                <Text
+                  as="span"
+                  variant="muted"
+                  className="hidden min-w-0 flex-1 text-sm group-open/bug:block"
                 >
-                  ▲ {bug.vote_count}
-                </button>
-              </div>
-
-              {/* Tags row */}
-              {bug.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {bug.tags.map((t) => (
-                    <TagBadge key={t} tag={t} />
-                  ))}
+                  Collapse report
+                </Text>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="text-ash h-5 w-5 shrink-0 transition-transform group-open/bug:rotate-180"
+                />
+              </summary>
+              <Flow className="border-t border-white/5 p-6 lg:p-12">
+                {/* Header row */}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Heading level="h4" as="span">
+                      {bug.title}
+                    </Heading>
+                    <Badge className={STATUS_CLASS[bug.status]}>{STATUS_LABEL[bug.status]}</Badge>
+                    {bug.hidden && (
+                      <Badge className="border-white/10 bg-white/5 text-white/30">Hidden</Badge>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => vote(bug)}
+                    className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold tracking-wide transition-colors ${
+                      bug.i_voted
+                        ? "border-gold/40 bg-gold/10 text-gold"
+                        : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70"
+                    }`}
+                  >
+                    ▲ {bug.vote_count}
+                  </button>
                 </div>
-              )}
 
-              <BugDescription description={bug.description} />
-              <Text as="span" variant="muted" className="text-xs">
-                Reported by {bug.reporter} · {new Date(bug.created_at).toLocaleDateString()}
-              </Text>
-
-              {/* Admin controls */}
-              {isAdmin && (
-                <>
-                  {/* Status buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    {(["open", "in_progress", "resolved", "wont_fix"] as Status[]).map((s) => (
-                      <Button
-                        key={s}
-                        variant={bug.status === s ? "primary" : "ghost"}
-                        size="sm"
-                        onClick={() => setStatus(bug.id, s)}
-                        disabled={bug.status === s}
-                      >
-                        {STATUS_LABEL[s]}
-                      </Button>
+                {/* Tags row */}
+                {bug.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {bug.tags.map((t) => (
+                      <TagBadge key={t} tag={t} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => toggleHidden(bug)}>
-                      {bug.hidden ? "Unhide" : "Hide"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (isEditingTag) {
-                          setEditingTags((prev) => {
-                            const n = { ...prev };
-                            delete n[bug.id];
-                            return n;
-                          });
-                        } else {
-                          setEditingTags((prev) => ({ ...prev, [bug.id]: [...bug.tags] }));
-                        }
-                      }}
-                    >
-                      {isEditingTag ? "Cancel Tags" : "Edit Tags"}
-                    </Button>
-                    {confirmDelete.has(bug.id) ? (
-                      <>
+                  </div>
+                )}
+
+                <BugDescription description={bug.description} />
+                <Text as="span" variant="muted" className="text-xs">
+                  Reported by {bug.reporter} · {new Date(bug.created_at).toLocaleDateString()}
+                </Text>
+
+                {/* Admin controls */}
+                {isAdmin && (
+                  <>
+                    {/* Status buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {(["open", "in_progress", "resolved", "wont_fix"] as Status[]).map((s) => (
                         <Button
-                          variant="primary"
+                          key={s}
+                          variant={bug.status === s ? "primary" : "ghost"}
                           size="sm"
-                          onClick={() => deleteBug(bug.id)}
-                          className="border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                          onClick={() => setStatus(bug.id, s)}
+                          disabled={bug.status === s}
                         >
-                          Confirm Delete
+                          {STATUS_LABEL[s]}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setConfirmDelete((prev) => {
-                              const n = new Set(prev);
-                              n.delete(bug.id);
-                              return n;
-                            })
-                          }
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
+                      ))}
+                      <Button variant="ghost" size="sm" onClick={() => toggleHidden(bug)}>
+                        {bug.hidden ? "Unhide" : "Hide"}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setConfirmDelete((prev) => new Set(prev).add(bug.id))}
-                        className="text-red-400/70 hover:text-red-300"
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Inline tag editor */}
-                  {isEditingTag && (
-                    <div className="rounded border border-white/10 bg-white/[0.03] p-4">
-                      <TagPicker
-                        selected={draftTags}
-                        onChange={(next) => setEditingTags((prev) => ({ ...prev, [bug.id]: next }))}
-                      />
-                      <div className="mt-3 flex gap-2">
-                        <Button size="sm" onClick={() => saveTags(bug.id)}>
-                          Save Tags
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
+                        onClick={() => {
+                          if (isEditingTag) {
                             setEditingTags((prev) => {
                               const n = { ...prev };
                               delete n[bug.id];
                               return n;
-                            })
+                            });
+                          } else {
+                            setEditingTags((prev) => ({ ...prev, [bug.id]: [...bug.tags] }));
                           }
+                        }}
+                      >
+                        {isEditingTag ? "Cancel Tags" : "Edit Tags"}
+                      </Button>
+                      {confirmDelete.has(bug.id) ? (
+                        <>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => deleteBug(bug.id)}
+                            className="border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                          >
+                            Confirm Delete
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setConfirmDelete((prev) => {
+                                const n = new Set(prev);
+                                n.delete(bug.id);
+                                return n;
+                              })
+                            }
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmDelete((prev) => new Set(prev).add(bug.id))}
+                          className="text-red-400/70 hover:text-red-300"
                         >
-                          Cancel
+                          Delete
                         </Button>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </>
-              )}
-            </Flow>
+
+                    {/* Inline tag editor */}
+                    {isEditingTag && (
+                      <div className="rounded border border-white/10 bg-white/[0.03] p-4">
+                        <TagPicker
+                          selected={draftTags}
+                          onChange={(next) =>
+                            setEditingTags((prev) => ({ ...prev, [bug.id]: next }))
+                          }
+                        />
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" onClick={() => saveTags(bug.id)}>
+                            Save Tags
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setEditingTags((prev) => {
+                                const n = { ...prev };
+                                delete n[bug.id];
+                                return n;
+                              })
+                            }
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </Flow>
+            </details>
           </Card>
         );
       })}

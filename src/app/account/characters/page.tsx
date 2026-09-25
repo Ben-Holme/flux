@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import { CharacterCard, CharacterDetail } from "@/components/character-card";
 import { Alert, Flow, Heading, Text } from "@/components/ui";
 import type { AccountData } from "../account-types";
@@ -28,7 +28,7 @@ function CharactersContent() {
       router.push(`/login?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
-    fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())

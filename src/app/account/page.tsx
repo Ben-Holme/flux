@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
@@ -68,7 +68,7 @@ function DashboardContent() {
       router.push("/login?redirect=/account");
       return;
     }
-    fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())
@@ -90,7 +90,7 @@ function DashboardContent() {
     if (!session || !account) return;
     setPlaystylePending(true);
     try {
-      const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
+      const res = await fetchAccount("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

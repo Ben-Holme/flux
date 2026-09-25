@@ -49,6 +49,8 @@ export default function Nav() {
   const isAccount =
     pathname === "/account" ||
     pathname.startsWith("/account/") ||
+    pathname === "/bugs" ||
+    pathname.startsWith("/bugs/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/");
   const [scrolled, setScrolled] = useState(false);

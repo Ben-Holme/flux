@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import {
   Badge,
@@ -50,7 +50,7 @@ function AdminContent() {
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
-    fetch(`${API}/admin-users-w.php`, {
+    fetchAccount(`${API}/admin-users-w.php`, {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())
@@ -75,7 +75,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-set-approved-w.php`, {
+      const res = await fetchAccount(`${API}/admin-set-approved-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-ban-w.php`, {
+      const res = await fetchAccount(`${API}/admin-ban-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +127,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-unsync-steam-w.php`, {
+      const res = await fetchAccount(`${API}/admin-unsync-steam-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +154,7 @@ function AdminContent() {
     setPipelineLoading(true);
     setPipelineStatus(null);
     try {
-      const res = await fetch(`${API}/admin-run-pipeline-w.php`, {
+      const res = await fetchAccount(`${API}/admin-run-pipeline-w.php`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.sessionkey}` },
       });

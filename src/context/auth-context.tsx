@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { isUnauthorizedResponse } from "@/lib/unauthorized-response";
 
 interface Session {
   sessionkey: string;
@@ -35,6 +36,28 @@ function saveSession(session: Session) {
 
 function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+let redirectingToLogin = false;
+
+/** Use for protected page requests, not public/login or background XP requests. */
+export async function fetchAccount(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const response = await fetch(input, init);
+  if (!(await isUnauthorizedResponse(response))) return response;
+
+  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  const currentSession = loadSession();
+  // Ignore an old request's failure if a newer login has already replaced its session.
+  const isCurrentSession = !currentSession
+    || headers.get("Authorization") === `Bearer ${currentSession.sessionkey}`;
+  if (typeof window !== "undefined" && isCurrentSession && !redirectingToLogin) {
+    redirectingToLogin = true;
+    clearSession();
+    const returnTo = window.location.pathname + window.location.search + window.location.hash;
+    // A full navigation also discards protected React state and closes open dialogs.
+    window.location.replace(`/login?redirect=${encodeURIComponent(returnTo)}`);
+  }
+  throw new Error("Session expired. Redirecting to login…");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
