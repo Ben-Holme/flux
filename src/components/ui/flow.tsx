@@ -71,16 +71,17 @@ function forwardsClassName(type: any): boolean {
 // Flatten fragments so spacing applies to the real elements inside them.
 // React.Children.map does not descend into <>...</>, so without this a fragment
 // would be treated as a single child and its contents would get no rhythm.
+// Children.map scopes keys to their original arrays/fragments; toArray also gives
+// unkeyed siblings stable keys without colliding with explicit keys (e.g. bug IDs).
 function flattenChildren(children: ReactNode): ReactNode[] {
-  const out: ReactNode[] = [];
-  React.Children.forEach(children, (child) => {
-    if (React.isValidElement(child) && child.type === React.Fragment) {
-      out.push(...flattenChildren((child.props as { children?: ReactNode }).children));
-    } else {
-      out.push(child);
-    }
-  });
-  return out;
+  return React.Children.toArray(
+    React.Children.map(children, (child) => {
+      if (React.isValidElement(child) && child.type === React.Fragment) {
+        return flattenChildren((child.props as { children?: ReactNode }).children);
+      }
+      return child;
+    }),
+  );
 }
 
 export function Flow({ children, as: Tag = "div", className }: FlowProps) {
@@ -88,7 +89,7 @@ export function Flow({ children, as: Tag = "div", className }: FlowProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let prevType: any = null;
 
-  const mapped = flattenChildren(children).map((child, index) => {
+  const mapped = flattenChildren(children).map((child) => {
     if (!React.isValidElement(child)) return child;
 
     const isFirst = elementIndex === 0;
@@ -117,14 +118,13 @@ export function Flow({ children, as: Tag = "div", className }: FlowProps) {
     // If the child can't receive className, wrap it so spacing still applies.
     if (!forwardsClassName(child.type)) {
       return (
-        <div key={child.key ?? index} className={spacing}>
+        <div key={child.key} className={spacing}>
           {child}
         </div>
       );
     }
 
     return React.cloneElement(child as React.ReactElement<{ className?: string }>, {
-      key: child.key ?? index,
       className: cn(spacing, (child.props as { className?: string }).className),
     });
   });

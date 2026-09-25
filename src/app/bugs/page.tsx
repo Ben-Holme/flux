@@ -1,10 +1,29 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { findSimilarBugs, normalizeBugSearch } from "@/lib/bug-search";
+import { readBugSubmissionResponse } from "@/lib/bug-submission";
+import {
+  BUG_DESCRIPTION_FIELDS,
+  bugDescriptionText,
+  parseBugDescription,
+  type BugDescriptionFields,
+} from "@/lib/bug-description";
 import Button from "@/components/button";
-import { Alert, Badge, Card, Eyebrow, Flow, FormLabel, Heading, Input, Text } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  Dialog,
+  Eyebrow,
+  Flow,
+  FormLabel,
+  Heading,
+  Input,
+  Text,
+} from "@/components/ui";
 
 const API = "https://api.unyhagame.com/ueserv";
 
@@ -30,19 +49,19 @@ const TAG_GROUPS: { label: string; tags: { value: string; label: string }[] }[] 
     label: "Website",
     tags: [
       { value: "website:account", label: "Account Management" },
-      { value: "website:other",   label: "Other" },
+      { value: "website:other", label: "Other" },
     ],
   },
   {
     label: "Game",
     tags: [
-      { value: "game:ui",           label: "UI" },
+      { value: "game:ui", label: "UI" },
       { value: "game:level-design", label: "Level Design" },
-      { value: "game:battle",       label: "Battle" },
-      { value: "game:crafting",     label: "Crafting" },
-      { value: "game:ai",           label: "Autochronicle AI" },
-      { value: "game:items",        label: "Items" },
-      { value: "game:other",        label: "Other" },
+      { value: "game:battle", label: "Battle" },
+      { value: "game:crafting", label: "Crafting" },
+      { value: "game:ai", label: "Autochronicle AI" },
+      { value: "game:items", label: "Items" },
+      { value: "game:other", label: "Other" },
     ],
   },
 ];
@@ -52,24 +71,45 @@ const TAG_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 const STATUS_LABEL: Record<Status, string> = {
-  open:        "Open",
+  open: "Open",
   in_progress: "In Progress",
-  resolved:    "Resolved",
-  wont_fix:    "Won't Fix",
+  resolved: "Resolved",
+  wont_fix: "Won't Fix",
 };
 
 const STATUS_CLASS: Record<Status, string> = {
-  open:        "border-red-500/30 bg-red-500/10 text-red-300",
-  in_progress: "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
-  resolved:    "border-teal-500/30 bg-teal-500/10 text-teal-300",
-  wont_fix:    "border-white/10 bg-white/5 text-white/40",
+  open: "border-red-500/30 bg-red-500/10 text-red-300 ml-2",
+  in_progress: "border-yellow-500/30 bg-yellow-500/10 text-yellow-300 ml-2",
+  resolved: "border-teal-500/30 bg-teal-500/10 text-teal-300 ml-2",
+  wont_fix: "border-white/10 bg-white/5 text-white/40 ml-2",
 };
+
+function BugDescription({ description }: { description: string }) {
+  const fields = parseBugDescription(description);
+  if (!fields) {
+    return <Text className="mt-2 text-sm break-words whitespace-pre-wrap">{description}</Text>;
+  }
+
+  return (
+    <Flow>
+      {BUG_DESCRIPTION_FIELDS.filter(({ key }) => fields[key].trim()).map(({ key, label }) => (
+        <Flow key={key}>
+          <Text>
+            <strong>{label}</strong>
+            <br />
+            {fields[key]}
+          </Text>
+        </Flow>
+      ))}
+    </Flow>
+  );
+}
 
 // Compact tag badge — inherits the dimmed-parchment palette used throughout
 function TagBadge({ tag }: { tag: string }) {
   const label = TAG_LABEL[tag] ?? tag;
   return (
-    <Badge className="border-white/10 bg-white/5 text-white/50 text-[11px] py-0.5 px-2">
+    <Badge className="border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/50">
       {label}
     </Badge>
   );
@@ -84,17 +124,17 @@ function TagPicker({
   onChange: (next: string[]) => void;
 }) {
   const toggle = (value: string) => {
-    onChange(
-      selected.includes(value)
-        ? selected.filter((t) => t !== value)
-        : [...selected, value],
-    );
+    onChange(selected.includes(value) ? selected.filter((t) => t !== value) : [...selected, value]);
   };
   return (
     <div className="flex flex-col gap-3">
       {TAG_GROUPS.map((group) => (
         <div key={group.label}>
-          <Text as="span" variant="muted" className="text-xs uppercase tracking-widest mb-1.5 block">
+          <Text
+            as="span"
+            variant="muted"
+            className="mb-1.5 block text-xs tracking-widest uppercase"
+          >
             {group.label}
           </Text>
           <div className="flex flex-wrap gap-2">
@@ -129,25 +169,31 @@ function TagPicker({
 function BugsContent() {
   const { session, isAdmin, ready } = useAuth();
   const router = useRouter();
-  const [bugs, setBugs]               = useState<Bug[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
+  const [bugs, setBugs] = useState<Bug[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Submit form
-  const [showForm, setShowForm]       = useState(false);
-  const [title, setTitle]             = useState("");
-  const [description, setDescription] = useState("");
-  const [formTags, setFormTags]       = useState<string[]>([]);
-  const [submitting, setSubmitting]   = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState<BugDescriptionFields>({
+    description: "",
+    repro: "",
+    expected: "",
+    actual: "",
+  });
+  const [formTags, setFormTags] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [xpAwarded, setXpAwarded]     = useState<number | null>(null);
+  const [xpAwarded, setXpAwarded] = useState<number | null>(null);
 
-  // Tag filter — all-match
-  const [filterTags, setFilterTags]   = useState<string[]>([]);
-  const [showFilter, setShowFilter]   = useState(false);
+  // Text search and tag filters — all-match
+  const [search, setSearch] = useState("");
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
 
   // Admin tag editor state: bug id → draft tags
-  const [editingTags, setEditingTags]     = useState<Record<number, string[] | undefined>>({});
+  const [editingTags, setEditingTags] = useState<Record<number, string[] | undefined>>({});
   // Admin delete confirm: set of bug ids currently showing the confirm button
   const [confirmDelete, setConfirmDelete] = useState<Set<number>>(new Set());
 
@@ -167,15 +213,26 @@ function BugsContent() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!session) { router.push("/login?redirect=/bugs"); return; }
+    if (!session) {
+      router.push("/login?redirect=/bugs");
+      return;
+    }
     fetchBugs();
   }, [session, ready, router, fetchBugs]);
 
-  // All-match filter: a bug must carry every selected filter tag
-  const visibleBugs =
-    filterTags.length === 0
-      ? bugs
-      : bugs.filter((b) => filterTags.every((t) => b.tags.includes(t)));
+  const visibleBugs = useMemo(() => {
+    const terms = normalizeBugSearch(search).split(" ").filter(Boolean);
+    return bugs.filter((bug) => {
+      if (!filterTags.every((tag) => bug.tags.includes(tag))) return false;
+      if (!terms.length) return true;
+      const text = normalizeBugSearch(`${bug.title} ${bugDescriptionText(bug.description)}`);
+      return terms.every((term) => text.includes(term));
+    });
+  }, [bugs, search, filterTags]);
+
+  // Search the full accessible list, independently of the browsing tag filters.
+  const similarBugs = useMemo(() => findSimilarBugs(bugs, title), [bugs, title]);
+  const showSimilarBugs = normalizeBugSearch(title).length >= 3;
 
   const vote = async (bug: Bug) => {
     if (!session) return;
@@ -188,16 +245,22 @@ function BugsContent() {
     );
     await fetch(`${API}/bug-vote-w.php`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
       body: JSON.stringify({ bug_id: bug.id }),
     });
   };
 
   const setStatus = async (bug_id: number, status: Status) => {
     if (!session) return;
-    const res  = await fetch(`${API}/admin-bug-status-w.php`, {
+    const res = await fetch(`${API}/admin-bug-status-w.php`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
       body: JSON.stringify({ bug_id, status }),
     });
     const data = await res.json();
@@ -208,9 +271,12 @@ function BugsContent() {
 
   const toggleHidden = async (bug: Bug) => {
     if (!session) return;
-    const res  = await fetch(`${API}/admin-bug-hide-w.php`, {
+    const res = await fetch(`${API}/admin-bug-hide-w.php`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
       body: JSON.stringify({ bug_id: bug.id, hidden: !bug.hidden }),
     });
     const data = await res.json();
@@ -221,49 +287,75 @@ function BugsContent() {
 
   const deleteBug = async (bug_id: number) => {
     if (!session) return;
-    const res  = await fetch(`${API}/admin-bug-delete-w.php`, {
+    const res = await fetch(`${API}/admin-bug-delete-w.php`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
       body: JSON.stringify({ bug_id }),
     });
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.filter((b) => b.id !== bug_id));
-      setConfirmDelete((prev) => { const n = new Set(prev); n.delete(bug_id); return n; });
+      setConfirmDelete((prev) => {
+        const n = new Set(prev);
+        n.delete(bug_id);
+        return n;
+      });
     }
   };
 
   const saveTags = async (bug_id: number) => {
     if (!session) return;
     const tags = editingTags[bug_id] ?? [];
-    const res  = await fetch(`${API}/admin-bug-tags-w.php`, {
+    const res = await fetch(`${API}/admin-bug-tags-w.php`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.sessionkey}`,
+      },
       body: JSON.stringify({ bug_id, tags }),
     });
     const data = await res.json();
     if (data.status === "OK") {
       setBugs((prev) => prev.map((b) => (b.id === bug_id ? { ...b, tags } : b)));
-      setEditingTags((prev) => { const n = { ...prev }; delete n[bug_id]; return n; });
+      setEditingTags((prev) => {
+        const n = { ...prev };
+        delete n[bug_id];
+        return n;
+      });
     }
   };
 
   const submitBug = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+    const details: BugDescriptionFields = {
+      description: description.description.trim(),
+      repro: description.repro.trim(),
+      expected: description.expected.trim(),
+      actual: description.actual.trim(),
+    };
+    if (BUG_DESCRIPTION_FIELDS.some(({ key }) => !details[key])) {
+      setSubmitError("Please fill in description, steps to reproduce, expected, and actual.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res  = await fetch(`${API}/bug-submit-w.php`, {
+      const res = await fetch(`${API}/bug-submit-w.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
-        body: JSON.stringify({ title, description, tags: formTags }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
+        body: JSON.stringify({ title, description: JSON.stringify(details), tags: formTags }),
       });
-      const data = await res.json();
-      if (data.status !== "OK") throw new Error(data.status);
-      if (data.xp_awarded > 0) setXpAwarded(data.xp_awarded);
+      const data = await readBugSubmissionResponse(res);
+      if (data.xp_awarded !== undefined && data.xp_awarded > 0) setXpAwarded(data.xp_awarded);
       setTitle("");
-      setDescription("");
+      setDescription({ description: "", repro: "", expected: "", actual: "" });
       setFormTags([]);
       setShowForm(false);
       fetchBugs();
@@ -282,87 +374,156 @@ function BugsContent() {
       <Heading level="h1">Bug Reports</Heading>
 
       {/* Actions row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="secondary" size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "Report a Bug"}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => setShowFilter((v) => !v)}>
-          {showFilter ? "Hide Filter" : "Filter by Tag"}
-          {filterTags.length > 0 && (
-            <Badge className="ml-1.5 border-gold/40 bg-gold/10 text-gold py-0 px-1.5 text-[10px]">
-              {filterTags.length}
-            </Badge>
-          )}
-        </Button>
-        {filterTags.length > 0 && (
-          <button
-            onClick={() => setFilterTags([])}
-            className="text-xs text-white/40 hover:text-white/60 underline underline-offset-2 cursor-pointer"
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto">
+          <div className="min-w-0 flex-1 sm:w-64">
+            <Input
+              type="search"
+              aria-label="Search bug reports"
+              placeholder="Search bug reports…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="md"
+            aria-expanded={showFilter}
+            aria-controls="bug-tag-filters"
+            onClick={() => setShowFilter((v) => !v)}
           >
-            Clear
-          </button>
-        )}
-        {xpAwarded !== null && (
-          <Text as="span" variant="muted">
-            +{xpAwarded} Spirit XP for your first report!
-          </Text>
+            {showFilter ? "Hide Filter" : "Filter by Tag"}
+            {filterTags.length > 0 && (
+              <Badge className="border-gold/40 bg-gold/10 text-gold ml-1.5 px-1.5 py-0 text-[10px]">
+                {filterTags.length}
+              </Badge>
+            )}
+          </Button>
+        </div>
+        <Button variant="primary" size="md" className="ml-auto" onClick={() => setShowForm(true)}>
+          Report a Bug
+        </Button>
+        {/* Submit form */}
+        {showForm && (
+          <Dialog title="New Bug Report" onClose={() => setShowForm(false)} busy={submitting}>
+            <form onSubmit={submitBug}>
+              <Flow>
+                <div>
+                  <FormLabel htmlFor="bug-title">Title</FormLabel>
+                  <Input
+                    id="bug-title"
+                    className="mt-1.5"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    aria-describedby={showSimilarBugs ? "similar-bugs-status" : undefined}
+                    placeholder="Short summary of the bug"
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                {showSimilarBugs && (
+                  <Card variant="raised" className="lg:p-5">
+                    <Flow>
+                      <div id="similar-bugs-status" role="status" aria-live="polite">
+                        <Text variant="muted" className="text-sm">
+                          {loading
+                            ? "Checking existing reports…"
+                            : error
+                              ? "Existing reports could not be checked. You can still submit your bug."
+                              : similarBugs.length > 0
+                                ? `Found ${similarBugs.length} similar ${similarBugs.length === 1 ? "report" : "reports"}. Expand to check before submitting a duplicate.`
+                                : "No similar reports found. You can continue with your report."}
+                        </Text>
+                      </div>
+
+                      {!loading &&
+                        !error &&
+                        similarBugs.map((bug) => (
+                          <details key={bug.id}>
+                            <summary className="text-sm">
+                              <Text as="span" variant="strong">
+                                {bug.title}
+                              </Text>
+                              {bug.hidden && <Badge className="ml-2">Hidden</Badge>}
+                              <Badge className={STATUS_CLASS[bug.status]}>
+                                {STATUS_LABEL[bug.status]}
+                              </Badge>
+                            </summary>
+
+                            <Flow>
+                              <BugDescription description={bug.description} />
+                              {bug.tags.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5 lg:mt-2">
+                                  {bug.tags.map((tag) => (
+                                    <TagBadge key={tag} tag={tag} />
+                                  ))}
+                                  <Text variant="muted" className="self-center text-xs">
+                                    Reported by {bug.reporter} · {bug.vote_count} votes
+                                  </Text>
+                                </div>
+                              )}
+                            </Flow>
+                          </details>
+                        ))}
+                    </Flow>
+                  </Card>
+                )}
+                {BUG_DESCRIPTION_FIELDS.map(({ key, label, placeholder, rows }) => (
+                  <div key={key} className="flex flex-col gap-1.5">
+                    <FormLabel htmlFor={`bug-${key}`}>{label}</FormLabel>
+                    <textarea
+                      id={`bug-${key}`}
+                      name={key}
+                      className="block w-full resize-y rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 transition-colors outline-none placeholder:text-white/30 focus:border-white/25 focus:bg-white/[0.04]"
+                      value={description[key]}
+                      onChange={(e) =>
+                        setDescription((prev) => ({ ...prev, [key]: e.target.value }))
+                      }
+                      placeholder={placeholder}
+                      required
+                      rows={rows}
+                    />
+                  </div>
+                ))}
+                <div>
+                  <FormLabel>Tags (optional)</FormLabel>
+                  <div className="mt-2">
+                    <TagPicker selected={formTags} onChange={setFormTags} />
+                  </div>
+                </div>
+                {submitError && <Alert>{submitError}</Alert>}
+                <div className="flex flex-wrap justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={submitting}
+                    onClick={() => setShowForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? "Submitting…" : "Submit Bug"}
+                  </Button>
+                </div>
+              </Flow>
+            </form>
+          </Dialog>
         )}
       </div>
 
       {/* Tag filter panel */}
       {showFilter && (
-        <Card>
-          <Flow>
-            <Heading level="h4">Filter Tags</Heading>
-            <Text variant="muted" className="text-sm">
-              Showing bugs that match <em>all</em> selected tags.
-            </Text>
-            <TagPicker selected={filterTags} onChange={setFilterTags} />
-          </Flow>
-        </Card>
+        <div id="bug-tag-filters">
+          <TagPicker selected={filterTags} onChange={setFilterTags} />
+        </div>
       )}
-
-      {/* Submit form */}
-      {showForm && (
-        <Card>
-          <form onSubmit={submitBug}>
-            <Flow>
-              <Heading level="h3">New Bug Report</Heading>
-              <div>
-                <FormLabel>Title</FormLabel>
-                <Input
-                  className="mt-1.5"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Short summary of the bug"
-                  required
-                  maxLength={255}
-                />
-              </div>
-              <div>
-                <FormLabel>Description</FormLabel>
-                <textarea
-                  className="mt-1.5 block w-full rounded-[6px] border border-white/10 bg-black/40 px-3.5 py-2.5 text-base text-white/85 outline-none transition-colors placeholder:text-white/30 focus:border-white/25 focus:bg-white/[0.04] resize-y"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Steps to reproduce, what you expected, what happened…"
-                  required
-                  rows={5}
-                />
-              </div>
-              <div>
-                <FormLabel>Tags <Text as="span" variant="muted" className="text-xs">(optional)</Text></FormLabel>
-                <div className="mt-2">
-                  <TagPicker selected={formTags} onChange={setFormTags} />
-                </div>
-              </div>
-              {submitError && <Alert>{submitError}</Alert>}
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Submitting…" : "Submit Bug"}
-              </Button>
-            </Flow>
-          </form>
-        </Card>
+      {filterTags.length > 0 && (
+        <Button variant="ghost" size="sm" onClick={() => setFilterTags([])}>
+          Clear tags
+        </Button>
+      )}
+      {xpAwarded !== null && (
+        <Text variant="muted">+{xpAwarded} Spirit XP for your first report!</Text>
       )}
 
       {loading && <Text>Loading…</Text>}
@@ -372,12 +533,12 @@ function BugsContent() {
         <Text variant="muted">No bugs reported yet. You could be the first.</Text>
       )}
 
-      {!loading && filterTags.length > 0 && visibleBugs.length === 0 && (
-        <Text variant="muted">No bugs match all of the selected tags.</Text>
+      {!loading && bugs.length > 0 && visibleBugs.length === 0 && (
+        <Text variant="muted">No bugs match your search and selected tags.</Text>
       )}
 
       {visibleBugs.map((bug) => {
-        const draftTags    = editingTags[bug.id];
+        const draftTags = editingTags[bug.id];
         const isEditingTag = draftTags !== undefined;
 
         return (
@@ -386,7 +547,9 @@ function BugsContent() {
               {/* Header row */}
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Heading level="h4" as="span">{bug.title}</Heading>
+                  <Heading level="h4" as="span">
+                    {bug.title}
+                  </Heading>
                   <Badge className={STATUS_CLASS[bug.status]}>{STATUS_LABEL[bug.status]}</Badge>
                   {bug.hidden && (
                     <Badge className="border-white/10 bg-white/5 text-white/30">Hidden</Badge>
@@ -394,7 +557,7 @@ function BugsContent() {
                 </div>
                 <button
                   onClick={() => vote(bug)}
-                  className={`flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold tracking-wide transition-colors cursor-pointer ${
+                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold tracking-wide transition-colors ${
                     bug.i_voted
                       ? "border-gold/40 bg-gold/10 text-gold"
                       : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70"
@@ -407,11 +570,13 @@ function BugsContent() {
               {/* Tags row */}
               {bug.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {bug.tags.map((t) => <TagBadge key={t} tag={t} />)}
+                  {bug.tags.map((t) => (
+                    <TagBadge key={t} tag={t} />
+                  ))}
                 </div>
               )}
 
-              <Text variant="muted" className="text-sm whitespace-pre-wrap">{bug.description}</Text>
+              <BugDescription description={bug.description} />
               <Text as="span" variant="muted" className="text-xs">
                 Reported by {bug.reporter} · {new Date(bug.created_at).toLocaleDateString()}
               </Text>
@@ -440,7 +605,11 @@ function BugsContent() {
                       size="sm"
                       onClick={() => {
                         if (isEditingTag) {
-                          setEditingTags((prev) => { const n = { ...prev }; delete n[bug.id]; return n; });
+                          setEditingTags((prev) => {
+                            const n = { ...prev };
+                            delete n[bug.id];
+                            return n;
+                          });
                         } else {
                           setEditingTags((prev) => ({ ...prev, [bug.id]: [...bug.tags] }));
                         }
@@ -461,7 +630,13 @@ function BugsContent() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setConfirmDelete((prev) => { const n = new Set(prev); n.delete(bug.id); return n; })}
+                          onClick={() =>
+                            setConfirmDelete((prev) => {
+                              const n = new Set(prev);
+                              n.delete(bug.id);
+                              return n;
+                            })
+                          }
                         >
                           Cancel
                         </Button>
@@ -486,12 +661,18 @@ function BugsContent() {
                         onChange={(next) => setEditingTags((prev) => ({ ...prev, [bug.id]: next }))}
                       />
                       <div className="mt-3 flex gap-2">
-                        <Button size="sm" onClick={() => saveTags(bug.id)}>Save Tags</Button>
+                        <Button size="sm" onClick={() => saveTags(bug.id)}>
+                          Save Tags
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            setEditingTags((prev) => { const n = { ...prev }; delete n[bug.id]; return n; })
+                            setEditingTags((prev) => {
+                              const n = { ...prev };
+                              delete n[bug.id];
+                              return n;
+                            })
                           }
                         >
                           Cancel

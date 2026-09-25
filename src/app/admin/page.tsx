@@ -7,6 +7,7 @@ import Button from "@/components/button";
 import {
   Badge,
   Card,
+  Dialog,
   Eyebrow,
   Flow,
   Heading,
@@ -214,43 +215,38 @@ function AdminContent() {
             {pipelineStatus}
           </Text>
         )}
-      </div>
-
-      {pipelineConfirmOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
-          onClick={() => setPipelineConfirmOpen(false)}
-        >
-          <div
-            className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
-            onClick={(e) => e.stopPropagation()}
+        {pipelineConfirmOpen && (
+          <Dialog
+            title="Run Build Pipeline?"
+            onClose={() => setPipelineConfirmOpen(false)}
+            busy={pipelineLoading}
           >
             <Flow>
-              <Heading level="h3">Run Build Pipeline?</Heading>
               <Text>
                 This will kill the game server, rebuild the shipping client, upload to Steam,
                 rebuild the dev server, and restart it. Players currently in-game will be
                 disconnected.
               </Text>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button type="button" variant="ghost" onClick={() => setPipelineConfirmOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => {
+                    setPipelineConfirmOpen(false);
+                    runPipeline();
+                  }}
+                  disabled={pipelineLoading}
+                >
+                  Yes, run it
+                </Button>
+              </div>
             </Flow>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setPipelineConfirmOpen(false);
-                  runPipeline();
-                }}
-                disabled={pipelineLoading}
-              >
-                Yes, run it
-              </Button>
-              <Button variant="ghost" onClick={() => setPipelineConfirmOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </Dialog>
+        )}
+      </div>
 
       {error && <Text className="text-ember">Error: {error}</Text>}
 
@@ -295,20 +291,40 @@ function AdminContent() {
             </div>
             <div className="flex shrink-0 gap-2">
               {u.approved ? (
-                <Button variant="ghost" size="sm" onClick={() => setApproved(u.id, false)} disabled={pending.has(u.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setApproved(u.id, false)}
+                  disabled={pending.has(u.id)}
+                >
                   Revoke
                 </Button>
               ) : (
-                <Button variant="primary" size="sm" onClick={() => setApproved(u.id, true)} disabled={pending.has(u.id)}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setApproved(u.id, true)}
+                  disabled={pending.has(u.id)}
+                >
                   Call
                 </Button>
               )}
               {u.banned ? (
-                <Button variant="ghost" size="sm" onClick={() => setBanned(u.id, false)} disabled={pending.has(u.id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBanned(u.id, false)}
+                  disabled={pending.has(u.id)}
+                >
                   Unban
                 </Button>
               ) : (
-                <Button variant="ghost" size="sm" onClick={() => setBanned(u.id, true)} disabled={pending.has(u.id) || u.is_admin}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBanned(u.id, true)}
+                  disabled={pending.has(u.id) || u.is_admin}
+                >
                   Ban
                 </Button>
               )}
@@ -325,13 +341,20 @@ function AdminContent() {
                 <Td>
                   {u.steam_id ? (
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="break-all font-mono text-sm">{u.steam_id}</span>
-                      <Button variant="ghost" size="sm" onClick={() => unsyncSteam(u.id)} disabled={pending.has(u.id)}>
+                      <span className="font-mono text-sm break-all">{u.steam_id}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unsyncSteam(u.id)}
+                        disabled={pending.has(u.id)}
+                      >
                         Unsync
                       </Button>
                     </span>
                   ) : (
-                    <Text as="span" variant="muted">Not linked</Text>
+                    <Text as="span" variant="muted">
+                      Not linked
+                    </Text>
                   )}
                 </Td>
               </TableRow>
