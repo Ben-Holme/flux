@@ -197,7 +197,7 @@ function DashboardContent() {
             </Card>
           ) : (
             <>
-              <BetaGuide betaKey={account.beta_key} />
+              <BetaGuide steamKey={account.steam_key} />
               {account.characters.length > 0 && (
                 <CharacterCard char={account.characters[0]} />
               )}

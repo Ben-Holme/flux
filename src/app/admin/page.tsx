@@ -25,6 +25,7 @@ interface User {
   username: string;
   email: string;
   steam_id: string | null;
+  steam_key: string | null;
   verified: boolean;
   approved: boolean;
   is_admin: boolean;
@@ -355,6 +356,16 @@ function AdminContent() {
                     <Text as="span" variant="muted">
                       Not linked
                     </Text>
+                  )}
+                </Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam Key</Td>
+                <Td>
+                  {u.steam_key ? (
+                    <span className="break-all font-mono text-sm">{u.steam_key}</span>
+                  ) : (
+                    <Text as="span" variant="muted">Not issued</Text>
                   )}
                 </Td>
               </TableRow>

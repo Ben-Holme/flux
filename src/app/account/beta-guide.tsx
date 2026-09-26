@@ -37,17 +37,17 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
   );
 }
 
-export function BetaGuide({ betaKey }: { betaKey: string | null }) {
+export function BetaGuide({ steamKey }: { steamKey: string | null }) {
   return (
     <Card>
       <Flow>
         <Heading level="h3">How to get into the beta</Heading>
 
-        {betaKey ? (
+        {steamKey ? (
           <>
             <div>
-              <Text variant="muted" className="mb-2 text-xs uppercase tracking-widest">Your beta key</Text>
-              <KeyDisplay betaKey={betaKey} />
+              <Text variant="muted" className="mb-2 text-xs uppercase tracking-widest">Your Steam key</Text>
+              <KeyDisplay betaKey={steamKey} />
             </div>
 
             <div className="flex flex-col gap-3">
