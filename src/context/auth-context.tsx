@@ -41,15 +41,20 @@ function clearSession() {
 let redirectingToLogin = false;
 
 /** Use for protected page requests, not public/login or background XP requests. */
-export async function fetchAccount(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function fetchAccount(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
   const response = await fetch(input, init);
   if (!(await isUnauthorizedResponse(response))) return response;
 
-  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  const headers = new Headers(
+    init?.headers ?? (input instanceof Request ? input.headers : undefined),
+  );
   const currentSession = loadSession();
   // Ignore an old request's failure if a newer login has already replaced its session.
-  const isCurrentSession = !currentSession
-    || headers.get("Authorization") === `Bearer ${currentSession.sessionkey}`;
+  const isCurrentSession =
+    !currentSession || headers.get("Authorization") === `Bearer ${currentSession.sessionkey}`;
   if (typeof window !== "undefined" && isCurrentSession && !redirectingToLogin) {
     redirectingToLogin = true;
     clearSession();

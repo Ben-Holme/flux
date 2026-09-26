@@ -363,9 +363,11 @@ function AdminContent() {
                 <Td variant="heading">Steam Key</Td>
                 <Td>
                   {u.steam_key ? (
-                    <span className="break-all font-mono text-sm">{u.steam_key}</span>
+                    <span className="font-mono text-sm break-all">{u.steam_key}</span>
                   ) : (
-                    <Text as="span" variant="muted">Not issued</Text>
+                    <Text as="span" variant="muted">
+                      Not issued
+                    </Text>
                   )}
                 </Td>
               </TableRow>

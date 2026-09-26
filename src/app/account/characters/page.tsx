@@ -70,9 +70,7 @@ function CharactersContent() {
         <>
           <Heading level="h2">Characters</Heading>
           {account.characters.length > 0 ? (
-            account.characters.map((char) => (
-              <CharacterCard key={char.id} char={char} />
-            ))
+            account.characters.map((char) => <CharacterCard key={char.id} char={char} />)
           ) : (
             <Text variant="muted">No characters yet.</Text>
           )}

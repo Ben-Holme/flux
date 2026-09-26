@@ -38,7 +38,7 @@ export default function PlayTestPage() {
       <Heading level="h1">Story Events</Heading>
 
       {loading && <Text className="mt-8">Loading events…</Text>}
-      {error && <Text className="mt-8 text-ember">Error: {error}</Text>}
+      {error && <Text className="text-ember mt-8">Error: {error}</Text>}
 
       {!loading && !error && !currentSeason && <Text className="mt-8">No events found.</Text>}
 

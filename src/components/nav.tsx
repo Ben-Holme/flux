@@ -23,7 +23,12 @@ const MENU_LINKS = [
   // { href: "/chronicle", label: "Chronicle" },
   { href: "/account", label: "My Account" },
   { href: "https://discord.gg/BRd7y3P5Xg", label: "Discord", external: true, discord: true },
-  { href: "https://store.steampowered.com/app/2712710/Unyha/", label: "Steam", external: true, steam: true },
+  {
+    href: "https://store.steampowered.com/app/2712710/Unyha/",
+    label: "Steam",
+    external: true,
+    steam: true,
+  },
   { href: "http://realspawn.com", label: "Realspawn Studios", external: true, small: true },
   { href: "/privacy-policy", label: "Privacy Policy", small: true },
 ];
