@@ -9,6 +9,7 @@ import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
 import { AccountBadgeList } from "@/components/account-badge";
+import { BetaGuide } from "./beta-guide";
 import type { AccountData } from "./account-types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -194,18 +195,13 @@ function DashboardContent() {
                 </Text>
               </Flow>
             </Card>
-          ) : account.characters.length > 0 ? (
-            <CharacterCard char={account.characters[0]} />
           ) : (
-            <Card>
-              <Flow>
-                <Heading level="h3">You&apos;re in!</Heading>
-                <Text>Your access is ready. The world of Unyha is waiting for you to join.</Text>
-                <Text>
-                  Launch Unyha on Steam and create your first character. Your story starts there.
-                </Text>
-              </Flow>
-            </Card>
+            <>
+              <BetaGuide betaKey={account.beta_key} />
+              {account.characters.length > 0 && (
+                <CharacterCard char={account.characters[0]} />
+              )}
+            </>
           )}
 
           {playstyleOpen && (
