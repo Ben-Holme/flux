@@ -57,13 +57,13 @@ export function BetaGuide({ steamKey }: { steamKey: string | null }) {
 
             <div className="flex flex-col gap-3">
               <Step n={1}>
-                Open Steam and go to <strong className="text-white/80">Games → Activate a Product on Steam</strong>, then enter your key above.
+                Open Steam and go to <strong className="text-white/80">Games → Activate a Product on Steam</strong>, then enter your Steam key above.
               </Step>
               <Step n={2}>
-                Once activated, find <strong className="text-white/80">Unyha</strong> in your library. Make sure you&apos;re opted into the correct beta branch — right-click the game, <strong className="text-white/80">Properties → Betas</strong>, and select the current wave.
+                Find <strong className="text-white/80">Unyha</strong> in your library. Right-click → <strong className="text-white/80">Properties → Game Versions &amp; Betas</strong>. Under <strong className="text-white/80">Private Versions</strong>, enter the beta password above and click <strong className="text-white/80">Check Code</strong>. Select the unlocked private branch.
               </Step>
               <Step n={3}>
-                Download and launch. When prompted, enter the beta password above. Create your character — your story begins there.
+                Download and launch. Create your character — your story begins there.
               </Step>
             </div>
           </>
