@@ -114,7 +114,7 @@ function RegisterForm() {
           label={
             <>
               I agree to the{" "}
-              <Link href="/privacy" className="text-white/60 underline">
+              <Link href="/privacy-policy" className="text-white/60 underline">
                 Privacy Policy
               </Link>
             </>
