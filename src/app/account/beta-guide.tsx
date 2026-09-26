@@ -50,6 +50,11 @@ export function BetaGuide({ steamKey }: { steamKey: string | null }) {
               <KeyDisplay betaKey={steamKey} />
             </div>
 
+            <div>
+              <Text variant="muted" className="mb-2 text-xs uppercase tracking-widest">Beta password</Text>
+              <KeyDisplay betaKey="huddingelan1997" />
+            </div>
+
             <div className="flex flex-col gap-3">
               <Step n={1}>
                 Open Steam and go to <strong className="text-white/80">Games → Activate a Product on Steam</strong>, then enter your key above.
@@ -58,7 +63,7 @@ export function BetaGuide({ steamKey }: { steamKey: string | null }) {
                 Once activated, find <strong className="text-white/80">Unyha</strong> in your library. Make sure you&apos;re opted into the correct beta branch — right-click the game, <strong className="text-white/80">Properties → Betas</strong>, and select the current wave.
               </Step>
               <Step n={3}>
-                Download and launch. Create your character — your story begins there.
+                Download and launch. When prompted, enter the beta password above. Create your character — your story begins there.
               </Step>
             </div>
           </>
