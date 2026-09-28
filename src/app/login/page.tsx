@@ -37,24 +37,15 @@ function LoginForm() {
       className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 backdrop-blur-[14px]"
     >
       <div className="mb-5">
-        <FormLabel>Username</FormLabel>
+        <FormLabel>Username or email</FormLabel>
         <Input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
+          autoComplete="username email"
           required
           className="mt-1.5"
         />
-        {username.includes("@") ? (
-          <p className="mt-1.5 text-[0.75rem] text-amber-400/80">
-            Use your username, not your email address.
-          </p>
-        ) : (
-          <p className="mt-1.5 text-[0.72rem] text-white/25">
-            Your username — not your email address.
-          </p>
-        )}
       </div>
 
       <div className="mb-6">
