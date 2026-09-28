@@ -46,6 +46,15 @@ function LoginForm() {
           required
           className="mt-1.5"
         />
+        {username.includes("@") ? (
+          <p className="mt-1.5 text-[0.75rem] text-amber-400/80">
+            Use your username, not your email address.
+          </p>
+        ) : (
+          <p className="mt-1.5 text-[0.72rem] text-white/25">
+            Your username — not your email address.
+          </p>
+        )}
       </div>
 
       <div className="mb-6">
