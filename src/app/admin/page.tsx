@@ -34,7 +34,21 @@ interface User {
   banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
+type Filter = "all" | "approved" | "unapproved" | "steam" | "has-key" | "banned";
+
+function toggleFilter(current: Set<Filter>, filter: Filter): Set<Filter> {
+  if (filter === "all") return new Set();
+
+  const next = new Set(current);
+  if (next.has(filter)) {
+    next.delete(filter);
+  } else {
+    if (filter === "approved") next.delete("unapproved");
+    if (filter === "unapproved") next.delete("approved");
+    next.add(filter);
+  }
+  return next;
+}
 
 function AdminContent() {
   const { session, ready } = useAuth();
@@ -42,10 +56,10 @@ function AdminContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filters, setFilters] = useState<Set<Filter>>(new Set());
   const [search, setSearch] = useState("");
-  const [pending, setPending]         = useState<Set<number>>(new Set());
-  const [freeKeys, setFreeKeys]       = useState<number | null>(null);
+  const [pending, setPending] = useState<Set<number>>(new Set());
+  const [freeKeys, setFreeKeys] = useState<number | null>(null);
   const [keyMessages, setKeyMessages] = useState<Record<number, string>>({});
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
@@ -177,14 +191,19 @@ function AdminContent() {
     setPending((p) => new Set(p).add(userId));
     setKeyMessages((m) => ({ ...m, [userId]: "" }));
     try {
-      const res  = await fetch(`${API}/admin-assign-key-w.php`, {
+      const res = await fetch(`${API}/admin-assign-key-w.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
         body: JSON.stringify({ user_id: userId }),
       });
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, steam_key: data.steam_key } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, steam_key: data.steam_key } : u)),
+      );
       setFreeKeys((n) => (n !== null ? n - 1 : null));
       setKeyMessages((m) => ({
         ...m,
@@ -193,7 +212,11 @@ function AdminContent() {
     } catch (e: unknown) {
       setKeyMessages((m) => ({ ...m, [userId]: e instanceof Error ? e.message : "Failed" }));
     } finally {
-      setPending((p) => { const n = new Set(p); n.delete(userId); return n; });
+      setPending((p) => {
+        const n = new Set(p);
+        n.delete(userId);
+        return n;
+      });
     }
   };
 
@@ -202,9 +225,12 @@ function AdminContent() {
     setPending((p) => new Set(p).add(userId));
     setKeyMessages((m) => ({ ...m, [userId]: "" }));
     try {
-      const res  = await fetch(`${API}/admin-resend-key-email-w.php`, {
+      const res = await fetch(`${API}/admin-resend-key-email-w.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.sessionkey}`,
+        },
         body: JSON.stringify({ user_id: userId }),
       });
       const data = await res.json();
@@ -213,7 +239,11 @@ function AdminContent() {
     } catch (e: unknown) {
       setKeyMessages((m) => ({ ...m, [userId]: e instanceof Error ? e.message : "Failed" }));
     } finally {
-      setPending((p) => { const n = new Set(p); n.delete(userId); return n; });
+      setPending((p) => {
+        const n = new Set(p);
+        n.delete(userId);
+        return n;
+      });
     }
   };
 
@@ -221,10 +251,11 @@ function AdminContent() {
 
   const q = search.trim().toLowerCase();
   const visible = users.filter((u) => {
-    if (filter === "approved" && !u.approved) return false;
-    if (filter === "unapproved" && u.approved) return false;
-    if (filter === "steam" && !u.steam_id) return false;
-    if (filter === "banned" && !u.banned) return false;
+    if (filters.has("approved") && !u.approved) return false;
+    if (filters.has("unapproved") && u.approved) return false;
+    if (filters.has("steam") && !u.steam_id) return false;
+    if (filters.has("has-key") && !u.steam_key) return false;
+    if (filters.has("banned") && !u.banned) return false;
     if (q && !u.username.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -234,6 +265,7 @@ function AdminContent() {
     approved: users.filter((u) => u.approved).length,
     unapproved: users.filter((u) => !u.approved).length,
     steam: users.filter((u) => !!u.steam_id).length,
+    "has-key": users.filter((u) => !!u.steam_key).length,
     banned: users.filter((u) => u.banned).length,
   };
 
@@ -242,6 +274,7 @@ function AdminContent() {
     { key: "approved", label: `Called (${counts.approved})` },
     { key: "unapproved", label: `Waiting (${counts.unapproved})` },
     { key: "steam", label: `Steam Synced (${counts.steam})` },
+    { key: "has-key", label: `Has key (${counts["has-key"]})` },
     { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
@@ -252,7 +285,10 @@ function AdminContent() {
 
       {freeKeys !== null && (
         <Text variant="muted">
-          <Text as="span" className={freeKeys === 0 ? "text-ember font-semibold" : "text-gold font-semibold"}>
+          <Text
+            as="span"
+            className={freeKeys === 0 ? "text-ember font-semibold" : "text-gold font-semibold"}
+          >
             {freeKeys}
           </Text>{" "}
           Steam {freeKeys === 1 ? "key" : "keys"} remaining
@@ -317,16 +353,20 @@ function AdminContent() {
       />
 
       <div className="flex flex-wrap gap-2">
-        {filterLabels.map(({ key, label }) => (
-          <Button
-            key={key}
-            variant={filter === key ? "primary" : "ghost"}
-            size="sm"
-            onClick={() => setFilter(key)}
-          >
-            {label}
-          </Button>
-        ))}
+        {filterLabels.map(({ key, label }) => {
+          const active = key === "all" ? filters.size === 0 : filters.has(key);
+          return (
+            <Button
+              key={key}
+              variant={active ? "primary" : "ghost"}
+              size="sm"
+              aria-pressed={active}
+              onClick={() => setFilters((current) => toggleFilter(current, key))}
+            >
+              {label}
+            </Button>
+          );
+        })}
       </div>
 
       {loading && <Text>Loading…</Text>}
@@ -433,7 +473,9 @@ function AdminContent() {
                 <Td>
                   {u.steam_key ? (
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="break-all font-mono text-sm text-teal-300">{u.steam_key}</span>
+                      <span className="font-mono text-sm break-all text-teal-300">
+                        {u.steam_key}
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"
