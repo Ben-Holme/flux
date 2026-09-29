@@ -44,7 +44,9 @@ function AdminContent() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [pending, setPending] = useState<Set<number>>(new Set());
+  const [pending, setPending]         = useState<Set<number>>(new Set());
+  const [freeKeys, setFreeKeys]       = useState<number | null>(null);
+  const [keyMessages, setKeyMessages] = useState<Record<number, string>>({});
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [pipelineConfirmOpen, setPipelineConfirmOpen] = useState(false);
@@ -58,6 +60,7 @@ function AdminContent() {
       .then((data) => {
         if (data.status !== "OK") throw new Error(data.status);
         setUsers(data.users);
+        setFreeKeys(data.free_keys ?? null);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -169,6 +172,51 @@ function AdminContent() {
     }
   };
 
+  const assignKey = async (userId: number) => {
+    if (!session) return;
+    setPending((p) => new Set(p).add(userId));
+    setKeyMessages((m) => ({ ...m, [userId]: "" }));
+    try {
+      const res  = await fetch(`${API}/admin-assign-key-w.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, steam_key: data.steam_key } : u)));
+      setFreeKeys((n) => (n !== null ? n - 1 : null));
+      setKeyMessages((m) => ({
+        ...m,
+        [userId]: data.email_warn ?? "Key assigned and email sent.",
+      }));
+    } catch (e: unknown) {
+      setKeyMessages((m) => ({ ...m, [userId]: e instanceof Error ? e.message : "Failed" }));
+    } finally {
+      setPending((p) => { const n = new Set(p); n.delete(userId); return n; });
+    }
+  };
+
+  const resendKeyEmail = async (userId: number) => {
+    if (!session) return;
+    setPending((p) => new Set(p).add(userId));
+    setKeyMessages((m) => ({ ...m, [userId]: "" }));
+    try {
+      const res  = await fetch(`${API}/admin-resend-key-email-w.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.sessionkey}` },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setKeyMessages((m) => ({ ...m, [userId]: "Email resent." }));
+    } catch (e: unknown) {
+      setKeyMessages((m) => ({ ...m, [userId]: e instanceof Error ? e.message : "Failed" }));
+    } finally {
+      setPending((p) => { const n = new Set(p); n.delete(userId); return n; });
+    }
+  };
+
   if (!session) return null;
 
   const q = search.trim().toLowerCase();
@@ -201,6 +249,15 @@ function AdminContent() {
     <Flow className="min-h-[90vh] px-6 pb-20">
       <Eyebrow>Admin</Eyebrow>
       <Heading level="h1">Players</Heading>
+
+      {freeKeys !== null && (
+        <Text variant="muted">
+          <Text as="span" className={freeKeys === 0 ? "text-ember font-semibold" : "text-gold font-semibold"}>
+            {freeKeys}
+          </Text>{" "}
+          Steam {freeKeys === 1 ? "key" : "keys"} remaining
+        </Text>
+      )}
 
       <div className="flex items-center gap-3">
         <Button
@@ -367,6 +424,40 @@ function AdminContent() {
                   ) : (
                     <Text as="span" variant="muted">
                       Not issued
+                    </Text>
+                  )}
+                </Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam Key</Td>
+                <Td>
+                  {u.steam_key ? (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="break-all font-mono text-sm text-teal-300">{u.steam_key}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resendKeyEmail(u.id)}
+                        disabled={pending.has(u.id)}
+                      >
+                        Resend email
+                      </Button>
+                    </span>
+                  ) : u.steam_id ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => assignKey(u.id)}
+                      disabled={pending.has(u.id) || freeKeys === 0}
+                    >
+                      {pending.has(u.id) ? "Assigning…" : "Assign Key"}
+                    </Button>
+                  ) : (
+                    <Text as="span" variant="muted">Steam not linked</Text>
+                  )}
+                  {keyMessages[u.id] && (
+                    <Text as="span" variant="muted" className="ml-2 text-xs">
+                      {keyMessages[u.id]}
                     </Text>
                   )}
                 </Td>
