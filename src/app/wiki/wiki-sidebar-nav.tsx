@@ -103,7 +103,7 @@ function DesktopSectionGroup({
         style={{
           opacity: open ? 1 : 0,
           height: open ? "auto" : "0px",
-          transition: open ? "padding-bottom 1s cubic-bezier(0, 1, 0, 1)" : "all .2s",
+          transition: open ? "padding-bottom 1s cubic-bezier(0, 1, 0, 1)" : "all 0s",
           transform: open ? "translateY(0)" : "translateY(-10px)",
           paddingBottom: open ? "8px" : "0px",
           visibility: open ? "visible" : "hidden",

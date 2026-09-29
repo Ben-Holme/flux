@@ -3,12 +3,13 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { CharacterCard } from "@/components/character-card";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import { Alert, Card, Flow, Heading, Text } from "@/components/ui";
 import { AccountBadgeList } from "@/components/account-badge";
+import { BetaGuide } from "./beta-guide";
 import type { AccountData } from "./account-types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ function DashboardContent() {
       router.push("/login?redirect=/account");
       return;
     }
-    fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())
@@ -90,7 +91,7 @@ function DashboardContent() {
     if (!session || !account) return;
     setPlaystylePending(true);
     try {
-      const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
+      const res = await fetchAccount("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -197,15 +198,7 @@ function DashboardContent() {
           ) : account.characters.length > 0 ? (
             <CharacterCard char={account.characters[0]} />
           ) : (
-            <Card>
-              <Flow>
-                <Heading level="h3">You&apos;re in!</Heading>
-                <Text>Your access is ready. The world of Unyha is waiting for you to join.</Text>
-                <Text>
-                  Launch Unyha on Steam and create your first character. Your story starts there.
-                </Text>
-              </Flow>
-            </Card>
+            <BetaGuide steamKey={account.steam_key} />
           )}
 
           {playstyleOpen && (

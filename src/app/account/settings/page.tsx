@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { PlayerTypeModal } from "@/components/player-type-modal";
 import {
@@ -39,7 +39,7 @@ function ChangePasswordModal({ sessionkey, onClose }: { sessionkey: string; onCl
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("https://api.unyhagame.com/ueserv/changePassword-w.php", {
+      const res = await fetchAccount("https://api.unyhagame.com/ueserv/changePassword-w.php", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionkey}` },
         body: JSON.stringify({ current_password: current, new_password: next }),
@@ -126,7 +126,7 @@ function DeleteAccountModal({ sessionkey, onClose }: { sessionkey: string; onClo
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("https://api.unyhagame.com/ueserv/delete-account-w.php", {
+      const res = await fetchAccount("https://api.unyhagame.com/ueserv/delete-account-w.php", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionkey}` },
         body: JSON.stringify({ password }),
@@ -211,7 +211,7 @@ function SettingsContent() {
       router.push("/login?redirect=/account/settings");
       return;
     }
-    fetch("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())
@@ -227,7 +227,7 @@ function SettingsContent() {
     if (!session || !account) return;
     setPlaystylePending(true);
     try {
-      const res = await fetch("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
+      const res = await fetchAccount("https://api.unyhagame.com/ueserv/set-playstyle-w.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

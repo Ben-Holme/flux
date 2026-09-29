@@ -37,4 +37,5 @@ export interface AccountData {
   spirit_xp: number;
   achievements: Record<string, number>;
   characters: Character[];
+  steam_key: string | null;
 }

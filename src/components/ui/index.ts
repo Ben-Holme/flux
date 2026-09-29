@@ -4,6 +4,7 @@ export { Heading } from "./heading";
 export { Text } from "./text";
 export { Flow } from "./flow";
 export { Card } from "./card";
+export { Dialog } from "./dialog";
 export { Badge } from "./badge";
 export { Tooltip } from "./tooltip";
 export { Tabs, TabsList, TabsTrigger, TabsPanel } from "./tabs";

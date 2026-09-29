@@ -31,7 +31,8 @@ const BASE =
 
 const SIZE_CLASS: Record<Size, string> = {
   sm: "px-3.5 py-2 text-[0.75rem]",
-  md: "px-6 py-4 text-[0.88rem]",
+  // Match Input: 1.5rem line height + 1.25rem vertical padding + 2px border.
+  md: "h-[calc(2.75rem+2px)] px-6 py-0 text-[0.88rem]",
   lg: "px-8 py-5 text-base",
 };
 

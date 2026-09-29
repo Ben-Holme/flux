@@ -2,11 +2,12 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import {
   Badge,
   Card,
+  Dialog,
   Eyebrow,
   Flow,
   Heading,
@@ -24,27 +25,13 @@ interface User {
   username: string;
   email: string;
   steam_id: string | null;
+  steam_key: string | null;
   verified: boolean;
   approved: boolean;
   is_admin: boolean;
-  spirit_xp: Record<string, number> | string | null;
+  spirit_xp: number;
+  achievements: Record<string, number>;
   banned: boolean;
-}
-
-function parseXpMap(raw: User["spirit_xp"]): Record<string, number> {
-  if (!raw) return {};
-  if (typeof raw === "string") {
-    try { return JSON.parse(raw) as Record<string, number>; } catch { return {}; }
-  }
-  return raw;
-}
-
-function xpTotal(raw: User["spirit_xp"]): number {
-  return Object.values(parseXpMap(raw)).reduce((a, b) => a + b, 0);
-}
-
-function xpKeys(raw: User["spirit_xp"]): string[] {
-  return Object.keys(parseXpMap(raw));
 }
 
 type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
@@ -64,7 +51,7 @@ function AdminContent() {
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
-    fetch(`${API}/admin-users-w.php`, {
+    fetchAccount(`${API}/admin-users-w.php`, {
       headers: { Authorization: `Bearer ${session.sessionkey}` },
     })
       .then((r) => r.json())
@@ -89,7 +76,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-set-approved-w.php`, {
+      const res = await fetchAccount(`${API}/admin-set-approved-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +102,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-ban-w.php`, {
+      const res = await fetchAccount(`${API}/admin-ban-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -141,7 +128,7 @@ function AdminContent() {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
     try {
-      const res = await fetch(`${API}/admin-unsync-steam-w.php`, {
+      const res = await fetchAccount(`${API}/admin-unsync-steam-w.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -168,7 +155,7 @@ function AdminContent() {
     setPipelineLoading(true);
     setPipelineStatus(null);
     try {
-      const res = await fetch(`${API}/admin-run-pipeline-w.php`, {
+      const res = await fetchAccount(`${API}/admin-run-pipeline-w.php`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.sessionkey}` },
       });
@@ -229,43 +216,38 @@ function AdminContent() {
             {pipelineStatus}
           </Text>
         )}
-      </div>
-
-      {pipelineConfirmOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
-          onClick={() => setPipelineConfirmOpen(false)}
-        >
-          <div
-            className="bg-surface flex w-full max-w-md flex-col gap-6 rounded-lg p-8"
-            onClick={(e) => e.stopPropagation()}
+        {pipelineConfirmOpen && (
+          <Dialog
+            title="Run Build Pipeline?"
+            onClose={() => setPipelineConfirmOpen(false)}
+            busy={pipelineLoading}
           >
             <Flow>
-              <Heading level="h3">Run Build Pipeline?</Heading>
               <Text>
                 This will kill the game server, rebuild the shipping client, upload to Steam,
                 rebuild the dev server, and restart it. Players currently in-game will be
                 disconnected.
               </Text>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button type="button" variant="ghost" onClick={() => setPipelineConfirmOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => {
+                    setPipelineConfirmOpen(false);
+                    runPipeline();
+                  }}
+                  disabled={pipelineLoading}
+                >
+                  Yes, run it
+                </Button>
+              </div>
             </Flow>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setPipelineConfirmOpen(false);
-                  runPipeline();
-                }}
-                disabled={pipelineLoading}
-              >
-                Yes, run it
-              </Button>
-              <Button variant="ghost" onClick={() => setPipelineConfirmOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </Dialog>
+        )}
+      </div>
 
       {error && <Text className="text-ember">Error: {error}</Text>}
 
@@ -297,9 +279,9 @@ function AdminContent() {
       )}
 
       {visible.map((u) => (
-        <Card key={u.id} className="flex items-center justify-between gap-4">
-          <Flow className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-3">
+        <Card key={u.id} className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-baseline gap-2">
               <Heading level="h4" as="span">
                 {u.username}
               </Heading>
@@ -308,88 +290,100 @@ function AdminContent() {
               {!u.verified && <Badge>Unverified</Badge>}
               {u.banned && <Badge>Banned</Badge>}
             </div>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <Td variant="heading">Email</Td>
-                  <Td>{u.email}</Td>
-                </TableRow>
-                <TableRow>
-                  <Td variant="heading">Steam</Td>
-                  <Td>
-                    {u.steam_id ? (
-                      <span className="flex items-center gap-3">
-                        {u.steam_id}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => unsyncSteam(u.id)}
-                          disabled={pending.has(u.id)}
-                        >
-                          Unsync
-                        </Button>
-                      </span>
-                    ) : (
-                      <Text as="span" variant="muted">
-                        Not linked
-                      </Text>
-                    )}
-                  </Td>
-                </TableRow>
-                <TableRow>
-                  <Td variant="heading">Spirit XP</Td>
-                  <Td>
-                    {xpTotal(u.spirit_xp)}
-                    {xpKeys(u.spirit_xp).length > 0 && (
-                      <Text as="span" variant="muted" className="ml-2 text-xs">
-                        ({xpKeys(u.spirit_xp).join(", ")})
-                      </Text>
-                    )}
-                  </Td>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Flow>
-          <div className="flex shrink-0 flex-col gap-2">
-            {u.approved ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setApproved(u.id, false)}
-                disabled={pending.has(u.id)}
-              >
-                Revoke
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setApproved(u.id, true)}
-                disabled={pending.has(u.id)}
-              >
-                Call
-              </Button>
-            )}
-            {u.banned ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBanned(u.id, false)}
-                disabled={pending.has(u.id)}
-              >
-                Unban
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBanned(u.id, true)}
-                disabled={pending.has(u.id) || u.is_admin}
-              >
-                Ban
-              </Button>
-            )}
+            <div className="flex shrink-0 gap-2">
+              {u.approved ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setApproved(u.id, false)}
+                  disabled={pending.has(u.id)}
+                >
+                  Revoke
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setApproved(u.id, true)}
+                  disabled={pending.has(u.id)}
+                >
+                  Call
+                </Button>
+              )}
+              {u.banned ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBanned(u.id, false)}
+                  disabled={pending.has(u.id)}
+                >
+                  Unban
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBanned(u.id, true)}
+                  disabled={pending.has(u.id) || u.is_admin}
+                >
+                  Ban
+                </Button>
+              )}
+            </div>
           </div>
+          <Table>
+            <TableBody>
+              <TableRow>
+                <Td variant="heading">Email</Td>
+                <Td className="break-all">{u.email}</Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam</Td>
+                <Td>
+                  {u.steam_id ? (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-sm break-all">{u.steam_id}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unsyncSteam(u.id)}
+                        disabled={pending.has(u.id)}
+                      >
+                        Unsync
+                      </Button>
+                    </span>
+                  ) : (
+                    <Text as="span" variant="muted">
+                      Not linked
+                    </Text>
+                  )}
+                </Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Steam Key</Td>
+                <Td>
+                  {u.steam_key ? (
+                    <span className="font-mono text-sm break-all">{u.steam_key}</span>
+                  ) : (
+                    <Text as="span" variant="muted">
+                      Not issued
+                    </Text>
+                  )}
+                </Td>
+              </TableRow>
+              <TableRow>
+                <Td variant="heading">Spirit XP</Td>
+                <Td>
+                  {u.spirit_xp}
+                  {Object.keys(u.achievements).length > 0 && (
+                    <Text as="span" variant="muted" className="ml-2 text-xs">
+                      ({Object.keys(u.achievements).join(", ")})
+                    </Text>
+                  )}
+                </Td>
+              </TableRow>
+            </TableBody>
+          </Table>
         </Card>
       ))}
     </Flow>

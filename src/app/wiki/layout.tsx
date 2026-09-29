@@ -8,7 +8,7 @@ async function WikiSidebar() {
     <div className="md:-mt-6 md:-ml-4">
       {/* Desktop: fixed sidebar column */}
       {/* Mobile: fixed bar below main nav */}
-      <div className="fixed max-h-[calc(100vh-100px)] w-[300px] overflow-y-scroll max-[1200px]:w-[200px] max-[768px]:inset-x-0 max-[768px]:top-[64px] max-[768px]:z-40 max-[768px]:w-auto md:pt-6 md:pl-4">
+      <div className="fixed max-h-[calc(100vh-100px)] w-[300px] overflow-y-scroll max-[1200px]:w-[200px] max-[768px]:inset-x-0 max-[768px]:top-[64px] max-[768px]:z-40 max-[768px]:w-auto md:pt-6 md:pl-4" data-lenis-prevent>
         <WikiSidebarNav sections={sections} />
       </div>
     </div>
