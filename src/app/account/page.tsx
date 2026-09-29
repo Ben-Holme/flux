@@ -175,7 +175,15 @@ function DashboardContent() {
             </Card>
           )}
 
-          {!account.approved ? (
+          {account.steam_key ? (
+            // Key assigned — show install guide (or character card if already in-game)
+            account.characters.length > 0 ? (
+              <CharacterCard char={account.characters[0]} />
+            ) : (
+              <BetaGuide steamKey={account.steam_key} />
+            )
+          ) : !account.approved ? (
+            // No key yet, not called — waiting room
             <Card>
               <Flow>
                 <Heading level="h3">In queue</Heading>
@@ -195,10 +203,9 @@ function DashboardContent() {
                 </Text>
               </Flow>
             </Card>
-          ) : account.characters.length > 0 ? (
-            <CharacterCard char={account.characters[0]} />
           ) : (
-            <BetaGuide steamKey={account.steam_key} />
+            // Called but no key yet — shouldn't normally happen
+            <BetaGuide steamKey={null} />
           )}
 
           {playstyleOpen && (
