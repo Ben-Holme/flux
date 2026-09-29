@@ -175,7 +175,9 @@ function DashboardContent() {
             </Card>
           )}
 
-          {!account.approved ? (
+          {account.steam_key ? (
+            <BetaGuide steamKey={account.steam_key} />
+          ) : !account.approved ? (
             <Card>
               <Flow>
                 <Heading level="h3">In queue</Heading>
@@ -197,9 +199,7 @@ function DashboardContent() {
             </Card>
           ) : account.characters.length > 0 ? (
             <CharacterCard char={account.characters[0]} />
-          ) : (
-            <BetaGuide steamKey={account.steam_key} />
-          )}
+          ) : null}
 
           {playstyleOpen && (
             <PlayerTypeModal
