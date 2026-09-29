@@ -443,7 +443,7 @@ function AdminContent() {
                         Resend email
                       </Button>
                     </span>
-                  ) : u.steam_id ? (
+                  ) : (
                     <Button
                       variant="primary"
                       size="sm"
@@ -452,8 +452,6 @@ function AdminContent() {
                     >
                       {pending.has(u.id) ? "Assigning…" : "Assign Key"}
                     </Button>
-                  ) : (
-                    <Text as="span" variant="muted">Steam not linked</Text>
                   )}
                   {keyMessages[u.id] && (
                     <Text as="span" variant="muted" className="ml-2 text-xs">
