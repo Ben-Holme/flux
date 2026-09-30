@@ -34,8 +34,9 @@ interface User {
   banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
+type Filter = "all" | "approved" | "unapproved" | "banned";
 type KeyFilter = "any" | "has-key" | "no-key";
+type SteamFilter = "any" | "synced" | "not-synced";
 
 function toggleFilter(current: Set<Filter>, filter: Filter): Set<Filter> {
   if (filter === "all") return new Set();
@@ -59,6 +60,7 @@ function AdminContent() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Set<Filter>>(new Set());
   const [keyFilter, setKeyFilter] = useState<KeyFilter>("any");
+  const [steamFilter, setSteamFilter] = useState<SteamFilter>("any");
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<Set<number>>(new Set());
   const [freeKeys, setFreeKeys] = useState<number | null>(null);
@@ -255,7 +257,8 @@ function AdminContent() {
   const visible = users.filter((u) => {
     if (filters.has("approved") && !u.approved) return false;
     if (filters.has("unapproved") && u.approved) return false;
-    if (filters.has("steam") && !u.steam_id) return false;
+    if (steamFilter === "synced" && !u.steam_id) return false;
+    if (steamFilter === "not-synced" && u.steam_id) return false;
     if (keyFilter === "has-key" && !u.steam_key) return false;
     if (keyFilter === "no-key" && u.steam_key) return false;
     if (filters.has("banned") && !u.banned) return false;
@@ -267,7 +270,6 @@ function AdminContent() {
     all: users.length,
     approved: users.filter((u) => u.approved).length,
     unapproved: users.filter((u) => !u.approved).length,
-    steam: users.filter((u) => !!u.steam_id).length,
     banned: users.filter((u) => u.banned).length,
   };
 
@@ -275,7 +277,6 @@ function AdminContent() {
     { key: "all", label: `All (${counts.all})` },
     { key: "approved", label: `Called (${counts.approved})` },
     { key: "unapproved", label: `Waiting (${counts.unapproved})` },
-    { key: "steam", label: `Steam Synced (${counts.steam})` },
     { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
@@ -368,6 +369,15 @@ function AdminContent() {
             </Button>
           );
         })}
+        <select
+          value={steamFilter}
+          onChange={(e) => setSteamFilter(e.target.value as SteamFilter)}
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+        >
+          <option value="any">Steam: Any</option>
+          <option value="synced">Synced</option>
+          <option value="not-synced">Not synced</option>
+        </select>
         <select
           value={keyFilter}
           onChange={(e) => setKeyFilter(e.target.value as KeyFilter)}
