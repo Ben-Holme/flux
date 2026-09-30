@@ -71,6 +71,7 @@ function AdminContent() {
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
+  const [onlinePlayers, setOnlinePlayers] = useState<string[]>([]);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -95,6 +96,21 @@ function AdminContent() {
     }
     fetchUsers();
   }, [session, ready, router, fetchUsers]);
+
+  useEffect(() => {
+    if (!session) return;
+    const fetchOnline = () => {
+      fetchAccount(`${API}/admin-online-players-w.php`, {
+        headers: { Authorization: `Bearer ${session.sessionkey}` },
+      })
+        .then((r) => r.json())
+        .then((data) => { if (data.status === "OK") setOnlinePlayers(data.players); })
+        .catch(() => {});
+    };
+    fetchOnline();
+    const interval = setInterval(fetchOnline, 60_000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const setApproved = async (userId: number, approved: boolean) => {
     if (!session) return;
@@ -319,6 +335,13 @@ function AdminContent() {
           Steam {freeKeys === 1 ? "key" : "keys"} remaining
         </Text>
       )}
+
+      <Text variant="muted">
+        <Text as="span" className={onlinePlayers.length > 0 ? "text-gold font-semibold" : "font-semibold"}>
+          {onlinePlayers.length}
+        </Text>{" "}
+        online{onlinePlayers.length > 0 && `: ${onlinePlayers.join(", ")}`}
+      </Text>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
