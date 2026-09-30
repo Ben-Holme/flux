@@ -34,7 +34,7 @@ interface User {
   banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
+type Filter = "all" | "approved" | "unapproved" | "steam" | "nokey" | "banned";
 
 function AdminContent() {
   const { session, ready } = useAuth();
@@ -224,6 +224,7 @@ function AdminContent() {
     if (filter === "approved" && !u.approved) return false;
     if (filter === "unapproved" && u.approved) return false;
     if (filter === "steam" && !u.steam_id) return false;
+    if (filter === "nokey" && u.steam_key) return false;
     if (filter === "banned" && !u.banned) return false;
     if (q && !u.username.toLowerCase().includes(q)) return false;
     return true;
@@ -234,6 +235,7 @@ function AdminContent() {
     approved: users.filter((u) => u.approved).length,
     unapproved: users.filter((u) => !u.approved).length,
     steam: users.filter((u) => !!u.steam_id).length,
+    nokey: users.filter((u) => !u.steam_key).length,
     banned: users.filter((u) => u.banned).length,
   };
 
@@ -242,6 +244,7 @@ function AdminContent() {
     { key: "approved", label: `Called (${counts.approved})` },
     { key: "unapproved", label: `Waiting (${counts.unapproved})` },
     { key: "steam", label: `Steam Synced (${counts.steam})` },
+    { key: "nokey", label: `No Key (${counts.nokey})` },
     { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
@@ -412,18 +415,6 @@ function AdminContent() {
                   ) : (
                     <Text as="span" variant="muted">
                       Not linked
-                    </Text>
-                  )}
-                </Td>
-              </TableRow>
-              <TableRow>
-                <Td variant="heading">Steam Key</Td>
-                <Td>
-                  {u.steam_key ? (
-                    <span className="font-mono text-sm break-all">{u.steam_key}</span>
-                  ) : (
-                    <Text as="span" variant="muted">
-                      Not issued
                     </Text>
                   )}
                 </Td>
