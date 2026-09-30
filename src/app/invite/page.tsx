@@ -9,6 +9,7 @@ import { ImageStrip } from "@/components/image-strip";
 import { SectionImage } from "@/components/section-image";
 import { Divide } from "lucide-react";
 import { Divider } from "@/components/ui/divider";
+import { Countdown } from "./countdown";
 
 export const metadata = {
   title: { absolute: "Unyha - Early Access Invite" },
@@ -195,6 +196,7 @@ export default async function InvitePage() {
         <Card>
           <Flow>
             <Heading level="h2">Join us</Heading>
+            <Countdown />
             <Text>
               Early access starts October 1 at 20:00 CEST (18:00 UTC). Sign up and verify your
               email. We&apos;ll invite players in small waves and email you when it&apos;s your turn.
