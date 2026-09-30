@@ -34,7 +34,8 @@ interface User {
   banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "steam" | "nokey" | "banned";
+type Filter = "all" | "approved" | "unapproved" | "steam" | "banned";
+type KeyFilter = "any" | "has-key" | "no-key";
 
 function toggleFilter(current: Set<Filter>, filter: Filter): Set<Filter> {
   if (filter === "all") return new Set();
@@ -57,6 +58,7 @@ function AdminContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Set<Filter>>(new Set());
+  const [keyFilter, setKeyFilter] = useState<KeyFilter>("any");
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<Set<number>>(new Set());
   const [freeKeys, setFreeKeys] = useState<number | null>(null);
@@ -254,7 +256,8 @@ function AdminContent() {
     if (filters.has("approved") && !u.approved) return false;
     if (filters.has("unapproved") && u.approved) return false;
     if (filters.has("steam") && !u.steam_id) return false;
-    if (filters.has("nokey") && u.steam_key) return false;
+    if (keyFilter === "has-key" && !u.steam_key) return false;
+    if (keyFilter === "no-key" && u.steam_key) return false;
     if (filters.has("banned") && !u.banned) return false;
     if (q && !u.username.toLowerCase().includes(q)) return false;
     return true;
@@ -265,7 +268,6 @@ function AdminContent() {
     approved: users.filter((u) => u.approved).length,
     unapproved: users.filter((u) => !u.approved).length,
     steam: users.filter((u) => !!u.steam_id).length,
-    nokey: users.filter((u) => !u.steam_key).length,
     banned: users.filter((u) => u.banned).length,
   };
 
@@ -274,7 +276,6 @@ function AdminContent() {
     { key: "approved", label: `Called (${counts.approved})` },
     { key: "unapproved", label: `Waiting (${counts.unapproved})` },
     { key: "steam", label: `Steam Synced (${counts.steam})` },
-    { key: "nokey", label: `No Key (${counts.nokey})` },
     { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
@@ -352,7 +353,7 @@ function AdminContent() {
         className="w-full max-w-sm rounded-md border border-white/10 bg-white/5 px-3 py-2 text-base text-white placeholder-white/30 outline-none focus:border-white/30"
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {filterLabels.map(({ key, label }) => {
           const active = key === "all" ? filters.size === 0 : filters.has(key);
           return (
@@ -367,6 +368,15 @@ function AdminContent() {
             </Button>
           );
         })}
+        <select
+          value={keyFilter}
+          onChange={(e) => setKeyFilter(e.target.value as KeyFilter)}
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+        >
+          <option value="any">Key: Any</option>
+          <option value="has-key">Has key</option>
+          <option value="no-key">No key</option>
+        </select>
       </div>
 
       {loading && <Text>Loading…</Text>}
