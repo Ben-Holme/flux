@@ -68,6 +68,9 @@ function AdminContent() {
   const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [pipelineConfirmOpen, setPipelineConfirmOpen] = useState(false);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -190,6 +193,26 @@ function AdminContent() {
     }
   };
 
+  const controlServer = async (action: "start" | "kill") => {
+    if (!session) return;
+    setServerLoading(true);
+    setServerStatus(null);
+    const endpoint = action === "start" ? "admin-start-server-w.php" : "admin-kill-server-w.php";
+    try {
+      const res = await fetchAccount(`${API}/${endpoint}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.sessionkey}` },
+      });
+      const data = await res.json();
+      if (data.status !== "OK") throw new Error(data.status);
+      setServerStatus(action === "start" ? "Server started" : "Server killed");
+    } catch (e: unknown) {
+      setServerStatus(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setServerLoading(false);
+    }
+  };
+
   const assignKey = async (userId: number) => {
     if (!session) return;
     setPending((p) => new Set(p).add(userId));
@@ -297,20 +320,70 @@ function AdminContent() {
         </Text>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
-          variant="ghost"
+          variant="secondary"
+          size="sm"
+          onClick={() => setServerConfirm("start")}
+          disabled={serverLoading}
+        >
+          Start Server
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setServerConfirm("kill")}
+          disabled={serverLoading}
+        >
+          Kill Server
+        </Button>
+        <Button
+          variant="secondary"
           size="sm"
           onClick={() => setPipelineConfirmOpen(true)}
           disabled={pipelineLoading}
         >
           {pipelineLoading ? "Triggering…" : "Run Pipeline"}
         </Button>
-        {pipelineStatus && (
+        {(pipelineStatus || serverStatus) && (
           <Text as="span" variant="muted">
-            {pipelineStatus}
+            {serverStatus ?? pipelineStatus}
           </Text>
         )}
+
+        {serverConfirm && (
+          <Dialog
+            title={serverConfirm === "start" ? "Start Server?" : "Kill Server?"}
+            onClose={() => setServerConfirm(null)}
+            busy={serverLoading}
+          >
+            <Flow>
+              <Text>
+                {serverConfirm === "start"
+                  ? "This will launch a new game server process."
+                  : "This will forcefully kill the game server. All players will be disconnected immediately."}
+              </Text>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Button type="button" variant="ghost" onClick={() => setServerConfirm(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => {
+                    const action = serverConfirm;
+                    setServerConfirm(null);
+                    controlServer(action);
+                  }}
+                  disabled={serverLoading}
+                >
+                  {serverConfirm === "start" ? "Yes, start it" : "Yes, kill it"}
+                </Button>
+              </div>
+            </Flow>
+          </Dialog>
+        )}
+
         {pipelineConfirmOpen && (
           <Dialog
             title="Run Build Pipeline?"
