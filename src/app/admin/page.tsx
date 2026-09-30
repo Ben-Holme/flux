@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
+import { Portrait } from "@/components/portrait";
 import {
   Badge,
   Card,
@@ -71,7 +72,7 @@ function AdminContent() {
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<string[]>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<{ id: number; name: string; house: string | null }[]>([]);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -336,12 +337,34 @@ function AdminContent() {
         </Text>
       )}
 
-      <Text variant="muted">
-        <Text as="span" className={onlinePlayers.length > 0 ? "text-gold font-semibold" : "font-semibold"}>
-          {onlinePlayers.length}
-        </Text>{" "}
-        online{onlinePlayers.length > 0 && `: ${onlinePlayers.join(", ")}`}
-      </Text>
+      <div>
+        <Text variant="muted" className="mb-3">
+          <Text as="span" className={onlinePlayers.length > 0 ? "text-gold font-semibold" : "font-semibold"}>
+            {onlinePlayers.length}
+          </Text>{" "}
+          online
+        </Text>
+        {onlinePlayers.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {onlinePlayers.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+              >
+                <Portrait charId={p.id} name={p.name} size={40} />
+                <div className="flex flex-col">
+                  <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
+                  {p.house && (
+                    <Text as="span" variant="muted" className="text-xs leading-tight">
+                      House {p.house}
+                    </Text>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
