@@ -195,10 +195,10 @@ export default async function InvitePage() {
       <section className="mx-auto box-content max-w-[1200px] px-6 py-12 lg:py-24">
         <Card>
           <Flow>
-            <Heading level="h2">Join us</Heading>
             <Card>
               <Countdown />
             </Card>
+            <Heading level="h2">Join us</Heading>
             <Text>
               Early access starts October 1 at 20:00 CEST (18:00 UTC). Sign up and verify your
               email. We&apos;ll invite players in small waves and email you when it&apos;s your turn.
