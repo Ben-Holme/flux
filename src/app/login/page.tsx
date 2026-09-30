@@ -37,12 +37,12 @@ function LoginForm() {
       className="rounded-[10px] border border-white/[0.07] bg-black/45 p-7 backdrop-blur-[14px]"
     >
       <div className="mb-5">
-        <FormLabel>Username</FormLabel>
+        <FormLabel>Username or email</FormLabel>
         <Input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
+          autoComplete="username email"
           required
           className="mt-1.5"
         />

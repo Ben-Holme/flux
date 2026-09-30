@@ -196,8 +196,8 @@ export default async function InvitePage() {
           <Flow>
             <Heading level="h2">Join us</Heading>
             <Text>
-              Early access starts October 1. Sign up and verify your email. We&apos;ll invite
-              players in small waves and email you when it&apos;s your turn.
+              Early access starts October 1 at 20:00 CEST. Sign up and verify your email.
+              We&apos;ll invite players in small waves and email you when it&apos;s your turn.
             </Text>
             <Text>
               Not everyone will get in on day one. We&apos;re bringing people in by hand so the
@@ -297,7 +297,7 @@ export default async function InvitePage() {
             },
             {
               q: "When can I actually play?",
-              a: "Early access starts October 1. Sign up and verify your email. We'll invite players in small waves and email you when it's your turn. Not everyone will get in on day one.",
+              a: "Early access starts October 1 at 20:00 CEST. Sign up and verify your email. We'll invite players in small waves and email you when it's your turn. Not everyone will get in on day one.",
             },
             {
               q: "What platform does it run on?",
