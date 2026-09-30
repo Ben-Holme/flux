@@ -391,6 +391,12 @@ function AdminContent() {
 
       {loading && <Text>Loading…</Text>}
 
+      {!loading && (
+        <Text variant="muted">
+          Showing {visible.length} {visible.length === 1 ? "account" : "accounts"}
+        </Text>
+      )}
+
       {!loading && visible.length === 0 && (
         <Text className="text-white/35">No users match this filter.</Text>
       )}
