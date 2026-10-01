@@ -527,7 +527,7 @@ function AdminContent() {
               <Heading level="h4" as="span">
                 {u.username}
               </Heading>
-              {u.is_admin && <Badge>Admin</Badge>}
+              {u.is_admin && <Badge variant="accent">Admin</Badge>}
               {u.approved && <Badge>Called</Badge>}
               {!u.verified && <Badge>Unverified</Badge>}
               {u.banned && <Badge>Banned</Badge>}
