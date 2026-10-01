@@ -52,7 +52,10 @@ export function Countdown({ className }: Props) {
   if (values === null) {
     return (
       <div className={className}>
-        <div className="font-heading text-2xl tracking-widest text-gold uppercase">Live now</div>
+        <div className="font-heading text-2xl tracking-widest text-gold uppercase">The gates are open</div>
+        <p className="mt-3 text-sm text-white/60">
+          We&apos;ll let players in gradually but as quick as the server allows.
+        </p>
       </div>
     );
   }
