@@ -128,6 +128,7 @@ function AdminContent() {
       const data = await res.json();
       if (data.status !== "OK") throw new Error(data.status);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approved } : u)));
+      if (data.email_warn) setError(data.email_warn);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
