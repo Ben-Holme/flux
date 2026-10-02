@@ -35,21 +35,16 @@ interface User {
   banned: boolean;
 }
 
-type Filter = "all" | "approved" | "unapproved" | "banned";
+type Filter = "all" | "banned";
 type KeyFilter = "any" | "has-key" | "no-key";
 type SteamFilter = "any" | "synced" | "not-synced";
+type CalledFilter = "any" | "called" | "not-called";
 
 function toggleFilter(current: Set<Filter>, filter: Filter): Set<Filter> {
   if (filter === "all") return new Set();
-
   const next = new Set(current);
-  if (next.has(filter)) {
-    next.delete(filter);
-  } else {
-    if (filter === "approved") next.delete("unapproved");
-    if (filter === "unapproved") next.delete("approved");
-    next.add(filter);
-  }
+  if (next.has(filter)) next.delete(filter);
+  else next.add(filter);
   return next;
 }
 
@@ -62,6 +57,7 @@ function AdminContent() {
   const [filters, setFilters] = useState<Set<Filter>>(new Set());
   const [keyFilter, setKeyFilter] = useState<KeyFilter>("any");
   const [steamFilter, setSteamFilter] = useState<SteamFilter>("any");
+  const [calledFilter, setCalledFilter] = useState<CalledFilter>("any");
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<Set<number>>(new Set());
   const [freeKeys, setFreeKeys] = useState<number | null>(null);
@@ -296,8 +292,8 @@ function AdminContent() {
 
   const q = search.trim().toLowerCase();
   const visible = users.filter((u) => {
-    if (filters.has("approved") && !u.approved) return false;
-    if (filters.has("unapproved") && u.approved) return false;
+    if (calledFilter === "called" && !u.approved) return false;
+    if (calledFilter === "not-called" && u.approved) return false;
     if (steamFilter === "synced" && !u.steam_id) return false;
     if (steamFilter === "not-synced" && u.steam_id) return false;
     if (keyFilter === "has-key" && !u.steam_key) return false;
@@ -309,15 +305,11 @@ function AdminContent() {
 
   const counts = {
     all: users.length,
-    approved: users.filter((u) => u.approved).length,
-    unapproved: users.filter((u) => !u.approved).length,
     banned: users.filter((u) => u.banned).length,
   };
 
   const filterLabels: { key: Filter; label: string }[] = [
     { key: "all", label: `All (${counts.all})` },
-    { key: "approved", label: `Called (${counts.approved})` },
-    { key: "unapproved", label: `Waiting (${counts.unapproved})` },
     { key: "banned", label: `Banned (${counts.banned})` },
   ];
 
@@ -489,6 +481,15 @@ function AdminContent() {
             </Button>
           );
         })}
+        <select
+          value={calledFilter}
+          onChange={(e) => setCalledFilter(e.target.value as CalledFilter)}
+          className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white outline-none focus:border-white/30"
+        >
+          <option value="any">Called: Any</option>
+          <option value="called">Called</option>
+          <option value="not-called">Not called</option>
+        </select>
         <select
           value={steamFilter}
           onChange={(e) => setSteamFilter(e.target.value as SteamFilter)}
