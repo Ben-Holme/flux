@@ -82,7 +82,6 @@ function AdminContent() {
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
-  const [onlineDebug, setOnlineDebug] = useState<string | null>(null);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -115,11 +114,8 @@ function AdminContent() {
         headers: { Authorization: `Bearer ${session.sessionkey}` },
       })
         .then((r) => r.json())
-        .then((data) => {
-          setOnlineDebug(JSON.stringify(data));
-          if (data.status === "OK") setOnlinePlayers(parseOnlinePlayers(data.players));
-        })
-        .catch((e) => setOnlineDebug(`ERR: ${e}`));
+        .then((data) => { if (data.status === "OK") setOnlinePlayers(parseOnlinePlayers(data.players)); })
+        .catch(() => {});
     };
     fetchOnline();
     const interval = setInterval(fetchOnline, 60_000);
@@ -354,9 +350,6 @@ function AdminContent() {
           </Text>{" "}
           online
         </Text>
-        {onlineDebug && (
-          <Text variant="muted" className="break-all text-xs">{onlineDebug}</Text>
-        )}
         {onlinePlayers.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {onlinePlayers.map((p) => (
