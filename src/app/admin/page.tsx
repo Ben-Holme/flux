@@ -39,6 +39,20 @@ type KeyFilter = "any" | "has-key" | "no-key";
 type SteamFilter = "any" | "synced" | "not-synced";
 type CalledFilter = "any" | "called" | "not-called";
 
+type OnlinePlayer = { name: string; house: string | null };
+
+function parseOnlinePlayers(raw: unknown): OnlinePlayer[] {
+  if (Array.isArray(raw)) return raw as OnlinePlayer[];
+  if (typeof raw === "string") {
+    return (raw.match(/"([^"]+)"/g) ?? []).map((entry) => {
+      const s = entry.replace(/"/g, "");
+      const slash = s.indexOf("/");
+      return slash === -1 ? { name: s, house: null } : { name: s.slice(0, slash), house: s.slice(slash + 1) };
+    });
+  }
+  return [];
+}
+
 function toggleFilter(current: Set<Filter>, filter: Filter): Set<Filter> {
   if (filter === "all") return new Set();
   const next = new Set(current);
@@ -67,7 +81,7 @@ function AdminContent() {
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<{ name: string; house: string | null }[]>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -100,8 +114,8 @@ function AdminContent() {
         headers: { Authorization: `Bearer ${session.sessionkey}` },
       })
         .then((r) => r.json())
-        .then((data) => { console.log("[online]", data); if (data.status === "OK") setOnlinePlayers(data.players); })
-        .catch((e) => console.error("[online] fetch failed", e));
+        .then((data) => { if (data.status === "OK") setOnlinePlayers(parseOnlinePlayers(data.players)); })
+        .catch(() => {});
     };
     fetchOnline();
     const interval = setInterval(fetchOnline, 60_000);
