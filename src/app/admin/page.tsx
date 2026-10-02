@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
+import { Portrait } from "@/components/portrait";
 import {
   Badge,
   Card,
@@ -39,7 +40,7 @@ type KeyFilter = "any" | "has-key" | "no-key";
 type SteamFilter = "any" | "synced" | "not-synced";
 type CalledFilter = "any" | "called" | "not-called";
 
-type OnlinePlayer = { name: string; house: string | null };
+type OnlinePlayer = { id?: number; name: string; house: string | null };
 
 function parseOnlinePlayers(raw: unknown): OnlinePlayer[] {
   if (Array.isArray(raw)) return raw as OnlinePlayer[];
@@ -351,18 +352,21 @@ function AdminContent() {
           online
         </Text>
         {onlinePlayers.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {onlinePlayers.map((p) => (
               <div
                 key={p.name}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
               >
-                <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
-                {p.house && (
-                  <Text as="span" variant="muted" className="ml-2 text-xs">
-                    House {p.house}
-                  </Text>
-                )}
+                {p.id !== undefined && <Portrait charId={p.id} name={p.name} size={40} />}
+                <div className="flex flex-col">
+                  <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
+                  {p.house && (
+                    <Text as="span" variant="muted" className="text-xs leading-tight">
+                      House {p.house}
+                    </Text>
+                  )}
+                </div>
               </div>
             ))}
           </div>
