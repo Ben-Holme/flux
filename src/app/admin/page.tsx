@@ -100,8 +100,8 @@ function AdminContent() {
         headers: { Authorization: `Bearer ${session.sessionkey}` },
       })
         .then((r) => r.json())
-        .then((data) => { if (data.status === "OK") setOnlinePlayers(data.players); })
-        .catch(() => {});
+        .then((data) => { console.log("[online]", data); if (data.status === "OK") setOnlinePlayers(data.players); })
+        .catch((e) => console.error("[online] fetch failed", e));
     };
     fetchOnline();
     const interval = setInterval(fetchOnline, 60_000);
