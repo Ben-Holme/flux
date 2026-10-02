@@ -30,12 +30,14 @@ interface Slice {
   startFmt: string;
   endFmt: string;
   dur: string;
+  lane: number;   // vertical row within the day (0 = server lane, 1+ = players)
 }
 
 interface DayRow {
   date: string;
   label: string;
   slices: Slice[];
+  laneCount: number; // total player lanes (excluding server)
 }
 
 function parseDate(s: string): number | null {
@@ -102,6 +104,7 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
         startFmt: fmtTime(sStart),
         endFmt:   s.active && sEnd >= now - 60 ? "now" : fmtTime(sEnd),
         dur:      fmtDur(sEnd - sStart),
+        lane:     0, // assigned per-day below
       };
 
       if (!dayMap[key]) dayMap[key] = [];
@@ -114,8 +117,14 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
     .map((date) => {
       const d = new Date(date);
       const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-      const slices = dayMap[date].sort((a, b) => (a.server ? -1 : b.server ? 1 : 0));
-      return { date, label, slices };
+      const raw = dayMap[date];
+      // Assign a stable lane per player for this day (alphabetical order)
+      const playerNames = [...new Set(raw.filter((s) => !s.server).map((s) => s.name))].sort();
+      const slices: Slice[] = raw.map((s) => ({
+        ...s,
+        lane: s.server ? -1 : playerNames.indexOf(s.name),
+      }));
+      return { date, label, slices, laneCount: playerNames.length };
     });
 
   return { days, colors };
@@ -208,14 +217,23 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
 
       {/* Day rows */}
       <div className="flex flex-col gap-1.5">
-        {days.map((day) => (
-          <div key={day.date} className="flex items-center gap-0">
-            <div className="w-[90px] shrink-0 text-right pr-3 text-[11px] text-white/40 leading-tight">
+        {days.map((day) => {
+          const LANE_H = 18; // px per player lane
+          const PADDING = 4;
+          const visibleLanes = Math.max(
+            1,
+            [...new Set(day.slices.filter((sl) => !sl.server && !hidden.has(sl.name)).map((sl) => sl.lane))].length,
+          );
+          const trackH = visibleLanes * LANE_H + PADDING;
+
+          return (
+          <div key={day.date} className="flex items-start gap-0">
+            <div className="w-[90px] shrink-0 text-right pr-3 pt-[3px] text-[11px] text-white/40 leading-tight">
               {day.label}
             </div>
             <div
-              className="flex-1 h-7 rounded relative overflow-hidden border border-white/5"
-              style={{ background: "#0f0f18" }}
+              className="flex-1 rounded relative overflow-hidden border border-white/5"
+              style={{ background: "#0f0f18", height: trackH }}
             >
               {/* Hour grid lines */}
               {HOURS.slice(1).map((h) => (
@@ -230,6 +248,11 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
               {day.slices.map((sl, i) => {
                 const charKey = sl.server ? "__server__" : sl.name;
                 if (hidden.has(charKey)) return null;
+
+                // Server: thin bar across the full middle
+                const topPx    = sl.server ? trackH / 2 - 2 : sl.lane * LANE_H + 2;
+                const heightPx = sl.server ? 3 : LANE_H - 4;
+
                 return (
                   <div
                     key={i}
@@ -237,10 +260,10 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
                     style={{
                       left:       `${sl.left}%`,
                       width:      `${sl.width}%`,
-                      top:        sl.server ? "35%" : "3px",
-                      bottom:     sl.server ? "35%" : "3px",
+                      top:        topPx,
+                      height:     heightPx,
                       background: sl.color,
-                      opacity:    sl.server ? 0.55 : 1,
+                      opacity:    sl.server ? 0.45 : 1,
                       boxShadow:  sl.active ? `0 0 6px ${sl.color}` : undefined,
                       zIndex:     sl.server ? 0 : 1,
                     }}
@@ -254,7 +277,8 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Tooltip */}
