@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { Portrait } from "@/components/portrait";
+import { AdminTimeline } from "./timeline";
 import {
   Badge,
   Card,
@@ -35,6 +36,7 @@ interface User {
   banned: boolean;
 }
 
+type Tab = "players" | "timeline";
 type Filter = "all" | "banned";
 type KeyFilter = "any" | "has-key" | "no-key";
 type SteamFilter = "any" | "synced" | "not-synced";
@@ -83,6 +85,7 @@ function AdminContent() {
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
+  const [tab, setTab] = useState<Tab>("players");
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -330,7 +333,34 @@ function AdminContent() {
   return (
     <Flow className="min-h-[90vh] px-6 pb-20">
       <Eyebrow>Admin</Eyebrow>
-      <Heading level="h1">Players</Heading>
+      <Heading level="h1">Admin</Heading>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-white/10 pb-0">
+        {(["players", "timeline"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className="px-4 py-2 text-sm capitalize transition-colors"
+            style={{
+              color:        tab === t ? "var(--gold)" : "rgba(255,255,255,0.4)",
+              border:       "none",
+              borderBottom: tab === t ? "2px solid var(--gold)" : "2px solid transparent",
+              marginBottom: "-1px",
+              background:   "transparent",
+              cursor:       "pointer",
+              padding:      "8px 16px",
+              fontSize:     "14px",
+            }}
+          >
+            {t === "players" ? "Players" : "Timeline"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "timeline" && <AdminTimeline sessionKey={session.sessionkey} />}
+
+      {tab === "players" && <>
 
       {freeKeys !== null && (
         <Text variant="muted">
@@ -666,6 +696,8 @@ function AdminContent() {
           </Table>
         </Card>
       ))}
+
+      </>}
     </Flow>
   );
 }
