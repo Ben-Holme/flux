@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
-import { Portrait } from "@/components/portrait";
 import {
   Badge,
   Card,
@@ -68,7 +67,7 @@ function AdminContent() {
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverConfirm, setServerConfirm] = useState<"start" | "kill" | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<{ id: number; name: string; house: string | null }[]>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<{ name: string; house: string | null }[]>([]);
 
   const fetchUsers = useCallback(() => {
     if (!session) return;
@@ -338,21 +337,18 @@ function AdminContent() {
           online
         </Text>
         {onlinePlayers.length > 0 && (
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {onlinePlayers.map((p) => (
               <div
-                key={p.id}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                key={p.name}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
               >
-                <Portrait charId={p.id} name={p.name} size={40} />
-                <div className="flex flex-col">
-                  <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
-                  {p.house && (
-                    <Text as="span" variant="muted" className="text-xs leading-tight">
-                      House {p.house}
-                    </Text>
-                  )}
-                </div>
+                <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
+                {p.house && (
+                  <Text as="span" variant="muted" className="ml-2 text-xs">
+                    House {p.house}
+                  </Text>
+                )}
               </div>
             ))}
           </div>
