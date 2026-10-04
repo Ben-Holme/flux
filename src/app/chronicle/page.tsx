@@ -291,6 +291,16 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
   };
 }
 
+function reverseSeasonForDisplay(season: Season): Season {
+  return {
+    ...season,
+    days: [...(season.days ?? [])].reverse().map((day) => ({
+      ...day,
+      events: [...(day.events ?? [])].reverse(),
+    })),
+  };
+}
+
 function sliceSeasonEvents(season: Season, maxEvents: number): Season {
   if (maxEvents <= 0) return { ...season, days: [] };
   let remaining = maxEvents;
@@ -1565,19 +1575,21 @@ export default function ChroniclePage() {
 
   const { displaySeasonSliced, filteredSeasonsSliced, hasMoreEvents } = useMemo(() => {
     if (viewingSeasonIdx !== 0 && displaySeason) {
-      const total = countSeasonEvents(displaySeason);
+      const reversed = reverseSeasonForDisplay(displaySeason);
+      const total = countSeasonEvents(reversed);
       return {
-        displaySeasonSliced: sliceSeasonEvents(displaySeason, visibleEventCount),
+        displaySeasonSliced: sliceSeasonEvents(reversed, visibleEventCount),
         filteredSeasonsSliced: filteredSeasons,
         hasMoreEvents: visibleEventCount < total,
       };
     }
-    // All-seasons view: slice across seasons in order
+    // All-seasons view: slice across seasons in order (newest season first via filteredSeasons)
     let remaining = visibleEventCount;
     let total = 0;
     const slicedList = filteredSeasons.map(({ season, filtered }) => {
-      total += countSeasonEvents(filtered);
-      const sliced = sliceSeasonEvents(filtered, remaining);
+      const reversed = reverseSeasonForDisplay(filtered);
+      total += countSeasonEvents(reversed);
+      const sliced = sliceSeasonEvents(reversed, remaining);
       remaining -= countSeasonEvents(sliced);
       return { season, filtered: sliced };
     });
