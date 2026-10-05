@@ -220,7 +220,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
               )}
               {sp.context && sp.context !== "0" && (
                 <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
-                  {sp.context as string}
+                  {String(sp.context).toLowerCase() === "ground" ? "Picked up from ground" : sp.context as string}
                 </p>
               )}
             </div>
