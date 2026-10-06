@@ -237,18 +237,27 @@ function EventGroupCard({ group, players, items, icons, onCharClick, onItemClick
       <div className="px-[18px] py-3.5 flex flex-col gap-2">
         {group.events.map((e, i) => {
           const itemName = e.item ? (items[e.item] ?? `item #${e.item}`) : null;
+          const eSp = parseSpecial(e.special);
           return itemName ? (
-            <div
-              key={i}
-              className="inline-block"
-              style={{ cursor: onItemClick && e.item != null ? "pointer" : "default" }}
-              onClick={() => { if (e.item != null) onItemClick?.(e.item); }}
-            >
-              <ItemDisplay itemStr={itemName} icons={icons} />
+            <div key={i}>
+              <div
+                className="inline-block"
+                style={{ cursor: onItemClick && e.item != null ? "pointer" : "default" }}
+                onClick={() => { if (e.item != null) onItemClick?.(e.item); }}
+              >
+                <ItemDisplay itemStr={itemName} icons={icons} />
+              </div>
+              {(rep.type === "ench" || rep.type === "tome") && eSp.lvl && (
+                <div className="mt-1">
+                  <Stat label="Level" value={eSp.lvl as string} />
+                </div>
+              )}
             </div>
           ) : null;
         })}
-        <p className="mt-0.5 text-[0.78rem] capitalize text-white/35">{contextLabel}</p>
+        {rep.type === "owch" && (
+          <p className="mt-0.5 text-[0.78rem] capitalize text-white/35">{contextLabel}</p>
+        )}
       </div>
     </div>
   );
