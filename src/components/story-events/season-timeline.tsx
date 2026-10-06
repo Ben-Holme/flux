@@ -161,6 +161,10 @@ function EventGroupCard({ group, players, items, icons, onCharClick, onItemClick
     ? context.toLowerCase() === "ground" ? "Picked up from ground" : context
     : "Acquired";
 
+  const char2Id = rep.char2 != null && rep.char2 !== 0 ? Number(rep.char2) : undefined;
+  const char2 = char2Id != null ? (players[char2Id] ?? { name: `#${char2Id}` }) : null;
+  const showPrimaryRow = rep.primary_char !== 0 && !(rep.type === "owch" && char2 != null);
+
   return (
     <div
       className="mb-2.5 overflow-hidden rounded-lg border border-white/[0.06] bg-black/45 backdrop-blur-[14px]"
@@ -188,14 +192,44 @@ function EventGroupCard({ group, players, items, icons, onCharClick, onItemClick
         )}
       </div>
 
-      {/* Player */}
-      {rep.primary_char !== 0 && (
+      {/* Player (simple row when no char2 involvement) */}
+      {showPrimaryRow && (
         <div
           className="border-b border-white/[0.05] px-[18px] py-2.5"
           style={{ cursor: onCharClick ? "pointer" : "default" }}
           onClick={() => onCharClick?.(rep.primary_char)}
         >
           <PlayerDisplay player={player} charId={rep.primary_char || undefined} />
+        </div>
+      )}
+
+      {/* owch: show receiver + giver with role labels */}
+      {rep.type === "owch" && char2 != null && (
+        <div className="border-b border-white/[0.05] px-[18px] py-3">
+          <div className="flex flex-col gap-2">
+            {rep.primary_char !== 0 && (
+              <div>
+                <div className="mb-0.5 text-[0.55rem] uppercase tracking-[0.12em] text-white/[0.2]">Received by</div>
+                <div
+                  style={{ cursor: onCharClick ? "pointer" : "default" }}
+                  onClick={() => onCharClick?.(rep.primary_char)}
+                >
+                  <PlayerDisplay player={player} charId={rep.primary_char || undefined} />
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="mb-0.5 text-[0.55rem] uppercase tracking-[0.12em] text-white/[0.2]">
+                {rep.primary_char !== 0 ? "From" : "Handed over by"}
+              </div>
+              <div
+                style={{ cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
+                onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
+              >
+                <PlayerDisplay player={char2} charId={char2Id} />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
