@@ -80,7 +80,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
     event.type === "introStory" ||
     (event.type === "tome"     && (itemName || sp.type || sp.lvl)) ||
     (event.type === "ench"     && (itemName || sp.type || sp.lvl)) ||
-    (event.type === "owch"     && (itemName || (sp.context && sp.context !== "0") || char2 != null)) ||
+    (event.type === "owch"     && (itemName != null || char2 != null)) ||
     (event.type === "minigame" && (sp.skill || itemName))
   );
 
@@ -231,11 +231,11 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
                   <ItemDisplay itemStr={itemName as string} icons={icons} />
                 </div>
               )}
-              {sp.context && sp.context !== "0" && (
-                <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
-                  {String(sp.context).toLowerCase() === "ground" ? "Picked up from ground" : sp.context as string}
-                </p>
-              )}
+              <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
+                {sp.context && sp.context !== "0"
+                  ? String(sp.context).toLowerCase() === "ground" ? "Picked up from ground" : sp.context as string
+                  : "Acquired"}
+              </p>
             </div>
           )}
 
