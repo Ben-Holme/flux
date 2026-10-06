@@ -7,7 +7,7 @@ import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
 import { buildSeasons, getCurrentSeason } from "@/components/story-events/season-utils";
 import type { Season } from "@/components/story-events/season-utils";
-import { buildLookup } from "@/components/story-events/utils";
+import { buildLookup, parseSpecial } from "@/components/story-events/utils";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -291,6 +291,21 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
   };
 }
 
+function resolveLostTempChars(events: StoryEvent[]): StoryEvent[] {
+  const byId = new Map<string | number, StoryEvent>();
+  for (const e of events) {
+    if (e.id != null) byId.set(e.id as string | number, e);
+  }
+  return events.map((e) => {
+    if (e.type !== "owch" || e.primary_char !== 0) return e;
+    const sp = parseSpecial(e.special);
+    if (sp.context !== "lost-temp" || !sp.link) return e;
+    const linked = byId.get(sp.link as string);
+    if (!linked || !linked.char2 || linked.char2 === 0) return e;
+    return { ...e, char2: linked.char2 };
+  });
+}
+
 function reverseSeasonForDisplay(season: Season): Season {
   return {
     ...season,
@@ -509,7 +524,7 @@ export default function ChroniclePage() {
     Promise.all([eventsReq, namesReq, iconsReq])
       .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
-        setEvents([...arr].reverse());
+        setEvents([...resolveLostTempChars(arr)].reverse());
         if (namesData) {
           const playerList = namesData.players ?? namesData.chars ?? namesData;
           if (Array.isArray(playerList)) {
