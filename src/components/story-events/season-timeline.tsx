@@ -161,7 +161,7 @@ function EventGroupCard({ group, players, items, icons, onCharClick, onItemClick
     ? context.toLowerCase() === "ground" ? "Picked up from ground" : context
     : "Acquired";
 
-  const char2Id = rep.char2 != null && rep.char2 !== 0 ? Number(rep.char2) : undefined;
+  const char2Id = rep.secondary_char != null && rep.secondary_char !== 0 ? Number(rep.secondary_char) : undefined;
   const char2 = char2Id != null ? (players[char2Id] ?? { name: `#${char2Id}` }) : null;
   const showPrimaryRow = rep.primary_char !== 0 && !(rep.type === "owch" && char2 != null);
 

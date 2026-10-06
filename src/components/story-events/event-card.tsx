@@ -70,7 +70,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
   const sp     = parseSpecial(event.special);
   const player = players[event.primary_char] ?? { name: `#${event.primary_char}` };
   const itemName = event.item ? (items[event.item] ?? `item #${event.item}`) : null;
-  const char2Id = event.char2 != null && event.char2 !== 0 ? Number(event.char2) : undefined;
+  const char2Id = event.secondary_char != null && event.secondary_char !== 0 ? Number(event.secondary_char) : undefined;
   const char2 = char2Id != null ? (players[char2Id] ?? { name: `#${char2Id}` }) : null;
 
   const hasBody = (

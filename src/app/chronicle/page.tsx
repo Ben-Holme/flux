@@ -281,8 +281,8 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
       events: (day.events ?? []).filter((e) => {
         if (nav.kind === "location") return e.location === nav.locName;
         if (nav.kind === "character") {
-          const char2 = e.char2 as number | undefined;
-          return e.primary_char === nav.charId || char2 === nav.charId;
+          const sec = e.secondary_char as number | undefined;
+          return e.primary_char === nav.charId || sec === nav.charId;
         }
         if (nav.kind === "item") return String(e.item) === String(nav.itemId);
         return true;
@@ -292,18 +292,19 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
 }
 
 function resolveOwchCharsFromLink(events: StoryEvent[]): StoryEvent[] {
-  const byId = new Map<string | number, StoryEvent>();
+  const byId = new Map<string, StoryEvent>();
   for (const e of events) {
-    if (e.id != null) byId.set(e.id as string | number, e);
+    const eid = e.entid ?? e.id;
+    if (eid != null) byId.set(String(eid), e);
   }
   return events.map((e) => {
     if (e.type !== "owch" || e.primary_char !== 0) return e;
-    if (e.char2 != null && e.char2 !== 0) return e; // already has char2
+    if (e.secondary_char != null && e.secondary_char !== 0) return e; // already has secondary_char
     const sp = parseSpecial(e.special);
     if (!sp.link) return e;
-    const linked = byId.get(sp.link as string);
-    if (!linked || !linked.char2 || linked.char2 === 0) return e;
-    return { ...e, char2: linked.char2 };
+    const linked = byId.get(String(sp.link));
+    if (!linked || !linked.secondary_char || linked.secondary_char === 0) return e;
+    return { ...e, secondary_char: linked.secondary_char };
   });
 }
 
