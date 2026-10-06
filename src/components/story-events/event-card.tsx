@@ -78,10 +78,10 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
     event.type === "seasonContext" ||
     event.type === "seasonSummary" ||
     event.type === "introStory" ||
-    (event.type === "tome"     && (sp.type || sp.lvl)) ||
-    (event.type === "ench"     && (sp.type || sp.lvl)) ||
+    (event.type === "tome"     && (itemName || sp.type || sp.lvl)) ||
+    (event.type === "ench"     && (itemName || sp.type || sp.lvl)) ||
     (event.type === "owch"     && (itemName || (sp.context && sp.context !== "0") || char2 != null)) ||
-    (event.type === "minigame" && sp.skill)
+    (event.type === "minigame" && (sp.skill || itemName))
   );
 
   return (
@@ -174,9 +174,22 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
           )}
 
           {(event.type === "tome" || event.type === "ench") && (
-            <div className="flex gap-6">
-              {sp.type && <Stat label="Type"  value={sp.type as string} />}
-              {sp.lvl  && <Stat label="Level" value={sp.lvl as string} />}
+            <div>
+              {itemName && (
+                <div
+                  className="mb-3 inline-block"
+                  style={{ cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
+                >
+                  <ItemDisplay itemStr={itemName} icons={icons} />
+                </div>
+              )}
+              {(sp.type || sp.lvl) && (
+                <div className="flex gap-6">
+                  {sp.type && <Stat label="Type"  value={sp.type as string} />}
+                  {sp.lvl  && <Stat label="Level" value={sp.lvl as string} />}
+                </div>
+              )}
             </div>
           )}
 
@@ -226,8 +239,19 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
             </div>
           )}
 
-          {event.type === "minigame" && sp.skill && (
-            <Stat label="Skill" value={sp.skill as string} />
+          {event.type === "minigame" && (
+            <div>
+              {sp.skill && <Stat label="Skill" value={sp.skill as string} />}
+              {itemName && (
+                <div
+                  className="mt-2 inline-block"
+                  style={{ cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
+                >
+                  <ItemDisplay itemStr={itemName} icons={icons} />
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -235,7 +259,13 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
       <SpecialDisclosure
         sp={sp}
         hasBody={!!hasBody}
-        exclude={event.type === "seasonContext" ? ["seasoncontext"] : []}
+        exclude={
+          event.type === "seasonContext" ? ["seasoncontext"] :
+          (event.type === "tome" || event.type === "ench") ? ["type", "lvl"] :
+          event.type === "owch" ? ["context"] :
+          event.type === "minigame" ? ["skill"] :
+          []
+        }
       />
     </div>
   );
