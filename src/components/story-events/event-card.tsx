@@ -256,17 +256,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
         </div>
       )}
 
-      <SpecialDisclosure
-        sp={sp}
-        hasBody={!!hasBody}
-        exclude={
-          event.type === "seasonContext" ? ["seasoncontext"] :
-          (event.type === "tome" || event.type === "ench") ? ["type", "lvl"] :
-          event.type === "owch" ? ["context"] :
-          event.type === "minigame" ? ["skill"] :
-          []
-        }
-      />
+      <SpecialDisclosure sp={sp} hasBody={!!hasBody} />
     </div>
   );
 });
