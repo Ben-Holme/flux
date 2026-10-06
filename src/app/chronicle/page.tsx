@@ -291,15 +291,16 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
   };
 }
 
-function resolveLostTempChars(events: StoryEvent[]): StoryEvent[] {
+function resolveOwchCharsFromLink(events: StoryEvent[]): StoryEvent[] {
   const byId = new Map<string | number, StoryEvent>();
   for (const e of events) {
     if (e.id != null) byId.set(e.id as string | number, e);
   }
   return events.map((e) => {
     if (e.type !== "owch" || e.primary_char !== 0) return e;
+    if (e.char2 != null && e.char2 !== 0) return e; // already has char2
     const sp = parseSpecial(e.special);
-    if (sp.context !== "lost-temp" || !sp.link) return e;
+    if (!sp.link) return e;
     const linked = byId.get(sp.link as string);
     if (!linked || !linked.char2 || linked.char2 === 0) return e;
     return { ...e, char2: linked.char2 };
@@ -524,7 +525,7 @@ export default function ChroniclePage() {
     Promise.all([eventsReq, namesReq, iconsReq])
       .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
-        setEvents([...resolveLostTempChars(arr)].reverse());
+        setEvents([...resolveOwchCharsFromLink(arr)].reverse());
         if (namesData) {
           const playerList = namesData.players ?? namesData.chars ?? namesData;
           if (Array.isArray(playerList)) {
