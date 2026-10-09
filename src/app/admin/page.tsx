@@ -401,9 +401,9 @@ function AdminContent() {
             onClick={() => setTab(t)}
             className="px-4 py-2 text-sm capitalize transition-colors"
             style={{
-              color:        tab === t ? "var(--gold)" : "rgba(255,255,255,0.4)",
+              color:        tab === t ? "white" : "rgba(255,255,255,0.4)",
               border:       "none",
-              borderBottom: tab === t ? "2px solid var(--gold)" : "2px solid transparent",
+              borderBottom: tab === t ? "2px solid white" : "2px solid transparent",
               marginBottom: "-1px",
               background:   "transparent",
               cursor:       "pointer",
