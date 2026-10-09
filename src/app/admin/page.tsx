@@ -22,6 +22,63 @@ import {
 
 const API = "https://api.unyhagame.com/ueserv";
 
+function SeasonCountdown() {
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${API}/getSeasons-w.php`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status !== "OK" || !data.seasonend) return;
+        const end = new Date(data.seasonend);
+
+        function tick() {
+          const now = new Date();
+          const diff = end.getTime() - now.getTime();
+          if (diff <= 0) {
+            setLabel("Season ended");
+            return;
+          }
+          const totalHours = Math.floor(diff / 3_600_000);
+          const days = Math.floor(totalHours / 24);
+          const hours = totalHours % 24;
+          const mins = Math.floor((diff % 3_600_000) / 60_000);
+
+          // Season day (1-based, seasons are 7 days)
+          const seasons: { name: string; start: string }[] = data.seasons ?? [];
+          const current = seasons[seasons.length - 1];
+          let dayLabel = "";
+          if (current?.start) {
+            const start = new Date(current.start);
+            const dayNum = Math.floor((now.getTime() - start.getTime()) / 86_400_000) + 1;
+            dayLabel = ` · Day ${Math.min(7, Math.max(1, dayNum))}/7`;
+          }
+
+          const countdown =
+            days > 0
+              ? `${days}d ${hours}h ${mins}m`
+              : hours > 0
+              ? `${hours}h ${mins}m`
+              : `${mins}m`;
+
+          setLabel(`Season end${dayLabel} · ${countdown} remaining`);
+        }
+
+        tick();
+        const id = setInterval(tick, 60_000);
+        return () => clearInterval(id);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!label) return null;
+  return (
+    <Text variant="muted" className="text-sm">
+      {label}
+    </Text>
+  );
+}
+
 interface User {
   id: number;
   username: string;
@@ -334,6 +391,7 @@ function AdminContent() {
     <Flow className="min-h-[90vh] px-6 pb-20">
       <Eyebrow>Admin</Eyebrow>
       <Heading level="h1">Admin</Heading>
+      <SeasonCountdown />
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-white/10 pb-0">
