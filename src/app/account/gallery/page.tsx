@@ -361,7 +361,7 @@ function GalleryContent() {
       map[h].push(p);
     }
     for (const h of Object.keys(map)) {
-      map[h].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
+      map[h].sort((a, b) => (a.fame ?? 0) - (b.fame ?? 0));
     }
     return map;
   }, [players]);
