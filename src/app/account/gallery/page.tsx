@@ -356,6 +356,7 @@ function GalleryContent() {
     const map: Record<string, PlayerEntry[]> = {};
     for (const p of players) {
       const h = p.house ?? "Unknown";
+      if (h.toLowerCase() === "none") continue;
       if (!map[h]) map[h] = [];
       map[h].push(p);
     }
