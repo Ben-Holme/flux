@@ -15,7 +15,7 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 
 function fmtDate(d: Date) {
   if (!d || isNaN(d.getTime())) return "?";
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
 
 function SeasonHeader({ season }: { season: Season }) {

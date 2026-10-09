@@ -44,12 +44,12 @@ function parseDate(s: string): number | null {
   const parts = s.split("-");
   if (parts.length < 5) return null;
   const [y, mo, d, h, mi] = parts.map(Number);
-  return new Date(y, mo - 1, d, h, mi, 0).getTime() / 1000;
+  return Date.UTC(y, mo - 1, d, h, mi, 0) / 1000;
 }
 
 function fmtTime(ts: number) {
   const d = new Date(ts * 1000);
-  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  return String(d.getUTCHours()).padStart(2, "0") + ":" + String(d.getUTCMinutes()).padStart(2, "0");
 }
 
 function fmtDur(secs: number) {
@@ -79,7 +79,7 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
 
     const dayStart = (ts: number) => {
       const d = new Date(ts * 1000);
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000;
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
     };
 
     const firstDay = dayStart(start);
@@ -116,7 +116,7 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
     .sort((a, b) => (a < b ? 1 : -1)) // descending
     .map((date) => {
       const d = new Date(date);
-      const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
       const raw = dayMap[date];
       // Assign a stable lane per player for this day (alphabetical order)
       const playerNames = [...new Set(raw.filter((s) => !s.server).map((s) => s.name))].sort();

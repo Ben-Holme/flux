@@ -31,7 +31,7 @@ function parseSessionDate(s: string): number | null {
   if (!s || s === "0") return null;
   const [year, month, day, hour, min] = s.split("-").map(Number);
   if ([year, month, day, hour, min].some(isNaN)) return null;
-  return new Date(year, month - 1, day, hour, min).getTime();
+  return Date.UTC(year, month - 1, day, hour, min);
 }
 
 function nameToRgb(name: string): string {
@@ -117,14 +117,14 @@ export function PlayerSessionTimeline({ sessionKey }: Props) {
   const ticks: { x: number; label: string }[] = [];
   {
     const d = new Date(viewMin);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 1);
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() + 1);
     while (d.getTime() <= viewMax) {
       ticks.push({
         x: ((d.getTime() - viewMin) / totalMs) * 100,
-        label: `${d.getDate()}/${d.getMonth() + 1}`,
+        label: `${d.getUTCDate()}/${d.getUTCMonth() + 1}`,
       });
-      d.setDate(d.getDate() + 1);
+      d.setUTCDate(d.getUTCDate() + 1);
     }
   }
 
