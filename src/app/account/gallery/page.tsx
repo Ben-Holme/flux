@@ -75,6 +75,8 @@ function filterSeasonsByChar(seasons: Season[], charId: number): Season[] {
   return seasons
     .map((s) => ({
       ...s,
+      contextEvent: undefined,
+      summaryEvent: undefined,
       days: (s.days ?? [])
         .map((day) => ({
           ...day,
