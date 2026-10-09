@@ -70,7 +70,7 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
   const sp     = parseSpecial(event.special);
   const player = players[event.primary_char] ?? { name: `#${event.primary_char}` };
   const itemName = event.item ? (items[event.item] ?? `item #${event.item}`) : null;
-  const char2Id = event.char2 != null && event.char2 !== 0 ? Number(event.char2) : undefined;
+  const char2Id = event.secondary_char != null && event.secondary_char !== 0 ? Number(event.secondary_char) : undefined;
   const char2 = char2Id != null ? (players[char2Id] ?? { name: `#${char2Id}` }) : null;
 
   const hasBody = (
@@ -78,10 +78,10 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
     event.type === "seasonContext" ||
     event.type === "seasonSummary" ||
     event.type === "introStory" ||
-    (event.type === "tome"     && (sp.type || sp.lvl)) ||
-    (event.type === "ench"     && (sp.type || sp.lvl)) ||
-    (event.type === "owch"     && (itemName || (sp.context && sp.context !== "0") || char2 != null)) ||
-    (event.type === "minigame" && sp.skill)
+    (event.type === "tome"     && (itemName || sp.type || sp.lvl)) ||
+    (event.type === "ench"     && (itemName || sp.type || sp.lvl)) ||
+    (event.type === "owch"     && (itemName != null || char2 != null)) ||
+    (event.type === "minigame" && (sp.skill || itemName))
   );
 
   return (
@@ -111,8 +111,8 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
         )}
       </div>
 
-      {/* Player */}
-      {event.primary_char !== 0 && (
+      {/* Player — hidden for owch with char2 (both rendered inline in body with role labels) */}
+      {event.primary_char !== 0 && !(event.type === "owch" && char2 != null) && (
         <div
           className="border-b border-white/[0.05] px-[18px] py-2.5"
           style={{ cursor: onCharClick ? "pointer" : "default" }}
@@ -174,14 +174,54 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
           )}
 
           {(event.type === "tome" || event.type === "ench") && (
-            <div className="flex gap-6">
-              {sp.type && <Stat label="Type"  value={sp.type as string} />}
-              {sp.lvl  && <Stat label="Level" value={sp.lvl as string} />}
+            <div>
+              {itemName && (
+                <div
+                  className="mb-3 inline-block"
+                  style={{ cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
+                >
+                  <ItemDisplay itemStr={itemName} icons={icons} />
+                </div>
+              )}
+              {(sp.type || sp.lvl) && (
+                <div className="flex gap-6">
+                  {sp.type && <Stat label="Type"  value={sp.type as string} />}
+                  {sp.lvl  && <Stat label="Level" value={sp.lvl as string} />}
+                </div>
+              )}
             </div>
           )}
 
           {event.type === "owch" && (
             <div>
+              {/* When both chars present, show receiver + giver with role labels */}
+              {char2 != null && (
+                <div className="mb-3 flex flex-col gap-2">
+                  {event.primary_char !== 0 && (
+                    <div>
+                      <div className="mb-0.5 text-[0.55rem] uppercase tracking-[0.12em] text-white/[0.2]">Received by</div>
+                      <div
+                        style={{ cursor: onCharClick ? "pointer" : "default" }}
+                        onClick={() => onCharClick?.(event.primary_char)}
+                      >
+                        <PlayerDisplay player={player} charId={event.primary_char || undefined} />
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="mb-0.5 text-[0.55rem] uppercase tracking-[0.12em] text-white/[0.2]">
+                      {event.primary_char !== 0 ? "From" : "Handed over by"}
+                    </div>
+                    <div
+                      style={{ cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
+                      onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
+                    >
+                      <PlayerDisplay player={char2} charId={char2Id} />
+                    </div>
+                  </div>
+                </div>
+              )}
               {itemName && (
                 <div
                   className="inline-block"
@@ -191,35 +231,32 @@ const EventCard = memo(function EventCard({ event, players, items, icons, onChar
                   <ItemDisplay itemStr={itemName as string} icons={icons} />
                 </div>
               )}
-              {sp.context && sp.context !== "0" && (
-                <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
-                  {sp.context as string}
-                </p>
-              )}
-              {char2 && (
+              <p className="mt-1.5 text-[0.78rem] capitalize text-white/35">
+                {sp.context && sp.context !== "0"
+                  ? String(sp.context).toLowerCase() === "ground" ? "Picked up from ground" : sp.context as string
+                  : "Acquired"}
+              </p>
+            </div>
+          )}
+
+          {event.type === "minigame" && (
+            <div>
+              {sp.skill && <Stat label="Skill" value={sp.skill as string} />}
+              {itemName && (
                 <div
-                  className="mt-2.5"
-                  style={{ cursor: onCharClick && char2Id != null ? "pointer" : "default" }}
-                  onClick={() => { if (char2Id != null) onCharClick?.(char2Id); }}
+                  className="mt-2 inline-block"
+                  style={{ cursor: onItemClick && event.item != null ? "pointer" : "default" }}
+                  onClick={() => { if (event.item != null) onItemClick?.(event.item); }}
                 >
-                  <div className="mb-1 text-[0.58rem] uppercase tracking-[0.1em] text-white/[0.18]">vs.</div>
-                  <PlayerDisplay player={char2} charId={char2Id} />
+                  <ItemDisplay itemStr={itemName} icons={icons} />
                 </div>
               )}
             </div>
           )}
-
-          {event.type === "minigame" && sp.skill && (
-            <Stat label="Skill" value={sp.skill as string} />
-          )}
         </div>
       )}
 
-      <SpecialDisclosure
-        sp={sp}
-        hasBody={!!hasBody}
-        exclude={event.type === "seasonContext" ? ["seasoncontext"] : []}
-      />
+      <SpecialDisclosure sp={sp} hasBody={!!hasBody} />
     </div>
   );
 });

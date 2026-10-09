@@ -49,6 +49,14 @@ const BADGE_DEFS = {
     iconClassName: "",
     earned: (xp) => "Legend" in xp,
   },
+  bugSquasher: {
+    label: "Bug Squasher",
+    icon: "rat",
+    className: "border-lime-500/30 bg-lime-500/10 text-lime-300",
+    description: "Hunted down a bug and reported it. The realm thanks you.",
+    iconClassName: "",
+    earned: (xp) => "BugSquasher" in xp,
+  },
 } as const satisfies Record<string, BadgeDef>;
 
 type BadgeKey = keyof typeof BADGE_DEFS;

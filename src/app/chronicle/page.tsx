@@ -7,7 +7,7 @@ import { StoryEvent } from "@/components/story-events/use-story-events";
 import SeasonTimeline from "@/components/story-events/season-timeline";
 import { buildSeasons, getCurrentSeason } from "@/components/story-events/season-utils";
 import type { Season } from "@/components/story-events/season-utils";
-import { buildLookup } from "@/components/story-events/utils";
+import { buildLookup, parseSpecial } from "@/components/story-events/utils";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
@@ -281,14 +281,58 @@ function filterSeasonByNav(season: Season, nav: NavEntry | null): Season {
       events: (day.events ?? []).filter((e) => {
         if (nav.kind === "location") return e.location === nav.locName;
         if (nav.kind === "character") {
-          const char2 = e.char2 as number | undefined;
-          return e.primary_char === nav.charId || char2 === nav.charId;
+          const sec = e.secondary_char as number | undefined;
+          return e.primary_char === nav.charId || sec === nav.charId;
         }
         if (nav.kind === "item") return String(e.item) === String(nav.itemId);
         return true;
       }),
     })),
   };
+}
+
+function resolveOwchCharsFromLink(events: StoryEvent[]): StoryEvent[] {
+  const byId = new Map<string, StoryEvent>();
+  for (const e of events) {
+    const eid = e.entid ?? e.id;
+    if (eid != null) byId.set(String(eid), e);
+  }
+  return events.map((e) => {
+    if (e.type !== "owch" || e.primary_char !== 0) return e;
+    if (e.secondary_char != null && e.secondary_char !== 0) return e; // already has secondary_char
+    const sp = parseSpecial(e.special);
+    if (!sp.link) return e;
+    const linked = byId.get(String(sp.link));
+    if (!linked || !linked.secondary_char || linked.secondary_char === 0) return e;
+    return { ...e, secondary_char: linked.secondary_char };
+  });
+}
+
+function reverseSeasonForDisplay(season: Season): Season {
+  return {
+    ...season,
+    days: [...(season.days ?? [])].reverse().map((day) => ({
+      ...day,
+      events: [...(day.events ?? [])].reverse(),
+    })),
+  };
+}
+
+function sliceSeasonEvents(season: Season, maxEvents: number): Season {
+  if (maxEvents <= 0) return { ...season, days: [] };
+  let remaining = maxEvents;
+  const days: Season["days"] = [];
+  for (const day of season.days ?? []) {
+    if (remaining <= 0) break;
+    const events = (day.events ?? []).slice(0, remaining);
+    remaining -= events.length;
+    days.push({ ...day, events });
+  }
+  return { ...season, days };
+}
+
+function countSeasonEvents(season: Season): number {
+  return (season.days ?? []).reduce((acc, d) => acc + (d.events ?? []).length, 0);
 }
 
 export default function ChroniclePage() {
@@ -350,6 +394,9 @@ export default function ChroniclePage() {
 
   const [navStack, setNavStack] = useState<NavEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"events" | "details">("events");
+  const [visibleEventCount, setVisibleEventCount] = useState(10);
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
   const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
   const [viewingSeasonIdx, setViewingSeasonIdx] = useState<number | null>(null); // null = latest
   const [roads, setRoads] = useState<RoadPath[]>([]);
@@ -479,7 +526,7 @@ export default function ChroniclePage() {
     Promise.all([eventsReq, namesReq, iconsReq])
       .then(([evData, namesData, iconsData]) => {
         const arr: StoryEvent[] = Array.isArray(evData) ? evData : (evData.events ?? []);
-        setEvents([...arr].reverse());
+        setEvents([...resolveOwchCharsFromLink(arr)].reverse());
         if (namesData) {
           const playerList = namesData.players ?? namesData.chars ?? namesData;
           if (Array.isArray(playerList)) {
@@ -1538,6 +1585,45 @@ export default function ChroniclePage() {
     [seasons, currentNav],
   );
 
+  // Reset pagination when the visible season or filter changes
+  useEffect(() => {
+    setVisibleEventCount(10);
+  }, [viewingSeasonIdx, currentNav]);
+
+  const { displaySeasonSliced, filteredSeasonsSliced, hasMoreEvents } = useMemo(() => {
+    if (viewingSeasonIdx !== 0 && displaySeason) {
+      const reversed = reverseSeasonForDisplay(displaySeason);
+      const total = countSeasonEvents(reversed);
+      return {
+        displaySeasonSliced: sliceSeasonEvents(reversed, visibleEventCount),
+        filteredSeasonsSliced: filteredSeasons,
+        hasMoreEvents: visibleEventCount < total,
+      };
+    }
+    // All-seasons view: slice across seasons in order (newest season first via filteredSeasons)
+    let remaining = visibleEventCount;
+    let total = 0;
+    const slicedList = filteredSeasons.map(({ season, filtered }) => {
+      const reversed = reverseSeasonForDisplay(filtered);
+      total += countSeasonEvents(reversed);
+      const sliced = sliceSeasonEvents(reversed, remaining);
+      remaining -= countSeasonEvents(sliced);
+      return { season, filtered: sliced };
+    });
+    return {
+      displaySeasonSliced: displaySeason,
+      filteredSeasonsSliced: slicedList,
+      hasMoreEvents: visibleEventCount < total,
+    };
+  }, [viewingSeasonIdx, displaySeason, filteredSeasons, visibleEventCount]);
+
+  const handleEventsScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) {
+      setVisibleEventCount((n) => n + 10);
+    }
+  }, []);
+
   const navBarTitle = currentNav ? getBreadcrumbLabel(currentNav, players, items) : null;
 
   return (
@@ -1903,7 +1989,7 @@ export default function ChroniclePage() {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8" data-lenis-prevent>
+          <div ref={desktopScrollRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-8" data-lenis-prevent onScroll={handleEventsScroll}>
             <div ref={desktopAnimRef}>
               {/* Details — always mounted when nav active; shown/hidden via CSS to avoid remounting events */}
               {currentNav && (
@@ -1914,7 +2000,7 @@ export default function ChroniclePage() {
               {/* Events — hidden when details tab is active */}
               <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
                 {viewingSeasonIdx === 0 ? (
-                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                  seasons.length > 0 ? filteredSeasonsSliced.map(({ season, filtered }) => {
                     if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
                     return (
                       <div key={season.number} style={{ marginBottom: "32px" }}>
@@ -1929,9 +2015,9 @@ export default function ChroniclePage() {
                   ) : (
                     <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
                   )
-                ) : displaySeason ? (
+                ) : displaySeasonSliced ? (
                   <SeasonTimeline
-                    season={displaySeason}
+                    season={displaySeasonSliced}
                     players={players}
                     items={items}
                     icons={icons}
@@ -1943,6 +2029,9 @@ export default function ChroniclePage() {
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                )}
+                {hasMoreEvents && (
+                  <p className="mt-3 pb-2 text-center text-[0.65rem] text-white/20">Scroll for more…</p>
                 )}
               </div>
             </div>
@@ -2049,9 +2138,11 @@ export default function ChroniclePage() {
 
           {/* Scrollable content */}
           <div
+            ref={mobileScrollRef}
             className="flex-1 overflow-y-auto px-4 pt-3 pb-8"
             style={{ opacity: sheetExpanded ? 1 : 0, pointerEvents: sheetExpanded ? "auto" : "none", transition: "opacity 0.15s ease" }}
             data-lenis-prevent
+            onScroll={handleEventsScroll}
           >
             <div ref={mobileAnimRef}>
               {currentNav && (
@@ -2061,7 +2152,7 @@ export default function ChroniclePage() {
               )}
               <div style={{ display: activeTab === "details" && currentNav ? "none" : "block" }}>
                 {viewingSeasonIdx === 0 ? (
-                  seasons.length > 0 ? filteredSeasons.map(({ season, filtered }) => {
+                  seasons.length > 0 ? filteredSeasonsSliced.map(({ season, filtered }) => {
                     if (!filtered.days?.some((d) => (d.events ?? []).length > 0)) return null;
                     return (
                       <div key={season.number} style={{ marginBottom: "32px" }}>
@@ -2076,9 +2167,9 @@ export default function ChroniclePage() {
                   ) : (
                     <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
                   )
-                ) : displaySeason ? (
+                ) : displaySeasonSliced ? (
                   <SeasonTimeline
-                    season={displaySeason}
+                    season={displaySeasonSliced}
                     players={players}
                     items={items}
                     icons={icons}
@@ -2090,6 +2181,9 @@ export default function ChroniclePage() {
                   <p className="mt-4 text-[0.78rem] text-white/30">Loading events…</p>
                 ) : (
                   <p className="mt-4 text-[0.78rem] text-white/20 italic">No events yet.</p>
+                )}
+                {hasMoreEvents && (
+                  <p className="mt-3 pb-2 text-center text-[0.65rem] text-white/20">Scroll for more…</p>
                 )}
               </div>
             </div>
