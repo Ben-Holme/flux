@@ -201,11 +201,17 @@ function CharactersView({ house, chars, onBack, onSelect }: CharactersViewProps)
               <Portrait charId={char.id} name={char.parsedName} size={52} />
               <div className="min-w-0 flex-1">
                 <Heading level="h4">{char.parsedName}</Heading>
-                {char.cls && (
-                  <Text variant="muted" as="span">
-                    {char.cls}
-                  </Text>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {char.cls && (
+                    <Text variant="muted" as="span">{char.cls}</Text>
+                  )}
+                  {char.season != null && (
+                    <>
+                      {char.cls && <span className="text-white/15 text-xs">·</span>}
+                      <Text variant="muted" as="span">S{char.season}</Text>
+                    </>
+                  )}
+                </div>
               </div>
               {char.fame != null && (
                 <div className="shrink-0 text-right">
