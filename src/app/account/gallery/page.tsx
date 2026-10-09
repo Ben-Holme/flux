@@ -20,6 +20,7 @@ interface PlayerEntry {
   house: string | null;
   cls: string | null;
   fame: number | null;
+  season: number | null;
 }
 
 type View =
@@ -44,6 +45,8 @@ function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | null {
     .split("#")
     .filter((p) => p && !p.startsWith("//"));
   const fame = raw.fame != null ? Number(raw.fame) : null;
+  const rawSeason = String(name).split("#").at(-1);
+  const season = rawSeason ? Number(rawSeason) : null;
   return {
     id: Number(id),
     name: String(name),
@@ -51,6 +54,7 @@ function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | null {
     house: parts[1] || null,
     cls: parts[2] || null,
     fame: fame != null && !isNaN(fame) ? fame : null,
+    season: season != null && !isNaN(season) ? season : null,
   };
 }
 
@@ -361,7 +365,7 @@ function GalleryContent() {
       map[h].push(p);
     }
     for (const h of Object.keys(map)) {
-      map[h].sort((a, b) => (a.fame ?? 0) - (b.fame ?? 0));
+      map[h].sort((a, b) => (b.season ?? 0) - (a.season ?? 0));
     }
     return map;
   }, [players]);
