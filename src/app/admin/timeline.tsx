@@ -177,7 +177,7 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
     <div ref={containerRef} className="relative select-none">
 
       {/* Hour axis */}
-      <div className="flex mb-1 ml-[90px] relative h-4">
+      <div className="relative mb-1 h-4">
         {HOURS.map((h) => (
           <span
             key={h}
@@ -190,7 +190,7 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
       </div>
 
       {/* Day rows */}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-3">
         {days.map((day) => {
           const LANE_H = 18; // px per player lane
           const PADDING = 4;
@@ -201,12 +201,12 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
           const trackH = visibleLanes * LANE_H + PADDING;
 
           return (
-          <div key={day.date} className="flex items-start gap-0">
-            <div className="w-[90px] shrink-0 text-right pr-3 pt-[3px] text-[11px] text-white/40 leading-tight">
+          <div key={day.date}>
+            <div className="mb-1 text-[11px] text-white/40 leading-tight">
               {day.label}
             </div>
             <div
-              className="flex-1 rounded relative overflow-hidden border border-white/5"
+              className="w-full rounded relative overflow-hidden border border-white/5"
               style={{ background: "#0f0f18", height: trackH }}
             >
               {/* Hour grid lines */}
@@ -253,6 +253,7 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
       </div>
 
       {/* Tooltip */}
+
       {tip && (
         <div
           className="pointer-events-none absolute z-50 rounded-lg border border-white/10 bg-[#1a1a28] px-3 py-2 text-xs shadow-xl"
