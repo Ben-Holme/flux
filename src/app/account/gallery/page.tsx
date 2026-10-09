@@ -19,6 +19,7 @@ interface PlayerEntry {
   parsedName: string;
   house: string | null;
   cls: string | null;
+  fame: number | null;
 }
 
 type View =
@@ -42,12 +43,14 @@ function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | null {
   const parts = String(name)
     .split("#")
     .filter((p) => p && !p.startsWith("//"));
+  const fame = raw.fame != null ? Number(raw.fame) : null;
   return {
     id: Number(id),
     name: String(name),
     parsedName: parts[0] || String(name),
     house: parts[1] || null,
     cls: parts[2] || null,
+    fame: fame != null && !isNaN(fame) ? fame : null,
   };
 }
 
@@ -188,7 +191,7 @@ function CharactersView({ house, chars, onBack, onSelect }: CharactersViewProps)
           >
             <div className="flex items-center gap-4">
               <Portrait charId={char.id} name={char.parsedName} size={52} />
-              <div>
+              <div className="min-w-0 flex-1">
                 <Heading level="h4">{char.parsedName}</Heading>
                 {char.cls && (
                   <Text variant="muted" as="span">
@@ -196,6 +199,12 @@ function CharactersView({ house, chars, onBack, onSelect }: CharactersViewProps)
                   </Text>
                 )}
               </div>
+              {char.fame != null && (
+                <div className="shrink-0 text-right">
+                  <div className="font-heading text-lg leading-none text-gold">{char.fame}</div>
+                  <div className="mt-0.5 text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Fame</div>
+                </div>
+              )}
             </div>
           </Card>
         ))}
@@ -237,11 +246,17 @@ function EventsView({
       />
       <div className="flex items-center gap-5">
         <Portrait charId={char.id} name={char.parsedName} size={72} />
-        <div>
+        <div className="min-w-0 flex-1">
           {char.house && <Eyebrow>House {char.house}</Eyebrow>}
           <Heading level="h1">{char.parsedName}</Heading>
           {char.cls && <Text variant="muted">{char.cls}</Text>}
         </div>
+        {char.fame != null && (
+          <div className="shrink-0 text-right">
+            <div className="font-heading text-[2.5rem] leading-none text-gold">{char.fame}</div>
+            <div className="mt-1 text-[0.6rem] uppercase tracking-[0.14em] text-white/25">Fame</div>
+          </div>
+        )}
       </div>
 
       {loading && <Text variant="muted">Loading events…</Text>}
@@ -339,6 +354,9 @@ function GalleryContent() {
       const h = p.house ?? "Unknown";
       if (!map[h]) map[h] = [];
       map[h].push(p);
+    }
+    for (const h of Object.keys(map)) {
+      map[h].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0));
     }
     return map;
   }, [players]);
