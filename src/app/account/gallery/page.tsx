@@ -90,7 +90,9 @@ function filterSeasonsByChar(seasons: Season[], charId: number): Season[] {
         }))
         .filter((day) => day.events.length > 0),
     }))
-    .filter((s) => s.days.length > 0);
+    .filter((s) => s.days.length > 0)
+    .reverse()
+    .map((s) => ({ ...s, days: [...s.days].reverse() }));
 }
 
 // ── Sub-views ─────────────────────────────────────────────────────────────────
