@@ -69,6 +69,22 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
     colors[s.name] = PALETTE[ci++ % PALETTE.length];
   }
 
+  // Build server-gap list for filtering stale player sessions
+  const serverSess = sessions
+    .filter((s) => s.id === -1)
+    .map((s) => ({ start: parseDate(s.start) ?? 0, end: (s.active ? now : parseDate(s.end)) ?? now }))
+    .filter((ss) => ss.start && ss.end)
+    .sort((a, b) => a.start - b.start);
+
+  function spansServerGap(pStart: number, pEnd: number): boolean {
+    for (let i = 0; i < serverSess.length - 1; i++) {
+      const gapStart = serverSess[i].end;
+      const gapEnd   = serverSess[i + 1].start;
+      if (gapEnd > gapStart && pStart < gapEnd && pEnd > gapStart) return true;
+    }
+    return false;
+  }
+
   // Group slices by day
   const dayMap: Record<string, Slice[]> = {};
 
@@ -76,6 +92,7 @@ function buildDays(sessions: RawSession[]): { days: DayRow[]; colors: Record<str
     const start = parseDate(s.start);
     const end = s.active ? now : parseDate(s.end);
     if (!start || !end || end < start) continue;
+    if (s.id !== -1 && spansServerGap(start, end)) continue;
 
     const dayStart = (ts: number) => {
       const d = new Date(ts * 1000);
@@ -134,8 +151,6 @@ const HOURS = Array.from({ length: 9 }, (_, i) => i * 3); // 0,3,6…24
 
 export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
   const [days, setDays]       = useState<DayRow[]>([]);
-  const [colors, setColors]   = useState<Record<string, string>>({});
-  const [hidden, setHidden]   = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [tip, setTip]         = useState<{ sl: Slice; x: number; y: number } | null>(null);
@@ -148,59 +163,18 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
       .then((r) => r.json())
       .then((data) => {
         if (data.status !== "OK") throw new Error(data.status);
-        const { days, colors } = buildDays(data.sessions as RawSession[]);
+        const { days } = buildDays(data.sessions as RawSession[]);
         setDays(days);
-        setColors(colors);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [sessionKey]);
 
-  const toggle = (name: string) =>
-    setHidden((h) => {
-      const next = new Set(h);
-      next.has(name) ? next.delete(name) : next.add(name);
-      return next;
-    });
-
   if (loading) return <Text variant="muted">Loading sessions…</Text>;
   if (error)   return <Text className="text-ember">Error: {error}</Text>;
 
-  const players = Object.keys(colors);
-
   return (
     <div ref={containerRef} className="relative select-none">
-
-      {/* Legend / filter buttons */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button
-          onClick={() => toggle("__server__")}
-          className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-all"
-          style={{
-            borderColor: hidden.has("__server__") ? "#333" : "#2a7a2a",
-            color:       hidden.has("__server__") ? "#555" : "#5fc",
-            background:  hidden.has("__server__") ? "transparent" : "#0d1f0d",
-          }}
-        >
-          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#2a7a2a" }} />
-          Server
-        </button>
-        {players.map((name) => (
-          <button
-            key={name}
-            onClick={() => toggle(name)}
-            className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-all"
-            style={{
-              borderColor: hidden.has(name) ? "#333" : colors[name] + "55",
-              color:       hidden.has(name) ? "#555" : colors[name],
-              background:  hidden.has(name) ? "transparent" : colors[name] + "18",
-            }}
-          >
-            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: hidden.has(name) ? "#444" : colors[name] }} />
-            {name}
-          </button>
-        ))}
-      </div>
 
       {/* Hour axis */}
       <div className="flex mb-1 ml-[90px] relative h-4">
@@ -222,7 +196,7 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
           const PADDING = 4;
           const visibleLanes = Math.max(
             1,
-            [...new Set(day.slices.filter((sl) => !sl.server && !hidden.has(sl.name)).map((sl) => sl.lane))].length,
+            [...new Set(day.slices.filter((sl) => !sl.server).map((sl) => sl.lane))].length,
           );
           const trackH = visibleLanes * LANE_H + PADDING;
 
@@ -246,9 +220,6 @@ export function AdminTimeline({ sessionKey }: { sessionKey: string }) {
 
               {/* Session bars */}
               {day.slices.map((sl, i) => {
-                const charKey = sl.server ? "__server__" : sl.name;
-                if (hidden.has(charKey)) return null;
-
                 // Server: thin bar across the full middle
                 const topPx    = sl.server ? trackH / 2 - 2 : sl.lane * LANE_H + 2;
                 const heightPx = sl.server ? 3 : LANE_H - 4;
