@@ -5,23 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { titleCase } from "@/components/character-card";
-import { UnyhaIcon } from "@/components/unyha-icon";
-import type { UnyhaIconName } from "@/components/unyha-icon";
+import { Portrait } from "@/components/portrait";
 import { Alert, Card, Eyebrow, Flow, Heading, Text } from "@/components/ui";
 import { fetchPlayers, buildHouseMap } from "./_utils";
 import type { PlayerEntry } from "./_utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const CLASS_ICON: Partial<Record<string, UnyhaIconName>> = {
-  mage: "mage",
-  orc: "orc",
-  ranger: "ranger",
-};
-
-function classIconName(cls: string): UnyhaIconName | null {
-  return CLASS_ICON[cls.toLowerCase()] ?? null;
-}
 
 type HouseGroup = { house: string; chars: PlayerEntry[]; totalFame: number };
 
@@ -65,9 +54,7 @@ function GalleryContent() {
       <Heading level="h1">Gallery</Heading>
       {loading && <Text>Loading…</Text>}
       {error && <Alert>Error: {error}</Alert>}
-      {players && groups.length === 0 && (
-        <Text variant="muted">No characters yet.</Text>
-      )}
+      {players && groups.length === 0 && <Text variant="muted">No characters yet.</Text>}
       {groups.map(({ house, chars, totalFame }) => {
         const houseHref = `/account/gallery/${encodeURIComponent(house)}`;
         return (
@@ -76,7 +63,7 @@ function GalleryContent() {
               <Link href={houseHref} className="group block">
                 <Eyebrow>House</Eyebrow>
                 <div className="flex items-baseline justify-between">
-                  <Heading level="h2" className="transition-colors group-hover:text-gold">
+                  <Heading level="h2" className="group-hover:text-gold transition-colors">
                     {house}
                   </Heading>
                   <Text as="span" variant="muted" className="text-sm tabular-nums">
@@ -85,33 +72,26 @@ function GalleryContent() {
                 </div>
               </Link>
               <div className="flex flex-col gap-3">
-                {chars.map((c) => {
-                  const icon = c.cls ? classIconName(c.cls) : null;
-                  return (
-                    <Link
-                      key={c.id}
-                      href={`${houseHref}/${c.id}`}
-                      className="group flex items-center gap-3"
-                    >
-                      {icon ? (
-                        <UnyhaIcon name={icon} className="size-5 shrink-0 text-white/60" />
-                      ) : (
-                        <span className="size-5 shrink-0" />
-                      )}
-                      <Text as="span" className="flex-1 transition-colors group-hover:text-gold">
-                        {c.parsedName}
+                {chars.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`${houseHref}/${c.id}`}
+                    className="group flex items-center gap-3"
+                  >
+                    <Portrait charId={c.id} name={c.parsedName} size={36} />
+                    <Text as="span" className="group-hover:text-gold flex-1 transition-colors">
+                      {c.parsedName}
+                    </Text>
+                    {c.cls && (
+                      <Text as="span" variant="muted" className="text-xs">
+                        {titleCase(c.cls)}
                       </Text>
-                      {c.cls && (
-                        <Text as="span" variant="muted" className="text-xs">
-                          {titleCase(c.cls)}
-                        </Text>
-                      )}
-                      <Text as="span" variant="muted" className="text-sm tabular-nums">
-                        {c.fame ?? 0} fame
-                      </Text>
-                    </Link>
-                  );
-                })}
+                    )}
+                    <Text as="span" variant="muted" className="text-sm tabular-nums">
+                      {c.fame ?? 0} fame
+                    </Text>
+                  </Link>
+                ))}
               </div>
             </Flow>
           </Card>
