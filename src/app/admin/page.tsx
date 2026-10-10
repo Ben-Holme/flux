@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
@@ -441,22 +442,36 @@ function AdminContent() {
         </Text>
         {onlinePlayers.length > 0 && (
           <div className="flex flex-wrap gap-3">
-            {onlinePlayers.map((p) => (
-              <div
-                key={p.name}
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-              >
-                {p.id !== undefined && <Portrait charId={p.id} name={p.name} size={40} />}
-                <div className="flex flex-col">
-                  <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
-                  {p.house && (
-                    <Text as="span" variant="muted" className="text-xs leading-tight">
-                      House {p.house}
-                    </Text>
-                  )}
+            {onlinePlayers.map((p) => {
+              const card = (
+                <>
+                  {p.id !== undefined && <Portrait charId={p.id} name={p.name} size={40} />}
+                  <div className="flex flex-col">
+                    <Text as="span" className="font-semibold leading-tight">{p.name}</Text>
+                    {p.house && (
+                      <Text as="span" variant="muted" className="text-xs leading-tight">
+                        House {p.house}
+                      </Text>
+                    )}
+                  </div>
+                </>
+              );
+              const cardClass =
+                "flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2";
+              return p.id !== undefined ? (
+                <Link
+                  key={p.name}
+                  href={`/account/gallery/${encodeURIComponent(p.house || "Unknown")}/${p.id}`}
+                  className={`${cardClass} transition-colors hover:border-white/15 hover:bg-white/[0.08]`}
+                >
+                  {card}
+                </Link>
+              ) : (
+                <div key={p.name} className={cardClass}>
+                  {card}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
