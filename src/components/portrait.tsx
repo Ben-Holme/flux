@@ -49,7 +49,7 @@ export function Portrait({ charId, name, size, cls, className }: PortraitProps) 
           className="absolute -right-0.5 -bottom-0.5 flex items-center justify-center rounded-full border border-white/10 bg-black text-white/80"
           style={{ width: badgeSize, height: badgeSize }}
         >
-          <UnyhaIcon name={classIcon} className="size-[90%]" />
+          <UnyhaIcon name={classIcon} className="size-[75%]" />
         </span>
       )}
     </div>
