@@ -79,7 +79,7 @@ function GalleryContent() {
                     aria-label={c.parsedName}
                     className="rounded-full transition-opacity hover:opacity-80"
                   >
-                    <Portrait charId={c.id} name={c.parsedName} size={44} cls={c.cls} />
+                    <Portrait charId={c.id} name={c.parsedName} size={64} cls={c.cls} />
                   </Link>
                 ))}
               </div>

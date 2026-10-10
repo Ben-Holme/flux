@@ -22,7 +22,7 @@ interface PortraitProps {
 export function Portrait({ charId, name, size, cls, className }: PortraitProps) {
   const initial = name[0]?.toUpperCase() ?? "?";
   const classIcon = cls ? CLASS_ICON[cls.toLowerCase()] : undefined;
-  const badgeSize = Math.max(14, Math.round(size * 0.36));
+  const badgeSize = Math.max(20, Math.round(size * 0.5));
   return (
     <div className={cn("relative flex-shrink-0", className)} style={{ width: size, height: size }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -49,7 +49,7 @@ export function Portrait({ charId, name, size, cls, className }: PortraitProps) 
           className="absolute -right-0.5 -bottom-0.5 flex items-center justify-center rounded-full border border-white/10 bg-black text-white/80"
           style={{ width: badgeSize, height: badgeSize }}
         >
-          <UnyhaIcon name={classIcon} className="size-[65%]" />
+          <UnyhaIcon name={classIcon} className="size-[90%]" />
         </span>
       )}
     </div>
