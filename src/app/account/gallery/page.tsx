@@ -44,17 +44,19 @@ function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | null {
   const parts = String(name)
     .split("#")
     .filter((p) => p && !p.startsWith("//"));
-  const fame = raw.fame != null ? Number(raw.fame) : null;
-  const rawSeason = String(name).split("#").at(-1);
+  const segments = String(name).split("#");
+  const rawSeason = segments.at(-1);
+  const rawFame   = segments.at(-2);
   const season = rawSeason ? Number(rawSeason) : null;
+  const fame   = rawFame   ? Number(rawFame)   : null;
   return {
     id: Number(id),
     name: String(name),
     parsedName: parts[0] || String(name),
     house: parts[1] || null,
     cls: parts[2] || null,
-    fame: fame != null && !isNaN(fame) ? fame : null,
-    season: season != null && !isNaN(season) ? season : null,
+    fame:   fame   != null && !isNaN(fame)   && isFinite(fame)   ? fame   : null,
+    season: season != null && !isNaN(season) && isFinite(season) ? season : null,
   };
 }
 
@@ -371,7 +373,12 @@ function GalleryContent() {
       map[h].push(p);
     }
     for (const h of Object.keys(map)) {
-      map[h].sort((a, b) => (b.season ?? 0) - (a.season ?? 0));
+      map[h].sort((a, b) => {
+        const sa = a.season ?? 9999;
+        const sb = b.season ?? 9999;
+        if (sb !== sa) return sb - sa;
+        return b.id - a.id;
+      });
     }
     return map;
   }, [players]);
