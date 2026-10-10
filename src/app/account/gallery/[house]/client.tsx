@@ -40,7 +40,7 @@ export default function HouseClient({ house }: { house: string }) {
           >
             <Card className="transition-colors hover:border-white/15 hover:bg-white/[0.04]">
               <div className="flex items-center gap-4">
-                <Portrait charId={char.id} name={char.parsedName} size={52} />
+                <Portrait charId={char.id} name={char.parsedName} size={52} cls={char.cls} />
                 <div className="min-w-0 flex-1">
                   <Heading level="h4">{char.parsedName}</Heading>
                   <div className="flex items-center gap-1.5">
