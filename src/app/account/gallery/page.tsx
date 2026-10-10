@@ -1,88 +1,135 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import { Portrait } from "@/components/portrait";
-import { Flow, Heading, Text, Eyebrow, Card } from "@/components/ui";
-import { fetchPlayers, buildHouseMap } from "./_utils";
-import type { PlayerEntry } from "./_utils";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { fetchAccount, useAuth } from "@/context/auth-context";
+import { parseData, titleCase } from "@/components/character-card";
+import { UnyhaIcon } from "@/components/unyha-icon";
+import type { UnyhaIconName } from "@/components/unyha-icon";
+import { Alert, Card, Eyebrow, Flow, Heading, Text } from "@/components/ui";
+import type { AccountData, Character } from "../account-types";
 
-function HousesContent() {
-  const [players, setPlayers] = useState<PlayerEntry[]>([]);
-  const [loading, setLoading]   = useState(true);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const CLASS_ICON: Partial<Record<string, UnyhaIconName>> = {
+  mage: "mage",
+  orc: "orc",
+  ranger: "ranger",
+};
+
+function classIconName(cls: string): UnyhaIconName | null {
+  return CLASS_ICON[cls.toLowerCase()] ?? null;
+}
+
+type HouseGroup = { house: string; chars: Character[]; totalFame: number };
+
+function groupByHouse(characters: Character[], fallbackHouse: string): HouseGroup[] {
+  const map = new Map<string, Character[]>();
+  for (const c of characters) {
+    const d = parseData(c.data);
+    const house = d.house || fallbackHouse || "Unknown";
+    if (!map.has(house)) map.set(house, []);
+    map.get(house)!.push(c);
+  }
+  return Array.from(map.entries())
+    .map(([house, chars]) => ({
+      house,
+      chars: [...chars].sort((a, b) => b.fame - a.fame),
+      totalFame: chars.reduce((s, c) => s + (c.fame ?? 0), 0),
+    }))
+    .sort((a, b) => b.totalFame - a.totalFame);
+}
+
+// ── GalleryContent ────────────────────────────────────────────────────────────
+
+function GalleryContent() {
+  const { session, ready } = useAuth();
+  const router = useRouter();
+  const [account, setAccount] = useState<AccountData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPlayers()
-      .then(setPlayers)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const houseMap = useMemo(() => buildHouseMap(players), [players]);
-  const houseFame = useMemo(() => {
-    const out: Record<string, number> = {};
-    for (const [h, chars] of Object.entries(houseMap)) {
-      out[h] = chars.reduce((sum, c) => sum + (c.fame ?? 0), 0);
+    if (!ready) return;
+    if (!session) {
+      router.push("/login?redirect=/account/gallery");
+      return;
     }
-    return out;
-  }, [houseMap]);
+    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
+      headers: { Authorization: `Bearer ${session.sessionkey}` },
+    })
+      .then((r) => r.json())
+      .then((data: AccountData & { status: string }) => {
+        if (data.status !== "OK") throw new Error(data.status);
+        setAccount(data);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [session, ready, router]);
 
-  const houses = useMemo(
-    () => Object.keys(houseMap).sort((a, b) => houseFame[b] - houseFame[a]),
-    [houseMap, houseFame],
-  );
+  if (!session) return null;
 
-  if (loading) return <Text variant="muted">Loading gallery…</Text>;
+  const groups = account ? groupByHouse(account.characters, account.house) : [];
 
   return (
-    <Flow as="section">
-      <Eyebrow deco>Gallery</Eyebrow>
-      <Heading level="h1">Houses</Heading>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {houses.map((house) => {
-          const chars = houseMap[house];
-          return (
-            <Link key={house} href={`/account/gallery/${encodeURIComponent(house)}`}>
-              <Card className="transition-colors hover:border-white/15 hover:bg-white/[0.04]">
-                <div className="flex items-start justify-between gap-4">
-                  <Flow className="min-w-0 flex-1">
-                    <Heading level="h3">{house}</Heading>
-                    <div className="flex flex-wrap gap-1.5">
-                      {chars.slice(0, 8).map((c) => (
-                        <Portrait key={c.id} charId={c.id} name={c.parsedName} size={36} />
-                      ))}
-                      {chars.length > 8 && (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-[0.6rem] text-white/30">
-                          +{chars.length - 8}
-                        </div>
-                      )}
-                    </div>
-                    <Text variant="muted">
-                      {chars.length} character{chars.length !== 1 ? "s" : ""}
+    <Flow className="min-h-[90vh] px-6 pb-20">
+      <Heading level="h1">Gallery</Heading>
+      {loading && <Text>Loading…</Text>}
+      {error && <Alert>Error: {error}</Alert>}
+      {account && groups.length === 0 && (
+        <Text variant="muted">No characters yet.</Text>
+      )}
+      {groups.map(({ house, chars, totalFame }) => (
+        <Card key={house}>
+          <Flow>
+            <div>
+              <Eyebrow>House</Eyebrow>
+              <div className="flex items-baseline justify-between">
+                <Heading level="h2">{house}</Heading>
+                <Text as="span" variant="muted" className="text-sm tabular-nums">
+                  {totalFame} fame
+                </Text>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {chars.map((c) => {
+                const d = parseData(c.data);
+                const displayName = c.name.split("#")[0];
+                const cls = d.class && d.class !== "none" ? d.class : "";
+                const icon = cls ? classIconName(cls) : null;
+                return (
+                  <div key={c.id} className="flex items-center gap-3">
+                    {icon ? (
+                      <UnyhaIcon name={icon} className="size-5 shrink-0 text-white/60" />
+                    ) : (
+                      <span className="size-5 shrink-0" />
+                    )}
+                    <Text as="span" className="flex-1">
+                      {displayName}
                     </Text>
-                  </Flow>
-                  {houseFame[house] > 0 && (
-                    <div className="shrink-0 text-right">
-                      <div className="font-heading text-[2rem] leading-none text-gold">{houseFame[house]}</div>
-                      <div className="mt-1 text-[0.6rem] uppercase tracking-[0.14em] text-white/25">Fame</div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
+                    {cls && (
+                      <Text as="span" variant="muted" className="text-xs">
+                        {titleCase(cls)}
+                      </Text>
+                    )}
+                    <Text as="span" variant="muted" className="text-sm tabular-nums">
+                      {c.fame} fame
+                    </Text>
+                  </div>
+                );
+              })}
+            </div>
+          </Flow>
+        </Card>
+      ))}
     </Flow>
   );
 }
 
 export default function GalleryPage() {
   return (
-    <div className="px-6 pb-20">
-      <Suspense>
-        <HousesContent />
-      </Suspense>
-    </div>
+    <Suspense>
+      <GalleryContent />
+    </Suspense>
   );
 }
