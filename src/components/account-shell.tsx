@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { useAuth } from "@/context/auth-context";
 import { SidebarNavLinks, type NavItem } from "@/components/sidebar-nav-links";
 import { Text } from "@/components/ui";
@@ -33,13 +33,17 @@ export function AccountShell({ children }: { children: ReactNode }) {
               My Account
             </Text>
           </div>
-          <SidebarNavLinks items={items} />
+          <Suspense>
+            <SidebarNavLinks items={items} />
+          </Suspense>
           <AccountSignOut />
         </div>
       </div>
 
       <div className="fixed inset-x-0 top-[64px] z-40 min-[769px]:hidden">
-        <AccountMobileNav items={items} />
+        <Suspense>
+          <AccountMobileNav items={items} />
+        </Suspense>
       </div>
 
       <div className="pb-[100px] max-[769px]:pt-[80px] max-[769px]:pb-20">{children}</div>
