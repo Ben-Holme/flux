@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
-import { titleCase } from "@/components/character-card";
 import { Portrait } from "@/components/portrait";
 import { Alert, Card, Eyebrow, Flow, Heading, Text } from "@/components/ui";
 import { fetchPlayers, buildHouseMap } from "./_utils";
@@ -71,25 +70,16 @@ function GalleryContent() {
                   </Text>
                 </div>
               </Link>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
                 {chars.map((c) => (
                   <Link
                     key={c.id}
                     href={`${houseHref}/${c.id}`}
-                    className="group flex items-center gap-3"
+                    title={c.parsedName}
+                    aria-label={c.parsedName}
+                    className="rounded-full transition-opacity hover:opacity-80"
                   >
-                    <Portrait charId={c.id} name={c.parsedName} size={36} />
-                    <Text as="span" className="group-hover:text-gold flex-1 transition-colors">
-                      {c.parsedName}
-                    </Text>
-                    {c.cls && (
-                      <Text as="span" variant="muted" className="text-xs">
-                        {titleCase(c.cls)}
-                      </Text>
-                    )}
-                    <Text as="span" variant="muted" className="text-sm tabular-nums">
-                      {c.fame ?? 0} fame
-                    </Text>
+                    <Portrait charId={c.id} name={c.parsedName} size={44} />
                   </Link>
                 ))}
               </div>
