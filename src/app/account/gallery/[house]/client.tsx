@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Portrait } from "@/components/portrait";
+import { titleCase } from "@/components/character-card";
 import { Flow, Heading, Text, Eyebrow, Card } from "@/components/ui";
 import { fetchPlayers, buildHouseMap } from "../_utils";
 import type { PlayerEntry } from "../_utils";
@@ -49,7 +50,7 @@ export default function HouseClient({ house }: { house: string }) {
                     {char.season != null && (
                       <>
                         {char.cls && <span className="text-white/15 text-xs">·</span>}
-                        <Text variant="muted" as="span">S{char.season}</Text>
+                        <Text variant="muted" as="span">{titleCase(char.season)}</Text>
                       </>
                     )}
                   </div>

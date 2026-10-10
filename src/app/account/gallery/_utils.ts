@@ -13,7 +13,7 @@ export interface PlayerEntry {
   house: string | null;
   cls: string | null;
   fame: number | null;
-  season: number | null;
+  season: string | null;
 }
 
 export interface EventsData {
@@ -23,34 +23,31 @@ export interface EventsData {
   icons: Set<string>;
 }
 
+// Player name layout: name#house#class#gender#fame#//appearance#epithet#season
+// ("none" is the game's empty marker for house/class; season is a name, e.g. "the Eclipsed March" or "current").
+function nonEmpty(v: string | undefined): string | null {
+  return v && v.toLowerCase() !== "none" ? v : null;
+}
+
 export function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | null {
   const id = raw.id ?? raw.char_id ?? raw.player_id;
   const name = raw.name ?? raw.player_name ?? raw.char_name;
   if (id == null || !name) return null;
-  const parts = String(name).split("#").filter((p) => p && !p.startsWith("//"));
-  const segments = String(name).split("#");
-  const rawSeason = segments.at(-1);
-  const rawFame   = segments.at(-2);
-  const season = rawSeason ? Number(rawSeason) : null;
-  const fame   = rawFame   ? Number(rawFame)   : null;
+  const [parsedName, house, cls, , rawFame, , , season] = String(name).split("#");
+  const fame = rawFame ? Number(rawFame) : NaN;
   return {
     id: Number(id),
     name: String(name),
-    parsedName: parts[0] || String(name),
-    house: parts[1] || null,
-    cls: parts[2] || null,
-    fame:   fame   != null && !isNaN(fame)   && isFinite(fame)   ? fame   : null,
-    season: season != null && !isNaN(season) && isFinite(season) ? season : null,
+    parsedName: parsedName || String(name),
+    house: house || null,
+    cls: nonEmpty(cls),
+    fame: Number.isFinite(fame) ? fame : null,
+    season: season || null,
   };
 }
 
 export function sortChars(chars: PlayerEntry[]): PlayerEntry[] {
-  return [...chars].sort((a, b) => {
-    const sa = a.season ?? 9999;
-    const sb = b.season ?? 9999;
-    if (sb !== sa) return sb - sa;
-    return b.id - a.id;
-  });
+  return [...chars].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0) || b.id - a.id);
 }
 
 export async function fetchPlayers(): Promise<PlayerEntry[]> {

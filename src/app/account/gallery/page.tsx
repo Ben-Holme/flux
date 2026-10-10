@@ -29,7 +29,7 @@ function groupByHouse(players: PlayerEntry[]): HouseGroup[] {
   return Object.entries(buildHouseMap(players))
     .map(([house, chars]) => ({
       house,
-      chars: [...chars].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0)),
+      chars,
       totalFame: chars.reduce((s, c) => s + (c.fame ?? 0), 0),
     }))
     .sort((a, b) => b.totalFame - a.totalFame);
@@ -86,8 +86,7 @@ function GalleryContent() {
               </Link>
               <div className="flex flex-col gap-3">
                 {chars.map((c) => {
-                  const cls = c.cls && c.cls !== "none" ? c.cls : "";
-                  const icon = cls ? classIconName(cls) : null;
+                  const icon = c.cls ? classIconName(c.cls) : null;
                   return (
                     <Link
                       key={c.id}
@@ -102,9 +101,9 @@ function GalleryContent() {
                       <Text as="span" className="flex-1 transition-colors group-hover:text-gold">
                         {c.parsedName}
                       </Text>
-                      {cls && (
+                      {c.cls && (
                         <Text as="span" variant="muted" className="text-xs">
-                          {titleCase(cls)}
+                          {titleCase(c.cls)}
                         </Text>
                       )}
                       <Text as="span" variant="muted" className="text-sm tabular-nums">
