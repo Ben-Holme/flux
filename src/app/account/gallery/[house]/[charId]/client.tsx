@@ -79,11 +79,15 @@ export default function CharacterEventsClient({ house, charId }: Props) {
       </div>
 
       <div className="flex items-center gap-5">
-        <Portrait charId={charId} name={char?.parsedName ?? String(charId)} size={72} />
+        <Portrait
+          charId={charId}
+          name={char?.parsedName ?? String(charId)}
+          size={72}
+          cls={char?.cls}
+        />
         <div className="min-w-0 flex-1">
           {char?.house && <Eyebrow>House {char.house}</Eyebrow>}
           <Heading level="h1">{char?.parsedName ?? `#${charId}`}</Heading>
-          {char?.cls && <Text variant="muted">{char.cls}</Text>}
         </div>
         {char?.fame != null && (
           <div className="shrink-0 text-right">
