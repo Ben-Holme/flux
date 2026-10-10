@@ -46,8 +46,9 @@ export function parsePlayerEntry(raw: Record<string, unknown>): PlayerEntry | nu
   };
 }
 
+/** Most recent first — char IDs increase with creation, so newer seasons' chars have higher IDs. */
 export function sortChars(chars: PlayerEntry[]): PlayerEntry[] {
-  return [...chars].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0) || b.id - a.id);
+  return [...chars].sort((a, b) => b.id - a.id);
 }
 
 export async function fetchPlayers(): Promise<PlayerEntry[]> {

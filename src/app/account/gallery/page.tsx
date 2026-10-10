@@ -17,7 +17,7 @@ function groupByHouse(players: PlayerEntry[]): HouseGroup[] {
   return Object.entries(buildHouseMap(players))
     .map(([house, chars]) => ({
       house,
-      chars,
+      chars: [...chars].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0)),
       totalFame: chars.reduce((s, c) => s + (c.fame ?? 0), 0),
     }))
     .sort((a, b) => b.totalFame - a.totalFame);
