@@ -60,15 +60,18 @@ function GalleryContent() {
           <Card key={house}>
             <Flow>
               <Link href={houseHref} className="group block">
-                <Eyebrow>House</Eyebrow>
-                <div className="flex items-baseline justify-between">
-                  <Heading level="h2" className="group-hover:text-gold transition-colors">
-                    {house}
-                  </Heading>
-                  <Text as="span" variant="muted" className="text-sm tabular-nums">
-                    {totalFame} fame
+                <div className="flex items-center justify-between">
+                  <Eyebrow glow={false}>House</Eyebrow>
+                  <Text
+                    as="span"
+                    className="font-heading text-gold text-lg leading-none tabular-nums"
+                  >
+                    {totalFame}
                   </Text>
                 </div>
+                <Heading level="h2" className="group-hover:text-gold transition-colors">
+                  {house}
+                </Heading>
               </Link>
               {/* Portraits overlap 12px (-ml-3, offset by the row's pl-3 so wrapped rows align); leftmost on top. */}
               <div className="flex flex-wrap gap-y-2 pl-3">
