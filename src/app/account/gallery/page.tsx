@@ -70,14 +70,16 @@ function GalleryContent() {
                   </Text>
                 </div>
               </Link>
-              <div className="flex flex-wrap gap-2">
-                {chars.map((c) => (
+              {/* Portraits overlap 12px (-ml-3, offset by the row's pl-3 so wrapped rows align); leftmost on top. */}
+              <div className="flex flex-wrap gap-y-2 pl-3">
+                {chars.map((c, i) => (
                   <Link
                     key={c.id}
                     href={`${houseHref}/${c.id}`}
                     title={c.parsedName}
                     aria-label={c.parsedName}
-                    className="rounded-full transition-opacity hover:opacity-80"
+                    className="relative -ml-3 rounded-full transition-opacity hover:opacity-80"
+                    style={{ zIndex: chars.length - i }}
                   >
                     <Portrait charId={c.id} name={c.parsedName} size={64} cls={c.cls} />
                   </Link>
