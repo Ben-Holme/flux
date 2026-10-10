@@ -1,13 +1,15 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchAccount, useAuth } from "@/context/auth-context";
-import { parseData, titleCase } from "@/components/character-card";
+import { useAuth } from "@/context/auth-context";
+import { titleCase } from "@/components/character-card";
 import { UnyhaIcon } from "@/components/unyha-icon";
 import type { UnyhaIconName } from "@/components/unyha-icon";
 import { Alert, Card, Eyebrow, Flow, Heading, Text } from "@/components/ui";
-import type { AccountData, Character } from "../account-types";
+import { fetchPlayers, buildHouseMap } from "./_utils";
+import type { PlayerEntry } from "./_utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,20 +23,13 @@ function classIconName(cls: string): UnyhaIconName | null {
   return CLASS_ICON[cls.toLowerCase()] ?? null;
 }
 
-type HouseGroup = { house: string; chars: Character[]; totalFame: number };
+type HouseGroup = { house: string; chars: PlayerEntry[]; totalFame: number };
 
-function groupByHouse(characters: Character[], fallbackHouse: string): HouseGroup[] {
-  const map = new Map<string, Character[]>();
-  for (const c of characters) {
-    const d = parseData(c.data);
-    const house = d.house || fallbackHouse || "Unknown";
-    if (!map.has(house)) map.set(house, []);
-    map.get(house)!.push(c);
-  }
-  return Array.from(map.entries())
+function groupByHouse(players: PlayerEntry[]): HouseGroup[] {
+  return Object.entries(buildHouseMap(players))
     .map(([house, chars]) => ({
       house,
-      chars: [...chars].sort((a, b) => b.fame - a.fame),
+      chars: [...chars].sort((a, b) => (b.fame ?? 0) - (a.fame ?? 0)),
       totalFame: chars.reduce((s, c) => s + (c.fame ?? 0), 0),
     }))
     .sort((a, b) => b.totalFame - a.totalFame);
@@ -45,7 +40,7 @@ function groupByHouse(characters: Character[], fallbackHouse: string): HouseGrou
 function GalleryContent() {
   const { session, ready } = useAuth();
   const router = useRouter();
-  const [account, setAccount] = useState<AccountData | null>(null);
+  const [players, setPlayers] = useState<PlayerEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,73 +50,74 @@ function GalleryContent() {
       router.push("/login?redirect=/account/gallery");
       return;
     }
-    fetchAccount("https://api.unyhagame.com/ueserv/getMyAccount-w.php", {
-      headers: { Authorization: `Bearer ${session.sessionkey}` },
-    })
-      .then((r) => r.json())
-      .then((data: AccountData & { status: string }) => {
-        if (data.status !== "OK") throw new Error(data.status);
-        setAccount(data);
-      })
+    fetchPlayers()
+      .then(setPlayers)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [session, ready, router]);
 
-  if (!session) return null;
+  const groups = useMemo(() => (players ? groupByHouse(players) : []), [players]);
 
-  const groups = account ? groupByHouse(account.characters, account.house) : [];
+  if (!session) return null;
 
   return (
     <Flow className="min-h-[90vh] px-6 pb-20">
       <Heading level="h1">Gallery</Heading>
       {loading && <Text>Loading…</Text>}
       {error && <Alert>Error: {error}</Alert>}
-      {account && groups.length === 0 && (
+      {players && groups.length === 0 && (
         <Text variant="muted">No characters yet.</Text>
       )}
-      {groups.map(({ house, chars, totalFame }) => (
-        <Card key={house}>
-          <Flow>
-            <div>
-              <Eyebrow>House</Eyebrow>
-              <div className="flex items-baseline justify-between">
-                <Heading level="h2">{house}</Heading>
-                <Text as="span" variant="muted" className="text-sm tabular-nums">
-                  {totalFame} fame
-                </Text>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              {chars.map((c) => {
-                const d = parseData(c.data);
-                const displayName = c.name.split("#")[0];
-                const cls = d.class && d.class !== "none" ? d.class : "";
-                const icon = cls ? classIconName(cls) : null;
-                return (
-                  <div key={c.id} className="flex items-center gap-3">
-                    {icon ? (
-                      <UnyhaIcon name={icon} className="size-5 shrink-0 text-white/60" />
-                    ) : (
-                      <span className="size-5 shrink-0" />
-                    )}
-                    <Text as="span" className="flex-1">
-                      {displayName}
-                    </Text>
-                    {cls && (
-                      <Text as="span" variant="muted" className="text-xs">
-                        {titleCase(cls)}
+      {groups.map(({ house, chars, totalFame }) => {
+        const houseHref = `/account/gallery/${encodeURIComponent(house)}`;
+        return (
+          <Card key={house}>
+            <Flow>
+              <Link href={houseHref} className="group block">
+                <Eyebrow>House</Eyebrow>
+                <div className="flex items-baseline justify-between">
+                  <Heading level="h2" className="transition-colors group-hover:text-gold">
+                    {house}
+                  </Heading>
+                  <Text as="span" variant="muted" className="text-sm tabular-nums">
+                    {totalFame} fame
+                  </Text>
+                </div>
+              </Link>
+              <div className="flex flex-col gap-3">
+                {chars.map((c) => {
+                  const cls = c.cls && c.cls !== "none" ? c.cls : "";
+                  const icon = cls ? classIconName(cls) : null;
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`${houseHref}/${c.id}`}
+                      className="group flex items-center gap-3"
+                    >
+                      {icon ? (
+                        <UnyhaIcon name={icon} className="size-5 shrink-0 text-white/60" />
+                      ) : (
+                        <span className="size-5 shrink-0" />
+                      )}
+                      <Text as="span" className="flex-1 transition-colors group-hover:text-gold">
+                        {c.parsedName}
                       </Text>
-                    )}
-                    <Text as="span" variant="muted" className="text-sm tabular-nums">
-                      {c.fame} fame
-                    </Text>
-                  </div>
-                );
-              })}
-            </div>
-          </Flow>
-        </Card>
-      ))}
+                      {cls && (
+                        <Text as="span" variant="muted" className="text-xs">
+                          {titleCase(cls)}
+                        </Text>
+                      )}
+                      <Text as="span" variant="muted" className="text-sm tabular-nums">
+                        {c.fame ?? 0} fame
+                      </Text>
+                    </Link>
+                  );
+                })}
+              </div>
+            </Flow>
+          </Card>
+        );
+      })}
     </Flow>
   );
 }

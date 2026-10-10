@@ -1,3 +1,4 @@
+import { fetchAccount } from "@/context/auth-context";
 import { parseSpecial, buildLookup } from "@/components/story-events/utils";
 import { buildSeasons } from "@/components/story-events/season-utils";
 import type { StoryEvent } from "@/components/story-events/use-story-events";
@@ -90,7 +91,25 @@ export function resolveOwchChars(events: StoryEvent[]): StoryEvent[] {
   });
 }
 
-export function filterSeasonsByChar(seasons: Season[], charId: number): Season[] {
+/** Events the game flagged `#public` in `special` — the only ones shown on other players' characters. */
+export function isPublicEvent(e: StoryEvent): boolean {
+  return parseSpecial(e.special).public === true;
+}
+
+/** IDs of the signed-in account's own characters (empty if the request fails). */
+export async function fetchMyCharIds(sessionkey: string): Promise<Set<number>> {
+  const data = await fetchAccount(`${API}/getMyAccount-w.php`, {
+    headers: { Authorization: `Bearer ${sessionkey}` },
+  }).then((r) => r.json());
+  if (data.status !== "OK" || !Array.isArray(data.characters)) return new Set();
+  return new Set((data.characters as { id: number }[]).map((c) => Number(c.id)));
+}
+
+export function filterSeasonsByChar(
+  seasons: Season[],
+  charId: number,
+  publicOnly: boolean,
+): Season[] {
   return seasons
     .map((s) => ({
       ...s,
@@ -100,6 +119,7 @@ export function filterSeasonsByChar(seasons: Season[], charId: number): Season[]
         .map((day) => ({
           ...day,
           events: day.events.filter((e) => {
+            if (publicOnly && !isPublicEvent(e)) return false;
             const sec = e.secondary_char as number | undefined;
             return (
               e.primary_char === charId ||

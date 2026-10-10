@@ -3,12 +3,14 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import { Portrait } from "@/components/portrait";
 import { Flow, Heading, Text, Eyebrow } from "@/components/ui";
 import SeasonTimeline from "@/components/story-events/season-timeline";
 import {
   fetchPlayers,
   fetchEventsData,
+  fetchMyCharIds,
   filterSeasonsByChar,
 } from "../../_utils";
 import type { PlayerEntry, EventsData } from "../../_utils";
@@ -20,10 +22,12 @@ interface Props {
 
 export default function CharacterEventsClient({ house, charId }: Props) {
   const router = useRouter();
+  const { session, ready } = useAuth();
 
   const [char, setChar]       = useState<PlayerEntry | null>(null);
   const [evData, setEvData]   = useState<EventsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myCharIds, setMyCharIds] = useState<Set<number> | null>(null);
 
   useEffect(() => {
     Promise.all([fetchPlayers(), fetchEventsData()])
@@ -35,16 +39,27 @@ export default function CharacterEventsClient({ house, charId }: Props) {
       .finally(() => setLoading(false));
   }, [charId]);
 
+  useEffect(() => {
+    if (!session) return;
+    fetchMyCharIds(session.sessionkey)
+      .catch(() => new Set<number>())
+      .then(setMyCharIds);
+  }, [session]);
+
+  // Signed-out viewers own nothing; signed-in viewers wait for their char list.
+  const ownershipKnown = ready && (!session || myCharIds !== null);
+  const isOwnChar = session != null && (myCharIds?.has(charId) ?? false);
+
   const filteredSeasons = useMemo(
-    () => (evData ? filterSeasonsByChar(evData.seasons, charId) : []),
-    [evData, charId],
+    () => (evData ? filterSeasonsByChar(evData.seasons, charId, !isOwnChar) : []),
+    [evData, charId, isOwnChar],
   );
 
   const handleCharClick = (targetId: number) => {
     router.push(`/account/gallery/${encodeURIComponent(house)}/${targetId}`);
   };
 
-  if (loading) return <Text variant="muted">Loading…</Text>;
+  if (loading || !ownershipKnown) return <Text variant="muted">Loading…</Text>;
 
   return (
     <Flow as="section">
@@ -79,7 +94,9 @@ export default function CharacterEventsClient({ house, charId }: Props) {
       </div>
 
       {evData && filteredSeasons.length === 0 && (
-        <Text variant="muted">No public events recorded for this character.</Text>
+        <Text variant="muted">
+          {isOwnChar ? "No events recorded for this character." : "No public events recorded for this character."}
+        </Text>
       )}
 
       {filteredSeasons.map((season) => (
