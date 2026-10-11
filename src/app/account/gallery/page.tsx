@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Portrait } from "@/components/portrait";
-import { Alert, Card, Eyebrow, Flow, Heading, Text } from "@/components/ui";
+import { Alert, Card, Eyebrow, Flow, Heading, Input, Text } from "@/components/ui";
 import { fetchPlayers, buildHouseMap } from "./_utils";
 import type { PlayerEntry } from "./_utils";
 
@@ -23,6 +23,17 @@ function groupByHouse(players: PlayerEntry[]): HouseGroup[] {
     .sort((a, b) => b.totalFame - a.totalFame);
 }
 
+/** A house-name match keeps the whole house; otherwise only houses with matching chars, narrowed to them. */
+function filterGroups(groups: HouseGroup[], query: string): HouseGroup[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return groups;
+  return groups.flatMap((g) => {
+    if (g.house.toLowerCase().includes(q)) return [g];
+    const chars = g.chars.filter((c) => c.parsedName.toLowerCase().includes(q));
+    return chars.length > 0 ? [{ ...g, chars }] : [];
+  });
+}
+
 // ── GalleryContent ────────────────────────────────────────────────────────────
 
 function GalleryContent() {
@@ -31,6 +42,7 @@ function GalleryContent() {
   const [players, setPlayers] = useState<PlayerEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!ready) return;
@@ -44,7 +56,8 @@ function GalleryContent() {
       .finally(() => setLoading(false));
   }, [session, ready, router]);
 
-  const groups = useMemo(() => (players ? groupByHouse(players) : []), [players]);
+  const allGroups = useMemo(() => (players ? groupByHouse(players) : []), [players]);
+  const groups = useMemo(() => filterGroups(allGroups, query), [allGroups, query]);
 
   if (!session) return null;
 
@@ -53,7 +66,19 @@ function GalleryContent() {
       <Heading level="h1">Gallery</Heading>
       {loading && <Text>Loading…</Text>}
       {error && <Alert>Error: {error}</Alert>}
-      {players && groups.length === 0 && <Text variant="muted">No characters yet.</Text>}
+      {players && allGroups.length > 0 && (
+        <Input
+          type="search"
+          placeholder="Search houses and characters…"
+          aria-label="Search houses and characters"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      )}
+      {players && allGroups.length === 0 && <Text variant="muted">No characters yet.</Text>}
+      {allGroups.length > 0 && groups.length === 0 && (
+        <Text variant="muted">No houses or characters match “{query.trim()}”.</Text>
+      )}
       {groups.map(({ house, chars, totalFame }) => {
         const houseHref = `/account/gallery/${encodeURIComponent(house)}`;
         return (
