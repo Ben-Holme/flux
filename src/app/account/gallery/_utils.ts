@@ -129,7 +129,10 @@ export function filterSeasonsByChar(
     }))
     .filter((s) => s.days.length > 0)
     .reverse()
-    .map((s) => ({ ...s, days: [...s.days].reverse() }));
+    .map((s) => ({
+      ...s,
+      days: [...s.days].reverse().map((day) => ({ ...day, events: [...day.events].reverse() })),
+    }));
 }
 
 export async function fetchEventsData(): Promise<EventsData> {
