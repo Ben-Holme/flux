@@ -223,9 +223,11 @@ export default function Nav() {
         {/* Section nav toggles — mobile only */}
         {isWiki && (
           <button
-            className="hidden items-center gap-1.5 text-white max-[768px]:flex"
+            className={`hidden items-center gap-1.5 text-white max-[768px]:flex transition-opacity duration-[400ms] ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
             onClick={toggleWikiNav}
             aria-expanded={wikiNavOpen}
+            aria-hidden={open}
+            tabIndex={open ? -1 : undefined}
           >
             <span className="font-heading text-[1.1rem] leading-none tracking-[0.15em] uppercase">
               The Unyha Wiki
@@ -246,9 +248,11 @@ export default function Nav() {
         )}
         {isAccount && (
           <button
-            className="hidden items-center gap-1.5 text-white max-[769px]:flex"
+            className={`hidden items-center gap-1.5 text-white max-[769px]:flex transition-opacity duration-[400ms] ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
             onClick={toggleAccountNav}
             aria-expanded={accountNavOpen}
+            aria-hidden={open}
+            tabIndex={open ? -1 : undefined}
           >
             <span className="font-heading text-[1.1rem] leading-none tracking-[0.15em] uppercase">
               My Account
