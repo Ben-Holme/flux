@@ -7,7 +7,9 @@ import {
   Badge,
   Card,
   Flow,
+  FormLabel,
   Heading,
+  Input,
   Table,
   TableHead,
   TableBody,
@@ -62,6 +64,19 @@ function dmgColor(pct: number): string {
   return `rgb(240,${g},40)`;
 }
 
+/**
+ * Damage per hit after armor, as the game computes it (functions.physicalDmgVsDefence):
+ * dmg² / (dmg + armor). `armor` is the displayed value — internally ×10, then ×0.1 in the formula.
+ */
+function dmgVsArmor(dmg: number, armor: number): number {
+  return armor > 0 ? (dmg * dmg) / (dmg + armor) : dmg;
+}
+
+function parseArmor(value: string): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function numSign(v: number): string {
   return v > 0 ? `+${v.toLocaleString()}` : v.toLocaleString();
 }
@@ -76,10 +91,6 @@ const maxDmgEnemy = combatEnemies.reduce<(Enemy & { dpct: number }) | null>(
   (best, e) => (best === null || e.dpct > best.dpct ? e : best),
   null,
 );
-const avgDmg =
-  combatEnemies.length > 0
-    ? combatEnemies.reduce((s, e) => s + e.dpct, 0) / combatEnemies.length
-    : 0;
 const maxHpEnemy = ALL_ENEMIES.reduce<Enemy | null>(
   (best, e) => (best === null || e.hp > best.hp ? e : best),
   null,
@@ -93,6 +104,16 @@ export function GameRulesTab() {
   const [sortKey, setSortKey] = useState<SortKey>("dpct");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(1);
+  const [armorInput, setArmorInput] = useState("0");
+  const armor = parseArmor(armorInput);
+
+  const avgDmg = useMemo(
+    () =>
+      combatEnemies.length > 0
+        ? combatEnemies.reduce((s, e) => s + dmgVsArmor(e.dpct, armor), 0) / combatEnemies.length
+        : 0,
+    [armor],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -142,9 +163,23 @@ export function GameRulesTab() {
     <Flow>
       <Heading level="h2">Game Rules</Heading>
       <Text variant="muted">
-        Enemy AI stat deltas from base. Damage per hit is the share of a naked newbie&apos;s health
-        one hit takes (10% base, +0.5% per +100 melee/archery). Bars scale to the highest, {MAX_PCT}%.
+        Enemy AI stat deltas from base. Damage per hit is the share of a 100 HP target&apos;s health
+        one hit takes (10% base, +0.5% per +100 melee/archery), reduced by armor as dmg² ÷ (dmg +
+        armor). Bars scale to the highest unarmored hit, {MAX_PCT}%.
       </Text>
+
+      <div className="max-w-[200px]">
+        <FormLabel htmlFor="target-armor">Target armor</FormLabel>
+        <Input
+          id="target-armor"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={10}
+          value={armorInput}
+          onChange={(e) => setArmorInput(e.target.value)}
+        />
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -156,7 +191,7 @@ export function GameRulesTab() {
         <Card className="flex flex-col gap-1">
           <Text as="span" variant="muted" className="text-xs uppercase tracking-wider">Highest Dmg / Hit</Text>
           <Text as="span" className="text-2xl font-semibold text-ember">
-            {maxDmgEnemy ? `${maxDmgEnemy.dpct.toFixed(1)}%` : "—"}
+            {maxDmgEnemy ? `${dmgVsArmor(maxDmgEnemy.dpct, armor).toFixed(1)}%` : "—"}
           </Text>
           <Text as="span" variant="muted" className="text-xs">{maxDmgEnemy?.n ?? "—"}</Text>
         </Card>
@@ -250,15 +285,16 @@ export function GameRulesTab() {
             {slice.map((e, i) => {
               const rank = (currentPage - 1) * PER_PAGE + i + 1;
               const type = getType(e);
-              const barPct = e.dpct !== null ? (e.dpct / MAX_PCT) * 100 : 0;
-              const color = e.dpct !== null ? dmgColor(barPct) : null;
+              const dmg = e.dpct !== null ? dmgVsArmor(e.dpct, armor) : null;
+              const barPct = dmg !== null ? (dmg / MAX_PCT) * 100 : 0;
+              const color = dmg !== null ? dmgColor(barPct) : null;
 
               return (
                 <TableRow key={e.n}>
                   <Td className="text-center text-xs text-white/30">{rank}</Td>
                   <Td className="font-medium">{e.n}</Td>
                   <Td>
-                    {e.dpct !== null ? (
+                    {dmg !== null ? (
                       <div className="flex min-w-[110px] items-center gap-2">
                         <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                           <div
@@ -270,7 +306,7 @@ export function GameRulesTab() {
                           className="w-10 text-right text-xs tabular-nums"
                           style={{ color: color ?? undefined }}
                         >
-                          {e.dpct.toFixed(1)}%
+                          {dmg.toFixed(1)}%
                         </span>
                       </div>
                     ) : (
