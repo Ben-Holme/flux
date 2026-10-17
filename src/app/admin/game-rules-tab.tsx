@@ -142,7 +142,8 @@ export function GameRulesTab() {
     <Flow>
       <Heading level="h2">Game Rules</Heading>
       <Text variant="muted">
-        Enemy AI stat deltas from base. Damage% relative to server max ({MAX_PCT}%).
+        Enemy AI stat deltas from base. Damage per hit is the share of a naked newbie&apos;s health
+        one hit takes (10% base, +0.5% per +100 melee/archery). Bars scale to the highest, {MAX_PCT}%.
       </Text>
 
       {/* Summary cards */}
@@ -153,7 +154,7 @@ export function GameRulesTab() {
           <Text as="span" variant="muted" className="text-xs">enemies</Text>
         </Card>
         <Card className="flex flex-col gap-1">
-          <Text as="span" variant="muted" className="text-xs uppercase tracking-wider">Highest Dmg</Text>
+          <Text as="span" variant="muted" className="text-xs uppercase tracking-wider">Highest Dmg / Hit</Text>
           <Text as="span" className="text-2xl font-semibold text-ember">
             {maxDmgEnemy ? `${maxDmgEnemy.dpct.toFixed(1)}%` : "—"}
           </Text>
@@ -165,7 +166,7 @@ export function GameRulesTab() {
           <Text as="span" variant="muted" className="text-xs">enemies</Text>
         </Card>
         <Card className="flex flex-col gap-1">
-          <Text as="span" variant="muted" className="text-xs uppercase tracking-wider">Avg Damage</Text>
+          <Text as="span" variant="muted" className="text-xs uppercase tracking-wider">Avg Dmg / Hit</Text>
           <Text as="span" className="text-2xl font-semibold text-gold">{avgDmg.toFixed(1)}%</Text>
           <Text as="span" variant="muted" className="text-xs">combat enemies</Text>
         </Card>
@@ -214,7 +215,7 @@ export function GameRulesTab() {
               <Th>Name</Th>
               <Th>
                 <button className="flex items-center gap-1" onClick={() => handleSort("dpct")}>
-                  Damage Output{sortArrow("dpct")}
+                  Dmg / Hit{sortArrow("dpct")}
                 </button>
               </Th>
               <Th>Type</Th>
