@@ -208,7 +208,7 @@ export function GameRulesTab() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-[860px] whitespace-nowrap">
           <TableHead>
             <TableRow>
               <Th className="w-10 text-center">#</Th>
