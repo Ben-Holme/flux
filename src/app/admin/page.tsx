@@ -7,6 +7,7 @@ import { fetchAccount, useAuth } from "@/context/auth-context";
 import Button from "@/components/button";
 import { Portrait } from "@/components/portrait";
 import { AdminTimeline } from "./timeline";
+import { GameRulesTab } from "./game-rules-tab";
 import {
   Badge,
   Card,
@@ -94,7 +95,7 @@ interface User {
   banned: boolean;
 }
 
-type Tab = "players" | "timeline";
+type Tab = "players" | "timeline" | "game-rules";
 type Filter = "all" | "banned";
 type KeyFilter = "any" | "has-key" | "no-key";
 type SteamFilter = "any" | "synced" | "not-synced";
@@ -396,7 +397,7 @@ function AdminContent() {
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-white/10 pb-0">
-        {(["players", "timeline"] as Tab[]).map((t) => (
+        {(["players", "timeline", "game-rules"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -412,12 +413,13 @@ function AdminContent() {
               fontSize:     "14px",
             }}
           >
-            {t === "players" ? "Players" : "Timeline"}
+            {t === "players" ? "Players" : t === "timeline" ? "Timeline" : "Game Rules"}
           </button>
         ))}
       </div>
 
       {tab === "timeline" && <AdminTimeline sessionKey={session.sessionkey} />}
+      {tab === "game-rules" && <GameRulesTab />}
 
       {tab === "players" && <>
 

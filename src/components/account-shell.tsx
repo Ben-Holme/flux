@@ -21,7 +21,6 @@ export function AccountShell({ children }: { children: ReactNode }) {
     ? [
         ...ACCOUNT_NAV,
         { label: "Admin", href: "/admin" },
-        { label: "Game Rules", href: "https://api.unyhagame.com/ueserv/admin-game-rules.php" },
       ]
     : ACCOUNT_NAV;
 
