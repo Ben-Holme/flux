@@ -18,7 +18,11 @@ const ACCOUNT_NAV: NavItem[] = [
 export function AccountShell({ children }: { children: ReactNode }) {
   const { isAdmin } = useAuth();
   const items: NavItem[] = isAdmin
-    ? [...ACCOUNT_NAV, { label: "Admin", href: "/admin" }]
+    ? [
+        ...ACCOUNT_NAV,
+        { label: "Admin", href: "/admin" },
+        { label: "Game Rules", href: "https://api.unyhagame.com/ueserv/admin-game-rules.php" },
+      ]
     : ACCOUNT_NAV;
 
   return (
