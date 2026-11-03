@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Odibee_Sans, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { Suspense } from "react";
 import "./globals.css";
 import Nav from "@/components/nav";
@@ -49,7 +48,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${odebeeSans.variable} ${inter.variable}`}>
       <body className="flex min-h-screen flex-col bg-void antialiased">
-        <Script src="https://scripts.simpleanalyticscdn.com/latest.js" />
         <AuthProvider>
           <LenisProvider>
           <NavGradientBlur />
